@@ -4,6 +4,7 @@ namespace SoulsOfTerra.Common;
 
 public static class SoulMath
 {
+	// Currency saturates instead of wrapping into a negative balance.
 	public static long SaturatingAdd(long left, long right)
 	{
 		if (right > 0 && left > long.MaxValue - right)

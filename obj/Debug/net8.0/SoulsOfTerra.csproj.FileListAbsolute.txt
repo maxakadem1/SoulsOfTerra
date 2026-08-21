@@ -10,3 +10,4 @@ C:\Users\Max\Documents\My Games\Terraria\tModLoader\ModSources\SoulsOfTerra\obj\
 C:\Users\Max\Documents\My Games\Terraria\tModLoader\ModSources\SoulsOfTerra\obj\Debug\net8.0\refint\SoulsOfTerra.dll
 C:\Users\Max\Documents\My Games\Terraria\tModLoader\ModSources\SoulsOfTerra\obj\Debug\net8.0\SoulsOfTerra.pdb
 C:\Users\Max\Documents\My Games\Terraria\tModLoader\ModSources\SoulsOfTerra\obj\Debug\net8.0\ref\SoulsOfTerra.dll
+C:\Users\Max\Documents\My Games\Terraria\tModLoader\ModSources\SoulsOfTerra\obj\Debug\net8.0\SoulsOfTerra.sourcelink.json

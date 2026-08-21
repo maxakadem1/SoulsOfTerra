@@ -1,8 +1,10 @@
 using System.IO;
 using Microsoft.Xna.Framework;
+using SoulsOfTerra.Common;
 using SoulsOfTerra.Content.Projectiles;
 using SoulsOfTerra.Players;
 using Terraria;
+using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
 
@@ -11,7 +13,11 @@ namespace SoulsOfTerra;
 public enum SoulMessageType : byte
 {
 	SyncPlayer,
-	RequestBloodstainRecovery
+	RequestBloodstainRecovery,
+	RequestCorePurchase,
+	RequestShrineUpgrade,
+	RequestSlimeCondensation,
+	RequestCampfireTransformation
 }
 
 public class SoulsOfTerra : Mod
@@ -27,6 +33,18 @@ public class SoulsOfTerra : Mod
 				break;
 			case SoulMessageType.RequestBloodstainRecovery:
 				HandleBloodstainRecovery(reader, whoAmI);
+				break;
+			case SoulMessageType.RequestCorePurchase:
+				HandleCorePurchase(reader, whoAmI);
+				break;
+			case SoulMessageType.RequestShrineUpgrade:
+				HandleShrineUpgrade(reader, whoAmI);
+				break;
+			case SoulMessageType.RequestSlimeCondensation:
+				HandleSlimeCondensation(reader, whoAmI);
+				break;
+			case SoulMessageType.RequestCampfireTransformation:
+				HandleCampfireTransformation(reader, whoAmI);
 				break;
 		}
 	}
@@ -81,6 +99,53 @@ public class SoulsOfTerra : Mod
 		if (player.IsProjectileInteractibleAndInInteractionRange(projectile, ref compareSpot))
 		{
 			bloodstain.Recover(player);
+		}
+	}
+
+	private static Player GetRequestingPlayer(int whoAmI)
+	{
+		return Main.netMode == NetmodeID.Server && whoAmI >= 0 && whoAmI < Main.maxPlayers
+			? Main.player[whoAmI]
+			: null;
+	}
+
+	private static void HandleCorePurchase(BinaryReader reader, int whoAmI)
+	{
+		int npcIndex = reader.ReadInt16();
+		Player player = GetRequestingPlayer(whoAmI);
+		if (player is not null)
+		{
+			SoulTransactions.TryPurchaseCore(player, npcIndex);
+		}
+	}
+
+	private static void HandleShrineUpgrade(BinaryReader reader, int whoAmI)
+	{
+		int npcIndex = reader.ReadInt16();
+		Player player = GetRequestingPlayer(whoAmI);
+		if (player is not null)
+		{
+			SoulTransactions.TryUpgradeShrine(player, npcIndex);
+		}
+	}
+
+	private static void HandleSlimeCondensation(BinaryReader reader, int whoAmI)
+	{
+		Point16 shrinePosition = new(reader.ReadInt16(), reader.ReadInt16());
+		Player player = GetRequestingPlayer(whoAmI);
+		if (player is not null)
+		{
+			SoulTransactions.TryCondenseSlimeEssence(player, shrinePosition);
+		}
+	}
+
+	private static void HandleCampfireTransformation(BinaryReader reader, int whoAmI)
+	{
+		Point16 campfirePosition = new(reader.ReadInt16(), reader.ReadInt16());
+		Player player = GetRequestingPlayer(whoAmI);
+		if (player is not null)
+		{
+			SoulTransactions.TryTransformCampfire(player, campfirePosition);
 		}
 	}
 }

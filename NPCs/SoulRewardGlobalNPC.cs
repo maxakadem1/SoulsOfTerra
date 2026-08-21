@@ -22,7 +22,7 @@ public class SoulRewardGlobalNPC : GlobalNPC
 		long reward = CalculateReward(npc);
 		if (reward > 0)
 		{
-			SoulOrbProjectile.Spawn(npc.GetSource_Loot(), npc.Center, reward);
+			SoulOrbProjectile.Spawn(npc.GetSource_Loot(), npc.Center, reward, npc.boss);
 		}
 	}
 
@@ -50,6 +50,7 @@ public class SoulRewardGlobalNPC : GlobalNPC
 			return 0;
 		}
 
+		// NPC value already includes vanilla difficulty scaling.
 		double reward = npc.value > 0f
 			? npc.value / CopperPerSoul
 			: CalculateBossFallback(npc);
