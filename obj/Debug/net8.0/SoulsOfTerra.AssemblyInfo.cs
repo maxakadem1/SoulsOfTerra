@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SoulsOfTerra")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+3ea4865330a46b2b44c43ac9df3b9042988776b3")]
 [assembly: System.Reflection.AssemblyProductAttribute("SoulsOfTerra")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SoulsOfTerra")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

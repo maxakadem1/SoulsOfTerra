@@ -1,6 +1,9 @@
 using System.Collections.Generic;
+using System.IO;
 using Microsoft.Xna.Framework;
 using SoulsOfTerra.Content.Projectiles;
+using SoulsOfTerra.NPCs;
+using SoulsOfTerra.Players;
 using Terraria;
 using Terraria.DataStructures;
 using Terraria.ID;
@@ -11,20 +14,47 @@ namespace SoulsOfTerra.Systems;
 
 public class SoulWorldSystem : ModSystem
 {
+	private static readonly long[] ShrineUpgradeCosts =
+	{
+		10_000,
+		20_000,
+		30_000,
+		50_000,
+		120_000,
+		200_000,
+		300_000,
+		450_000,
+		750_000
+	};
+
 	private readonly List<SavedBloodstain> pendingBloodstains = new();
+	private int soullessSpawnTimer;
+
+	public static bool SoullessSpawnedOnce { get; private set; }
+	public static int TerraShrineTier { get; private set; }
+	public static long SoullessSoulHoard { get; private set; }
 
 	public override void OnWorldLoad()
 	{
 		pendingBloodstains.Clear();
+		SoullessSpawnedOnce = false;
+		TerraShrineTier = 0;
+		SoullessSoulHoard = 0;
+		soullessSpawnTimer = 0;
 	}
 
 	public override void OnWorldUnload()
 	{
 		pendingBloodstains.Clear();
+		SoullessSpawnedOnce = false;
+		TerraShrineTier = 0;
+		SoullessSoulHoard = 0;
+		soullessSpawnTimer = 0;
 	}
 
 	public override void SaveWorldData(TagCompound tag)
 	{
+		// Temporary enemy orbs intentionally remain session-only.
 		List<TagCompound> saved = new();
 		foreach (Projectile projectile in Main.ActiveProjectiles)
 		{
@@ -46,11 +76,29 @@ public class SoulWorldSystem : ModSystem
 		{
 			tag["bloodstains"] = saved;
 		}
+
+		if (SoullessSpawnedOnce)
+		{
+			tag["soullessSpawned"] = true;
+		}
+
+		if (TerraShrineTier > 0)
+		{
+			tag["terraShrineTier"] = TerraShrineTier;
+		}
+
+		if (SoullessSoulHoard > 0)
+		{
+			tag["soullessSoulHoard"] = SoullessSoulHoard;
+		}
 	}
 
 	public override void LoadWorldData(TagCompound tag)
 	{
 		pendingBloodstains.Clear();
+		SoullessSpawnedOnce = tag.GetBool("soullessSpawned");
+		TerraShrineTier = System.Math.Clamp(tag.GetInt("terraShrineTier"), 0, ShrineUpgradeCosts.Length);
+		SoullessSoulHoard = System.Math.Max(0, tag.GetLong("soullessSoulHoard"));
 		foreach (TagCompound saved in tag.GetList<TagCompound>("bloodstains"))
 		{
 			long souls = saved.GetLong("souls");
@@ -78,6 +126,80 @@ public class SoulWorldSystem : ModSystem
 		}
 
 		pendingBloodstains.Clear();
+	}
+
+	public override void PostUpdateWorld()
+	{
+		if (SoullessSpawnedOnce || NPC.AnyNPCs(ModContent.NPCType<SoullessNPC>()) || ++soullessSpawnTimer < 120)
+		{
+			return;
+		}
+
+		foreach (Player player in Main.ActivePlayers)
+		{
+			int index = NPC.NewNPC(new EntitySource_Misc("SoulsOfTerra:InitialSoulless"), (int)player.Center.X, (int)player.Center.Y, ModContent.NPCType<SoullessNPC>());
+			if (index >= 0 && index < Main.maxNPCs)
+			{
+				Main.npc[index].homeless = true;
+				SoullessSpawnedOnce = true;
+			}
+
+			break;
+		}
+	}
+
+	public override void NetSend(BinaryWriter writer)
+	{
+		writer.Write(SoullessSpawnedOnce);
+		writer.Write((byte)TerraShrineTier);
+		writer.Write(SoullessSoulHoard);
+	}
+
+	public override void NetReceive(BinaryReader reader)
+	{
+		SoullessSpawnedOnce = reader.ReadBoolean();
+		TerraShrineTier = reader.ReadByte();
+		SoullessSoulHoard = reader.ReadInt64();
+	}
+
+	public static long GetNextUpgradeCost()
+	{
+		return TerraShrineTier >= ShrineUpgradeCosts.Length ? 0 : ShrineUpgradeCosts[TerraShrineTier];
+	}
+
+	public static bool IsNextUpgradeUnlocked()
+	{
+		return TerraShrineTier switch
+		{
+			0 => NPC.downedBoss1,
+			1 => NPC.downedBoss2,
+			2 => NPC.downedBoss3,
+			3 => Main.hardMode,
+			4 => NPC.downedMechBoss1 && NPC.downedMechBoss2 && NPC.downedMechBoss3,
+			5 => NPC.downedPlantBoss,
+			6 => NPC.downedGolemBoss,
+			7 => NPC.downedAncientCultist,
+			8 => NPC.downedMoonlord,
+			_ => false
+		};
+	}
+
+	public static bool TryUpgradeShrine(Player player)
+	{
+		long cost = GetNextUpgradeCost();
+		if (cost <= 0 || !IsNextUpgradeUnlocked() || !player.GetModPlayer<SoulPlayer>().TrySpendSouls(cost))
+		{
+			return false;
+		}
+
+		TerraShrineTier++;
+		SoullessSoulHoard = Common.SoulMath.SaturatingAdd(SoullessSoulHoard, cost);
+		if (Main.netMode == NetmodeID.Server)
+		{
+			NetMessage.SendData(MessageID.WorldData);
+		}
+
+		return true;
 	}
 
 	private readonly record struct SavedBloodstain(Vector2 Position, long Souls, string CharacterId);
