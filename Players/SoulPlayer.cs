@@ -69,6 +69,7 @@ public class SoulPlayer : ModPlayer
 		}
 
 		safePositionTimer = 0;
+		// Grounded snapshots keep hazardous deaths recoverable.
 		if (Player.velocity.Y == 0f && IsPositionInWorld(Player.Center))
 		{
 			lastSafePosition = Player.Center;
@@ -103,6 +104,17 @@ public class SoulPlayer : ModPlayer
 		}
 
 		SetBalanceAuthoritative(SoulMath.SaturatingAdd(SoulBalance, amount), true);
+	}
+
+	public bool TrySpendSouls(long amount)
+	{
+		if (amount <= 0 || Main.netMode == NetmodeID.MultiplayerClient || SoulBalance < amount)
+		{
+			return false;
+		}
+
+		SetBalanceAuthoritative(SoulBalance - amount, false);
+		return true;
 	}
 
 	public void ReceiveSync(long balance, string characterId)
@@ -151,7 +163,11 @@ public class SoulPlayer : ModPlayer
 			return;
 		}
 
-		RecentGain = balance - oldBalance;
+		long gainedSouls = balance - oldBalance;
+		// Nearby pickups join the visible total instead of replacing a large reward.
+		RecentGain = RecentGainTime > 0
+			? SoulMath.SaturatingAdd(RecentGain, gainedSouls)
+			: gainedSouls;
 		RecentGainTime = 120;
 		if (!Main.dedServ)
 		{
