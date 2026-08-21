@@ -1,0 +1,18 @@
+Mods: {
+	SoulsOfTerra: {
+		UI: {
+			RecoverBloodstain: "Right-click to recover {0} souls"
+		}
+
+		Configs: {
+			SoulServerConfig: {
+				DisplayName: "Soul Economy"
+				SoulRewardMultiplier: {
+					Label: "Soul reward multiplier"
+					Tooltip: "Multiplies every automatic enemy soul reward. Set to 0 to disable enemy rewards."
+				}
+			}
+		}
+	}
+}
+
