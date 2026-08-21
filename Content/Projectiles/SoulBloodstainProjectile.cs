@@ -3,7 +3,6 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using SoulsOfTerra.Players;
 using Terraria;
-using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.GameContent;
 using Terraria.GameInput;
@@ -114,6 +113,7 @@ public class SoulBloodstainProjectile : ModProjectile
 			return;
 		}
 
+		// Character identity is tracked now so owner-only rules can be added later.
 		foreach (Projectile projectile in Main.ActiveProjectiles)
 		{
 			if (projectile.ModProjectile is SoulBloodstainProjectile bloodstain && bloodstain.OriginCharacterId == characterId)
@@ -175,6 +175,5 @@ public class SoulBloodstainProjectile : ModProjectile
 			Recover(player);
 		}
 
-		SoundEngine.PlaySound(SoundID.Item4 with { Volume = 0.7f, Pitch = -0.1f });
 	}
 }

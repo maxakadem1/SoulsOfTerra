@@ -5,6 +5,7 @@ namespace SoulsOfTerra.Config;
 
 public class SoulServerConfig : ModConfig
 {
+	// Server scope keeps every player's economy on the same scale.
 	public override ConfigScope Mode => ConfigScope.ServerSide;
 
 	[DefaultValue(1f)]

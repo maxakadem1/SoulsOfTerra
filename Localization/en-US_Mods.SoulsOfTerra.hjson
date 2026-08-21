@@ -1,18 +1,79 @@
 Mods: {
 	SoulsOfTerra: {
 		UI: {
-			RecoverBloodstain: "Right-click to recover {0} souls"
+			RecoverBloodstain: Right-click to recover {0} souls
+			Commune: Commune
+		}
+
+		Dialogue: {
+			Soulless: {
+				Introduction: So another bearer wakes. Keep close the souls you gather; death is eager to loosen your grasp.
+				BloodstainHint: What spills from you does not vanish. Return to the stain, reach into it, and take back what remains.
+				AfterKingSlime: Even a crown of gel leaves an echo. A Terra Shrine can press that echo into useful form.
+			}
 		}
 
 		Configs: {
 			SoulServerConfig: {
-				DisplayName: "Soul Economy"
+				DisplayName: Soul Economy
+
 				SoulRewardMultiplier: {
-					Label: "Soul reward multiplier"
-					Tooltip: "Multiplies every automatic enemy soul reward. Set to 0 to disable enemy rewards."
+					Label: Soul reward multiplier
+					Tooltip: Multiplies every automatic enemy soul reward. Set to 0 to disable enemy rewards.
 				}
 			}
 		}
 	}
 }
 
+Configs: {
+	SoulServerConfig: {
+		SoulRewardMultiplier: {
+			Tooltip: ""
+			Label: Soul Reward Multiplier
+		}
+
+		DisplayName: Soul Server Config
+	}
+}
+
+Projectiles: {
+	SoulOrbProjectile.DisplayName: Soul Orb Projectile
+	SoulBloodstainProjectile.DisplayName: Soul Bloodstain Projectile
+}
+
+NPCs: {
+	SoullessNPC: {
+		DisplayName: Soulless
+
+		TownNPCMood: {
+			Content: I am content.
+			NoHome: I hate not having a home.
+			FarFromHome: I am too far from home.
+			LoveSpace: I love having so much space.
+			DislikeCrowded: I dislike how crowded I am.
+			HateCrowded: I hate how crowded I am.
+			LikeNPC_Princess: I like {NPCName}.
+			Princess_LovesNPC: I like {NPCName}.
+		}
+	}
+}
+
+Items: {
+	BrokenTerraBladeCore: {
+		DisplayName: Broken Terra Blade
+		Tooltip: Right-click a campfire to form a Terra Shrine
+	}
+
+	SlimeEssence: {
+		DisplayName: Slime Essence
+		Tooltip: A royal echo condensed from souls
+	}
+
+	SlimeboundBlade: {
+		DisplayName: Slimebound Blade
+		Tooltip: The edge flexes, but never yields
+	}
+}
+
+Tiles.TerraShrineTile.MapEntry: Terra Shrine

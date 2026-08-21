@@ -33,6 +33,7 @@ public class SoulInterfaceSystem : ModSystem
 			return true;
 		}
 
+		// UI coordinates account for the player's interface scale.
 		SoulPlayer soulPlayer = Main.LocalPlayer.GetModPlayer<SoulPlayer>();
 		string balanceText = soulPlayer.SoulBalance.ToString("N0");
 		Vector2 textSize = FontAssets.MouseText.Value.MeasureString(balanceText);
