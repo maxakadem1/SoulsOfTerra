@@ -1,6 +1,8 @@
 using Microsoft.Xna.Framework;
 using SoulsOfTerra.Content.Items.Access;
+using SoulsOfTerra.Content.Items.Consumables.SoulCrystals;
 using SoulsOfTerra.Content.Items.Materials;
+using SoulsOfTerra.Content.Projectiles;
 using SoulsOfTerra.Content.Tiles;
 using SoulsOfTerra.NPCs;
 using SoulsOfTerra.Players;
@@ -17,6 +19,8 @@ public static class SoulTransactions
 	public const long CoreCost = 100;
 	public const long SlimeEssenceCost = 2_500;
 	public const long EyeEssenceCost = 5_000;
+	private static readonly long[] SoulCrystalCosts = { 1_250, 6_250, 31_250 };
+	private static readonly long[] SoulCrystalValues = { 1_000, 5_000, 25_000 };
 	private const float InteractionRange = 12f * 16f;
 
 	public static bool TryPurchaseCore(Player player, int npcIndex)
@@ -35,6 +39,51 @@ public static class SoulTransactions
 		return IsValidSoullessInteraction(player, npcIndex) && SoulWorldSystem.TryUpgradeShrine(player);
 	}
 
+	public static bool TryConvertSoulCrystal(Player player, int npcIndex, int crystalIndex)
+	{
+		if (!IsValidSoullessInteraction(player, npcIndex) || !IsSoulCrystalUnlocked(crystalIndex))
+		{
+			return false;
+		}
+
+		long cost = GetSoulCrystalCost(crystalIndex);
+		if (!player.GetModPlayer<SoulPlayer>().TrySpendSouls(cost))
+		{
+			return false;
+		}
+
+		int itemType = crystalIndex switch
+		{
+			0 => ModContent.ItemType<FaintSoulCrystal>(),
+			1 => ModContent.ItemType<VividSoulCrystal>(),
+			2 => ModContent.ItemType<ProfoundSoulCrystal>(),
+			_ => ItemID.None
+		};
+		player.QuickSpawnItem(new EntitySource_Misc("SoulsOfTerra:SoulCrystalConversion"), itemType);
+		return true;
+	}
+
+	public static long GetSoulCrystalCost(int crystalIndex)
+	{
+		return crystalIndex >= 0 && crystalIndex < SoulCrystalCosts.Length ? SoulCrystalCosts[crystalIndex] : 0;
+	}
+
+	public static long GetSoulCrystalValue(int crystalIndex)
+	{
+		return crystalIndex >= 0 && crystalIndex < SoulCrystalValues.Length ? SoulCrystalValues[crystalIndex] : 0;
+	}
+
+	public static bool IsSoulCrystalUnlocked(int crystalIndex)
+	{
+		return crystalIndex switch
+		{
+			0 => true,
+			1 => SoulWorldSystem.TerraShrineTier >= 1,
+			2 => SoulWorldSystem.TerraShrineTier >= 4,
+			_ => false
+		};
+	}
+
 	public static bool TryCondenseSlimeEssence(Player player, Point16 shrinePosition)
 	{
 		if (!NPC.downedSlimeKing || !IsValidShrineInteraction(player, shrinePosition) || !player.GetModPlayer<SoulPlayer>().TrySpendSouls(SlimeEssenceCost))
@@ -43,6 +92,7 @@ public static class SoulTransactions
 		}
 
 		player.QuickSpawnItem(new EntitySource_Misc("SoulsOfTerra:SlimeCondensation"), ModContent.ItemType<SlimeEssence>());
+		CondensationSoulWispProjectile.Spawn(player, shrinePosition);
 		return true;
 	}
 
@@ -156,6 +206,7 @@ public static class SoulTransactions
 		}
 
 		player.QuickSpawnItem(new EntitySource_Misc("SoulsOfTerra:EyeCondensation"), ModContent.ItemType<EyeEssence>());
+		CondensationSoulWispProjectile.Spawn(player, shrinePosition);
 		return true;
 	}
 

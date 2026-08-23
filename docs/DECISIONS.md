@@ -78,6 +78,5 @@
 - Whether bloodstains eventually become owner-only or configurable.
 - The complete King Slime equipment set and its mechanical identity.
 - The order and content of later boss essence families.
-- Rules and denominations for physical consumable soul items.
-- How Soulless's hidden hoard changes his story encounter or boss fight.
+- How Soul Crystal conversion fees are expressed in Soulless's later story without a tracked hoard counter.
 - Original visual designs and final UI presentation.

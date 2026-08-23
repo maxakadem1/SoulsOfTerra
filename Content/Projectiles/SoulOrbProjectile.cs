@@ -134,39 +134,47 @@ public class SoulOrbProjectile : ModProjectile
 
 	public override bool PreDraw(ref Color lightColor)
 	{
+		DrawSoulVisual(Projectile, StoredSouls, ContainsBossReward);
+		return false;
+	}
+
+	internal static void DrawSoulVisual(Projectile projectile, long visualSouls, bool containsBossReward, float opacity = 1f,
+		float scaleMultiplier = 1f, Vector2[] trailPositions = null, float trailScaleMultiplier = 1f)
+	{
 		glowTexture ??= CreateGlowTexture();
 		ringTexture ??= CreateRingTexture();
 		Vector2 origin = glowTexture.Size() * 0.5f;
-		float pulse = 1f + 0.06f * (float)System.Math.Sin(Main.GlobalTimeWrappedHourly * 5f + Projectile.whoAmI);
-		float valueLog = (float)System.Math.Log10(System.Math.Max(1, StoredSouls));
+		float pulse = 1f + 0.06f * (float)System.Math.Sin(Main.GlobalTimeWrappedHourly * 5f + projectile.whoAmI);
+		float valueLog = (float)System.Math.Log10(System.Math.Max(1, visualSouls));
 		float visualProgress = MathHelper.Clamp((valueLog - 1f) / 4f, 0f, 1f);
 		float valueIntensity = MathHelper.Lerp(0.82f, 1.52f, visualProgress);
-		Color soulColor = GetSoulColor(valueLog, ContainsBossReward);
+		Color soulColor = GetSoulColor(valueLog, containsBossReward);
 
 		// One smooth trail keeps the reward readable during crowded fights.
-		for (int i = Projectile.oldPos.Length - 1; i >= 1; i--)
+		Vector2[] positions = trailPositions ?? projectile.oldPos;
+		for (int i = positions.Length - 1; i >= 1; i--)
 		{
-			if (Projectile.oldPos[i] == Vector2.Zero)
+			if (positions[i] == Vector2.Zero)
 			{
 				continue;
 			}
 
-			float trailStrength = 1f - i / (float)Projectile.oldPos.Length;
-			Vector2 trailPosition = Projectile.oldPos[i] + Projectile.Size * 0.5f - Main.screenPosition;
-			float trailScale = MathHelper.Lerp(0.1f, 0.35f, trailStrength) * valueIntensity;
+			float trailStrength = 1f - i / (float)positions.Length;
+			Vector2 trailPosition = positions[i] + projectile.Size * 0.5f - Main.screenPosition;
+			float trailScale = MathHelper.Lerp(0.1f, 0.35f, trailStrength) * valueIntensity * scaleMultiplier * trailScaleMultiplier;
 			Color trailColor = WithAlpha(soulColor, 95) * (trailStrength * 0.76f);
-			Main.EntitySpriteDraw(glowTexture, trailPosition, null, trailColor, 0f, origin, trailScale, SpriteEffects.None);
+			Main.EntitySpriteDraw(glowTexture, trailPosition, null, trailColor * opacity, 0f, origin, trailScale, SpriteEffects.None);
 		}
 
-		Vector2 drawPosition = Projectile.Center - Main.screenPosition;
+		Vector2 drawPosition = projectile.Center - Main.screenPosition;
 		// A bright annular border surrounds a nearly transparent interior.
-		Main.EntitySpriteDraw(glowTexture, drawPosition, null, WithAlpha(soulColor, 24), 0f, origin, 0.52f * pulse * valueIntensity, SpriteEffects.None);
-		Main.EntitySpriteDraw(ringTexture, drawPosition, null, WithAlpha(soulColor, 225), 0f, origin, 0.38f * pulse * valueIntensity, SpriteEffects.None);
+		Main.EntitySpriteDraw(glowTexture, drawPosition, null, WithAlpha(soulColor, 24) * opacity, 0f, origin, 0.52f * pulse * valueIntensity * scaleMultiplier, SpriteEffects.None);
+		Main.EntitySpriteDraw(ringTexture, drawPosition, null, WithAlpha(soulColor, 225) * opacity, 0f, origin, 0.38f * pulse * valueIntensity * scaleMultiplier, SpriteEffects.None);
 
 		// Counter-rotating wisps create a small vortex inside the soul.
-		float spinSpeed = ContainsBossReward ? 2.1f : 3.25f;
-		float spinTime = Main.GlobalTimeWrappedHourly * spinSpeed + Projectile.whoAmI * 0.37f;
-		float orbitRadius = MathHelper.Lerp(5.5f, 9.5f, visualProgress) * (ContainsBossReward ? 1.18f : 1f);
+		float spinSpeed = containsBossReward ? 2.1f : 3.25f;
+		float spinTime = Main.GlobalTimeWrappedHourly * spinSpeed + projectile.whoAmI * 0.37f;
+		float orbitRadius = MathHelper.Lerp(5.5f, 9.5f, visualProgress) * (containsBossReward ? 1.18f : 1f) * scaleMultiplier;
 		Color wispColor = Color.Lerp(Color.White, soulColor, 0.55f);
 		for (int wisp = 0; wisp < 2; wisp++)
 		{
@@ -176,12 +184,10 @@ public class SoulOrbProjectile : ModProjectile
 			Vector2 orbit = new((float)System.Math.Cos(phase) * orbitRadius, depth * orbitRadius * 0.42f);
 			orbit = orbit.RotatedBy(direction * 0.38f);
 			float depthFactor = MathHelper.Lerp(0.55f, 1f, (depth + 1f) * 0.5f);
-			Color animatedWispColor = WithAlpha(wispColor, (byte)(245f * depthFactor));
-			float wispScale = MathHelper.Lerp(0.13f, 0.205f, visualProgress) * depthFactor;
+			Color animatedWispColor = WithAlpha(wispColor, (byte)(245f * depthFactor)) * opacity;
+			float wispScale = MathHelper.Lerp(0.13f, 0.205f, visualProgress) * depthFactor * scaleMultiplier;
 			Main.EntitySpriteDraw(glowTexture, drawPosition + orbit, null, animatedWispColor, 0f, origin, wispScale, SpriteEffects.None);
 		}
-
-		return false;
 	}
 
 	public override void OnKill(int timeLeft)

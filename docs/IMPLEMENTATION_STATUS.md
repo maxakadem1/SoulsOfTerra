@@ -1,6 +1,6 @@
 # Souls of Terra — Implementation Status
 
-> This document describes the current prototype, not every intended feature. Last reviewed: 2026-08-20.
+> This document describes the current prototype, not every intended feature. Last reviewed: 2026-08-23.
 
 ## Current playable loop
 
@@ -12,6 +12,7 @@
 6. Defeat King Slime, then spend 2,500 souls at the shrine to create Slime Essence.
 7. Craft the prototype Slimebound Blade at a normal anvil.
 8. Defeat the Eye of Cthulhu, strengthen the shrine to tier 1, then spend 5,000 souls to create Eye Essence.
+9. Craft Servant's Gaze at a normal anvil and release delayed homing servant volleys.
 
 ## Implemented
 
@@ -56,7 +57,8 @@
 - Row-based Soulless transactions and an eight-slot Terra Shrine essence grid with selection details and one Condense action.
 - Unlimited Broken Terra Blade purchases for 100 souls each.
 - Nine world-wide shrine upgrade tiers tied to major vanilla milestones.
-- Persistent hidden counter for all souls paid into upgrades.
+- Two-tab Soulless menu separating shrine services from Soul Crystal conversion.
+- Three tradable Soul Crystal denominations with 25% conversion loss, tiered unlocks, one-click consumption, and soul-release effects.
 
 ### Terra Shrine and essence prototype
 
@@ -67,9 +69,12 @@
 - Shrine menu with King Slime and Eye of Cthulhu progression checks.
 - Slime Essence condensation for 2,500 souls.
 - Eye Essence condensation for 5,000 souls after the Eye is defeated and shrine tier 1 is purchased.
+- Successful condensation immediately grants the essence, then sends seven curved soul wisps from the player into the shrine with a two-part vanilla sound cue and final arrival pulse.
 - Shrine destruction returns the core and the original Iron or Lead Anvil.
 - Slimebound Blade standard anvil recipe for Magic Storage compatibility.
 - Slimebound Blade Royal Viscosity prototype: an exceptionally slow 1.6x sword with a miss-independent 1, 1, 3 firing cycle; its compact gel balls use closely matched damage and bounce areas, pierce enemies, and bounce up to three times.
+- Servant's Gaze magic staff recipe with Eye Essence, Lenses, and either Demonite or Crimtane Bars.
+- Servant's Gaze releases three harmless dispersing servants that awaken after one second, independently home through terrain, and rupture into small damaging gore bursts.
 
 ## Current shrine upgrade table
 
@@ -98,7 +103,7 @@ These values have not been reconciled with measured boss rewards and are deliber
 
 ## Known limitations and risks
 
-- King Slime and Eye of Cthulhu have implemented essences; only King Slime currently has an equipment demonstration.
+- King Slime and Eye of Cthulhu have implemented essences and one equipment demonstration each.
 - Shrine upgrades currently unlock tiers but do not yet gate additional implemented recipes.
 - Upgrade costs require balance testing against actual soul payouts.
 - The anvil transformation, clearance checks, and shrine behavior need multiplayer playtesting.
@@ -123,7 +128,7 @@ These values have not been reconciled with measured boss rewards and are deliber
 6. Defeat King Slime and condense several essences.
 7. Confirm the Slimebound Blade appears and crafts in both vanilla recipe search and Magic Storage.
 8. Repeat purchase, transformation, condensation, and recovery with a multiplayer client.
-9. Save and reload; verify shrine tier, Soulless state, hidden hoard, player balance, and bloodstains.
+9. Save and reload; verify shrine tier, Soulless state, player balance, and bloodstains.
 
 ## Near-term implementation backlog
 
@@ -132,5 +137,4 @@ These values have not been reconciled with measured boss rewards and are deliber
 - Create original art and animation for Soulless, the Broken Terra Blade, Terra Shrine, Slime Essence, and Slimebound equipment.
 - Add the remaining King Slime weapon and armor recipes.
 - Decide which boss essence follows King Slime and define its equipment identity.
-- Add physical consumable soul items suitable for trading between players.
 - Add automated or repeatable multiplayer regression checks where practical.

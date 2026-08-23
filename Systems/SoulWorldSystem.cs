@@ -32,14 +32,12 @@ public class SoulWorldSystem : ModSystem
 
 	public static bool SoullessSpawnedOnce { get; private set; }
 	public static int TerraShrineTier { get; private set; }
-	public static long SoullessSoulHoard { get; private set; }
 
 	public override void OnWorldLoad()
 	{
 		pendingBloodstains.Clear();
 		SoullessSpawnedOnce = false;
 		TerraShrineTier = 0;
-		SoullessSoulHoard = 0;
 		soullessSpawnTimer = 0;
 	}
 
@@ -48,7 +46,6 @@ public class SoulWorldSystem : ModSystem
 		pendingBloodstains.Clear();
 		SoullessSpawnedOnce = false;
 		TerraShrineTier = 0;
-		SoullessSoulHoard = 0;
 		soullessSpawnTimer = 0;
 	}
 
@@ -87,10 +84,6 @@ public class SoulWorldSystem : ModSystem
 			tag["terraShrineTier"] = TerraShrineTier;
 		}
 
-		if (SoullessSoulHoard > 0)
-		{
-			tag["soullessSoulHoard"] = SoullessSoulHoard;
-		}
 	}
 
 	public override void LoadWorldData(TagCompound tag)
@@ -98,7 +91,6 @@ public class SoulWorldSystem : ModSystem
 		pendingBloodstains.Clear();
 		SoullessSpawnedOnce = tag.GetBool("soullessSpawned");
 		TerraShrineTier = System.Math.Clamp(tag.GetInt("terraShrineTier"), 0, ShrineUpgradeCosts.Length);
-		SoullessSoulHoard = System.Math.Max(0, tag.GetLong("soullessSoulHoard"));
 		foreach (TagCompound saved in tag.GetList<TagCompound>("bloodstains"))
 		{
 			long souls = saved.GetLong("souls");
@@ -152,14 +144,12 @@ public class SoulWorldSystem : ModSystem
 	{
 		writer.Write(SoullessSpawnedOnce);
 		writer.Write((byte)TerraShrineTier);
-		writer.Write(SoullessSoulHoard);
 	}
 
 	public override void NetReceive(BinaryReader reader)
 	{
 		SoullessSpawnedOnce = reader.ReadBoolean();
 		TerraShrineTier = reader.ReadByte();
-		SoullessSoulHoard = reader.ReadInt64();
 	}
 
 	public static long GetNextUpgradeCost()
@@ -193,7 +183,6 @@ public class SoulWorldSystem : ModSystem
 		}
 
 		TerraShrineTier++;
-		SoullessSoulHoard = Common.SoulMath.SaturatingAdd(SoullessSoulHoard, cost);
 		if (Main.netMode == NetmodeID.Server)
 		{
 			NetMessage.SendData(MessageID.WorldData);

@@ -43,9 +43,15 @@ Multiple simultaneous attraction trails were tested and rejected because they ma
 
 Nearby pickups accumulate into one `+souls` notification instead of immediately replacing a large reward with a smaller one.
 
-### Future consumable souls
+### Soul Crystals
 
-Craftable or lootable physical soul items may be added later. These can be traded to another player and consumed to add their stored value to the abstract soul balance. They are distinct from temporary enemy soul orbs.
+Soul Crystals are physical, stackable, tradable vessels for abstract souls. Soulless converts carried souls into three denominations while retaining a 25% thematic fee. Using a crystal requires one deliberate hold-up action and releases its contained value back into the player's abstract balance.
+
+- Faint Soul Crystal: contains 1,000 souls and costs 1,250; available immediately.
+- Vivid Soul Crystal: contains 5,000 souls and costs 6,250; requires Terra Shrine tier 1.
+- Profound Soul Crystal: contains 25,000 souls and costs 31,250; requires Terra Shrine tier 4.
+
+The conversion loss preserves meaningful death risk while still allowing costly banking and player-to-player trading. Soulless's retained fee is story flavor and is not recorded as a hidden numerical resource.
 
 ## Death and recovery
 
@@ -78,7 +84,7 @@ His dialogue introduces souls, death recovery, shrines, and new progression in a
 
 Soulless is intended to become an antagonist. He quietly retains the souls paid for Terra Shrine upgrades and uses the player's progress for his own benefit. Early dialogue and mechanics should foreshadow this without immediately exposing it.
 
-The accumulated payment is stored as a world-wide hidden value so it can influence later dialogue, encounters, difficulty, transformation, or boss mechanics.
+His profit is communicated through prices, dialogue, and later story developments rather than a hidden numerical counter.
 
 ## Terra Shrine
 
@@ -128,7 +134,7 @@ Current costs and equipment statistics are prototypes, not final balance.
 
 - Enemy orbs and bloodstains are free-for-all.
 - Soul balances belong to player characters.
-- Shrine strength, boss unlocks, and Soulless's hidden hoard belong to the world.
+- Shrine strength and boss unlocks belong to the world.
 - Purchases, spending, condensation, recovery, and tile transformations must be validated by the server.
 - A complete enemy produces one shared reward rather than one full reward per player.
 
