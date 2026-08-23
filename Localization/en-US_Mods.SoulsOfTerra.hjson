@@ -42,6 +42,10 @@ Projectiles: {
 	SoulBloodstainProjectile.DisplayName: Soul Bloodstain Projectile
 	RoyalGelCrescentProjectile.DisplayName: Royal Gel Crescent Projectile
 	RoyalGelBallProjectile.DisplayName: Royal Gel Ball Projectile
+	ServantEyeProjectile.DisplayName: Awakened Servant
+	ServantGoreExplosionProjectile.DisplayName: Gore Burst
+	CondensationSoulWispProjectile.DisplayName: Condensing Soul
+	SoulCrystalReleaseProjectile.DisplayName: Soul Crystal Release Projectile
 }
 
 NPCs: {
@@ -77,12 +81,36 @@ Items: {
 		Tooltip: A watchful crimson echo condensed from souls
 	}
 
+	FaintSoulCrystal: {
+		DisplayName: Faint Soul Crystal
+		Tooltip: ""
+	}
+
+	VividSoulCrystal: {
+		DisplayName: Vivid Soul Crystal
+		Tooltip: ""
+	}
+
+	ProfoundSoulCrystal: {
+		DisplayName: Profound Soul Crystal
+		Tooltip: ""
+	}
+
 	SlimeboundBlade: {
 		DisplayName: Slimebound Blade
 		Tooltip:
 			'''
 			Every swing releases a large piercing gel ball
 			Every third swing releases three balls instead
+			'''
+	}
+
+	ServantsGaze: {
+		DisplayName: Servant's Gaze
+		Tooltip:
+			'''
+			Releases three dormant servants
+			They awaken after a moment and seek nearby enemies
 			'''
 	}
 }

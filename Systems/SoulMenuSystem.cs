@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using SoulsOfTerra.Common;
+using SoulsOfTerra.Content.Items.Consumables.SoulCrystals;
 using SoulsOfTerra.Content.Items.Materials;
 using SoulsOfTerra.Content.Tiles;
 using SoulsOfTerra.NPCs;
@@ -103,6 +104,12 @@ internal sealed class SoulMenuState : UIState
 		Shrine
 	}
 
+	private enum SoullessTab
+	{
+		Services,
+		Crystals
+	}
+
 	private const int FeedbackDuration = 180;
 	private UIPanel panel;
 	private UIText title;
@@ -110,6 +117,10 @@ internal sealed class SoulMenuState : UIState
 	private UIText balance;
 	private SoulActionRow primaryRow;
 	private SoulActionRow secondaryRow;
+	private UITextPanel<string> servicesTabButton;
+	private UITextPanel<string> crystalsTabButton;
+	private UIElement crystalGrid;
+	private SoulEssenceCard[] crystalCards;
 	private UIElement essenceGrid;
 	private SoulEssenceCard[] essenceCards;
 	private UIPanel essenceDetails;
@@ -121,10 +132,12 @@ internal sealed class SoulMenuState : UIState
 	private UIText feedback;
 	private UITextPanel<string> closeButton;
 	private MenuKind kind;
+	private SoullessTab soullessTab;
 	private int npcIndex;
 	private Point16 shrinePosition;
 	private int feedbackTime;
 	private int selectedEssenceIndex;
+	private int selectedCrystalIndex;
 
 	public override void OnInitialize()
 	{
@@ -160,7 +173,9 @@ internal sealed class SoulMenuState : UIState
 		primaryRow.SetAction(UsePrimaryAction);
 		secondaryRow = CreateRow(168f);
 		secondaryRow.SetAction(UseSecondaryAction);
+		CreateSoullessTabs();
 		CreateEssenceCatalogue();
+		CreateCrystalCatalogue();
 
 		feedback = new UIText(string.Empty, 0.72f);
 		feedback.HAlign = 0.5f;
@@ -185,6 +200,8 @@ internal sealed class SoulMenuState : UIState
 	{
 		kind = MenuKind.Soulless;
 		npcIndex = requestedNpcIndex;
+		soullessTab = SoullessTab.Services;
+		selectedCrystalIndex = 0;
 		BuildSoullessLayout();
 		ClearFeedback();
 		RefreshContent();
@@ -236,16 +253,34 @@ internal sealed class SoulMenuState : UIState
 	private void BuildSoullessLayout()
 	{
 		panel.RemoveAllChildren();
-		panel.Height.Set(340f, 0f);
+		panel.Height.Set(400f, 0f);
 		panel.Append(title);
 		panel.Append(subtitle);
 		panel.Append(balance);
-		panel.Append(primaryRow);
-		panel.Append(secondaryRow);
-		feedback.Top.Set(266f, 0f);
+		panel.Append(servicesTabButton);
+		panel.Append(crystalsTabButton);
+		if (soullessTab == SoullessTab.Services)
+		{
+			primaryRow.Top.Set(108f, 0f);
+			secondaryRow.Top.Set(198f, 0f);
+			panel.Append(primaryRow);
+			panel.Append(secondaryRow);
+		}
+		else
+		{
+			crystalGrid.Top.Set(112f, 0f);
+			panel.Append(crystalGrid);
+			essenceDetails.Top.Set(184f, 0f);
+			panel.Append(essenceDetails);
+			condenseButton.Top.Set(276f, 0f);
+			panel.Append(condenseButton);
+		}
+
+		feedback.Top.Set(326f, 0f);
 		panel.Append(feedback);
-		closeButton.Top.Set(294f, 0f);
+		closeButton.Top.Set(358f, 0f);
 		panel.Append(closeButton);
+		ApplySoullessTabStyles();
 	}
 
 	private void BuildShrineLayout()
@@ -256,7 +291,9 @@ internal sealed class SoulMenuState : UIState
 		panel.Append(subtitle);
 		panel.Append(balance);
 		panel.Append(essenceGrid);
+		essenceDetails.Top.Set(204f, 0f);
 		panel.Append(essenceDetails);
+		condenseButton.Top.Set(294f, 0f);
 		panel.Append(condenseButton);
 		feedback.Top.Set(340f, 0f);
 		panel.Append(feedback);
@@ -325,12 +362,33 @@ internal sealed class SoulMenuState : UIState
 		condenseButton.OnLeftClick += (_, _) => UsePrimaryAction();
 		condenseButton.OnMouseOver += (_, _) =>
 		{
-			if (IsSelectedEssenceUnlocked())
+			if (IsCurrentSelectionAvailable())
 			{
-				condenseButton.BackgroundColor = HasEnoughForSelectedEssence() ? new Color(55, 112, 91) : new Color(104, 65, 59);
+				condenseButton.BackgroundColor = HasEnoughForCurrentSelection() ? new Color(55, 112, 91) : new Color(104, 65, 59);
 			}
 		};
-		condenseButton.OnMouseOut += (_, _) => ApplyCondenseButtonStyle();
+		condenseButton.OnMouseOut += (_, _) => ApplyCurrentActionButtonStyle();
+	}
+
+	private void CreateCrystalCatalogue()
+	{
+		crystalGrid = new UIElement();
+		crystalGrid.Width.Set(-32f, 1f);
+		crystalGrid.Height.Set(62f, 0f);
+		crystalGrid.Left.Set(16f, 0f);
+
+		crystalCards = new SoulEssenceCard[3];
+		for (int index = 0; index < crystalCards.Length; index++)
+		{
+			int selectedIndex = index;
+			SoulEssenceCard card = new();
+			card.Width.Set(160f, 0f);
+			card.Height.Set(58f, 0f);
+			card.Left.Set(4f + index * 166f, 0f);
+			card.OnLeftClick += (_, _) => SelectCrystal(selectedIndex);
+			crystalCards[index] = card;
+			crystalGrid.Append(card);
+		}
 	}
 
 	private void SelectEssence(int index)
@@ -345,7 +403,14 @@ internal sealed class SoulMenuState : UIState
 		balance.SetText($"{Main.LocalPlayer.GetModPlayer<SoulPlayer>().SoulBalance:N0} souls");
 		if (kind == MenuKind.Soulless)
 		{
-			RefreshSoullessContent();
+			if (soullessTab == SoullessTab.Services)
+			{
+				RefreshSoullessContent();
+			}
+			else
+			{
+				RefreshCrystalContent();
+			}
 		}
 		else
 		{
@@ -379,6 +444,36 @@ internal sealed class SoulMenuState : UIState
 			? $"World-wide tier {SoulWorldSystem.TerraShrineTier + 1}  •  {upgradeCost:N0} souls"
 			: $"Requires {GetNextMilestoneName()}";
 		secondaryRow.SetContent(ItemID.IronAnvil, "Strengthen Terra Shrine", detail, milestoneUnlocked ? "Strengthen" : "Locked", milestoneUnlocked, canAfford);
+	}
+
+	private void RefreshCrystalContent()
+	{
+		title.SetText("Soulless");
+		subtitle.SetText("I can bind what death would otherwise reclaim.");
+		int[] itemTypes =
+		{
+			ModContent.ItemType<FaintSoulCrystal>(),
+			ModContent.ItemType<VividSoulCrystal>(),
+			ModContent.ItemType<ProfoundSoulCrystal>()
+		};
+		string[] names = { "Faint", "Vivid", "Profound" };
+
+		for (int index = 0; index < crystalCards.Length; index++)
+		{
+			bool unlocked = SoulTransactions.IsSoulCrystalUnlocked(index);
+			crystalCards[index].SetContent(itemTypes[index], unlocked ? names[index] : "Unknown", unlocked, selectedCrystalIndex == index);
+		}
+
+		bool selectedUnlocked = SoulTransactions.IsSoulCrystalUnlocked(selectedCrystalIndex);
+		long crystalValue = SoulTransactions.GetSoulCrystalValue(selectedCrystalIndex);
+		long conversionCost = SoulTransactions.GetSoulCrystalCost(selectedCrystalIndex);
+		detailIcon.ItemType = selectedUnlocked ? itemTypes[selectedCrystalIndex] : ItemID.FallenStar;
+		detailIcon.Opacity = selectedUnlocked ? 1f : 0.25f;
+		detailName.SetText(selectedUnlocked ? $"{names[selectedCrystalIndex]} Soul Crystal" : "Unknown Crystal");
+		detailDescription.SetText(selectedUnlocked ? $"A tradable vessel containing {crystalValue:N0} souls." : "Soulless withholds this deeper art.");
+		detailCost.SetText(selectedUnlocked ? $"Cost: {conversionCost:N0} souls  •  Contains: {crystalValue:N0}" : GetSoulCrystalRequirement());
+		detailCost.TextColor = selectedUnlocked && !HasEnoughForSelectedCrystal() ? new Color(238, 154, 137) : new Color(180, 238, 210);
+		ApplyCurrentActionButtonStyle();
 	}
 
 	private void RefreshShrineContent()
@@ -422,13 +517,19 @@ internal sealed class SoulMenuState : UIState
 			detailCost.TextColor = new Color(130, 139, 140);
 		}
 
-		ApplyCondenseButtonStyle();
+		ApplyCurrentActionButtonStyle();
 	}
 
 	private void UsePrimaryAction()
 	{
 		if (kind == MenuKind.Soulless)
 		{
+			if (soullessTab == SoullessTab.Crystals)
+			{
+				UseCrystalConversion();
+				return;
+			}
+
 			if (!HasSouls(SoulTransactions.CoreCost))
 			{
 				return;
@@ -463,24 +564,111 @@ internal sealed class SoulMenuState : UIState
 		}
 	}
 
+	private void UseCrystalConversion()
+	{
+		if (!SoulTransactions.IsSoulCrystalUnlocked(selectedCrystalIndex))
+		{
+			ShowFeedback(GetSoulCrystalRequirement(), false);
+			return;
+		}
+
+		long cost = SoulTransactions.GetSoulCrystalCost(selectedCrystalIndex);
+		if (!HasSouls(cost))
+		{
+			return;
+		}
+
+		bool completed = SendCrystalTransaction();
+		ShowFeedback(completed ? "Soul Crystal bound." : "Conversion request sent.", true);
+	}
+
 	private bool HasEnoughForSelectedEssence()
 	{
 		return Main.LocalPlayer.GetModPlayer<SoulPlayer>().SoulBalance >= GetSelectedEssenceCost();
 	}
 
-	private void ApplyCondenseButtonStyle()
+	private bool HasEnoughForSelectedCrystal()
 	{
-		bool available = IsSelectedEssenceUnlocked();
-		bool affordable = available && HasEnoughForSelectedEssence();
-		condenseButton.SetText(available ? "Condense" : "Locked");
+		return Main.LocalPlayer.GetModPlayer<SoulPlayer>().SoulBalance >= SoulTransactions.GetSoulCrystalCost(selectedCrystalIndex);
+	}
+
+	private void SelectCrystal(int index)
+	{
+		selectedCrystalIndex = index;
+		ClearFeedback();
+		RefreshCrystalContent();
+	}
+
+	private void CreateSoullessTabs()
+	{
+		servicesTabButton = CreateTabButton("Services", 16f, SoullessTab.Services);
+		crystalsTabButton = CreateTabButton("Soul Crystals", 144f, SoullessTab.Crystals);
+	}
+
+	private UITextPanel<string> CreateTabButton(string text, float left, SoullessTab tab)
+	{
+		UITextPanel<string> button = new(text, 0.68f, false);
+		button.Width.Set(120f, 0f);
+		button.Height.Set(30f, 0f);
+		button.Left.Set(left, 0f);
+		button.Top.Set(68f, 0f);
+		button.OnLeftClick += (_, _) => SetSoullessTab(tab);
+		button.OnMouseOut += (_, _) => ApplySoullessTabStyles();
+		return button;
+	}
+
+	private void SetSoullessTab(SoullessTab tab)
+	{
+		if (kind != MenuKind.Soulless || soullessTab == tab)
+		{
+			return;
+		}
+
+		soullessTab = tab;
+		ClearFeedback();
+		BuildSoullessLayout();
+		RefreshContent();
+	}
+
+	private void ApplySoullessTabStyles()
+	{
+		ApplyTabStyle(servicesTabButton, soullessTab == SoullessTab.Services);
+		ApplyTabStyle(crystalsTabButton, soullessTab == SoullessTab.Crystals);
+	}
+
+	private static void ApplyTabStyle(UITextPanel<string> button, bool selected)
+	{
+		button.BackgroundColor = selected ? new Color(42, 72, 65) : new Color(31, 39, 45);
+		button.BorderColor = selected ? new Color(117, 182, 151) : new Color(63, 76, 78);
+		button.TextColor = selected ? new Color(220, 244, 231) : new Color(154, 169, 165);
+	}
+
+	private void ApplyCurrentActionButtonStyle()
+	{
+		bool available = IsCurrentSelectionAvailable();
+		bool affordable = available && HasEnoughForCurrentSelection();
+		string actionText = kind == MenuKind.Soulless ? "Convert" : "Condense";
+		condenseButton.SetText(available ? actionText : "Locked");
 		condenseButton.BackgroundColor = !available ? new Color(43, 47, 51) : affordable ? new Color(43, 83, 70) : new Color(73, 52, 50);
 		condenseButton.BorderColor = !available ? new Color(68, 72, 76) : affordable ? new Color(90, 143, 121) : new Color(123, 78, 71);
 		condenseButton.TextColor = !available ? new Color(125, 130, 132) : affordable ? new Color(215, 244, 229) : new Color(236, 183, 171);
 	}
 
+	private bool IsCurrentSelectionAvailable()
+	{
+		return kind == MenuKind.Soulless
+			? soullessTab == SoullessTab.Crystals && SoulTransactions.IsSoulCrystalUnlocked(selectedCrystalIndex)
+			: IsSelectedEssenceUnlocked();
+	}
+
+	private bool HasEnoughForCurrentSelection()
+	{
+		return kind == MenuKind.Soulless ? HasEnoughForSelectedCrystal() : HasEnoughForSelectedEssence();
+	}
+
 	private void UseSecondaryAction()
 	{
-		if (kind != MenuKind.Soulless || SoulWorldSystem.GetNextUpgradeCost() <= 0)
+		if (kind != MenuKind.Soulless || soullessTab != SoullessTab.Services || SoulWorldSystem.GetNextUpgradeCost() <= 0)
 		{
 			return;
 		}
@@ -524,6 +712,21 @@ internal sealed class SoulMenuState : UIState
 		}
 
 		return singlePlayerAction();
+	}
+
+	private bool SendCrystalTransaction()
+	{
+		if (Main.netMode == NetmodeID.MultiplayerClient)
+		{
+			ModPacket packet = ModContent.GetInstance<SoulsOfTerra>().GetPacket();
+			packet.Write((byte)SoulMessageType.RequestSoulCrystalConversion);
+			packet.Write((short)npcIndex);
+			packet.Write((byte)selectedCrystalIndex);
+			packet.Send();
+			return false;
+		}
+
+		return SoulTransactions.TryConvertSoulCrystal(Main.LocalPlayer, npcIndex, selectedCrystalIndex);
 	}
 
 	private bool SendShrineTransaction()
@@ -570,6 +773,16 @@ internal sealed class SoulMenuState : UIState
 		}
 
 		return SoulWorldSystem.TerraShrineTier < 1 ? "Requires Terra Shrine tier 1" : string.Empty;
+	}
+
+	private string GetSoulCrystalRequirement()
+	{
+		return selectedCrystalIndex switch
+		{
+			1 => "Requires Terra Shrine tier 1",
+			2 => "Requires Terra Shrine tier 4",
+			_ => string.Empty
+		};
 	}
 
 	private void ShowFeedback(string message, bool success)
