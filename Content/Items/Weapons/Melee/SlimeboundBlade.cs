@@ -1,12 +1,13 @@
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
+using SoulsOfTerra.Content.Items.Materials;
 using SoulsOfTerra.Content.Projectiles;
 using Terraria;
 using Terraria.Audio;
 using Terraria.ID;
 using Terraria.ModLoader;
 
-namespace SoulsOfTerra.Content.Items;
+namespace SoulsOfTerra.Content.Items.Weapons.Melee;
 
 public class SlimeboundBlade : ModItem
 {

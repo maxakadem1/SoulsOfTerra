@@ -1,6 +1,6 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using SoulsOfTerra.Content.Items;
+using SoulsOfTerra.Content.Items.Access;
 using SoulsOfTerra.Systems;
 using Terraria;
 using Terraria.DataStructures;
@@ -82,7 +82,7 @@ public class TerraShrineTile : ModTile
 		Vector2 drawPosition = shrineCenter - Main.screenPosition
 			+ (Main.drawToScreen ? Vector2.Zero : new Vector2(Main.offScreenRange));
 
-		Texture2D anvil = ModContent.Request<Texture2D>("SoulsOfTerra/Content/Items/SoulAnvil").Value;
+		Texture2D anvil = ModContent.Request<Texture2D>("SoulsOfTerra/Content/Tiles/SoulAnvil").Value;
 		// A 32x16 source becomes crisp 2x pixel art across the 4x2 footprint.
 		Vector2 anvilScale = new(Width * 16f / anvil.Width, Height * 16f / anvil.Height);
 		spriteBatch.Draw(anvil, drawPosition, null, lightColor, 0f,

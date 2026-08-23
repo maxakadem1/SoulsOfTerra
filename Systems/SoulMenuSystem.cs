@@ -4,7 +4,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using SoulsOfTerra.Common;
-using SoulsOfTerra.Content.Items;
+using SoulsOfTerra.Content.Items.Materials;
 using SoulsOfTerra.Content.Tiles;
 using SoulsOfTerra.NPCs;
 using SoulsOfTerra.Players;
@@ -325,7 +325,7 @@ internal sealed class SoulMenuState : UIState
 		condenseButton.OnLeftClick += (_, _) => UsePrimaryAction();
 		condenseButton.OnMouseOver += (_, _) =>
 		{
-			if (selectedEssenceIndex == 0 && NPC.downedSlimeKing)
+			if (IsSelectedEssenceUnlocked())
 			{
 				condenseButton.BackgroundColor = HasEnoughForSelectedEssence() ? new Color(55, 112, 91) : new Color(104, 65, 59);
 			}
@@ -386,8 +386,10 @@ internal sealed class SoulMenuState : UIState
 		title.SetText("Terra Shrine");
 		subtitle.SetText($"World-wide strength: tier {SoulWorldSystem.TerraShrineTier}");
 		bool slimeUnlocked = NPC.downedSlimeKing;
+		bool eyeUnlocked = NPC.downedBoss1 && SoulWorldSystem.TerraShrineTier >= 1;
 		essenceCards[0].SetContent(ModContent.ItemType<SlimeEssence>(), slimeUnlocked ? "Slime Essence" : "Unknown", slimeUnlocked, selectedEssenceIndex == 0);
-		for (int index = 1; index < essenceCards.Length; index++)
+		essenceCards[1].SetContent(ModContent.ItemType<EyeEssence>(), eyeUnlocked ? "Eye Essence" : "Unknown", eyeUnlocked, selectedEssenceIndex == 1);
+		for (int index = 2; index < essenceCards.Length; index++)
 		{
 			essenceCards[index].SetContent(ItemID.FallenStar, "Unknown", false, selectedEssenceIndex == index);
 		}
@@ -400,6 +402,15 @@ internal sealed class SoulMenuState : UIState
 			detailDescription.SetText(slimeUnlocked ? "A royal, viscous echo condensed into matter." : "Defeat its source to reveal this echo.");
 			detailCost.SetText(slimeUnlocked ? $"Cost: {SoulTransactions.SlimeEssenceCost:N0} souls" : "Requires King Slime");
 			detailCost.TextColor = slimeUnlocked && !HasEnoughForSelectedEssence() ? new Color(238, 154, 137) : new Color(180, 238, 210);
+		}
+		else if (selectedEssenceIndex == 1)
+		{
+			detailIcon.ItemType = eyeUnlocked ? ModContent.ItemType<EyeEssence>() : ItemID.FallenStar;
+			detailIcon.Opacity = eyeUnlocked ? 1f : 0.25f;
+			detailName.SetText(eyeUnlocked ? "Eye Essence" : "Unknown Essence");
+			detailDescription.SetText(eyeUnlocked ? "A watchful crimson echo bound into matter." : "Defeat the Eye and awaken the shrine to reveal this echo.");
+			detailCost.SetText(eyeUnlocked ? $"Cost: {SoulTransactions.EyeEssenceCost:N0} souls" : GetEyeEssenceRequirement());
+			detailCost.TextColor = eyeUnlocked && !HasEnoughForSelectedEssence() ? new Color(238, 154, 137) : new Color(180, 238, 210);
 		}
 		else
 		{
@@ -428,36 +439,38 @@ internal sealed class SoulMenuState : UIState
 		}
 		else
 		{
-			if (selectedEssenceIndex != 0)
+			if (selectedEssenceIndex is < 0 or > 1)
 			{
 				ShowFeedback("This echo has not awakened.", false);
 				return;
 			}
 
-			if (!NPC.downedSlimeKing)
+			if (!IsSelectedEssenceUnlocked())
 			{
-				ShowFeedback("King Slime's echo has not awakened.", false);
+				ShowFeedback(selectedEssenceIndex == 0 ? "King Slime's echo has not awakened." : GetEyeEssenceRequirement(), false);
 				return;
 			}
 
-			if (!HasSouls(SoulTransactions.SlimeEssenceCost))
+			long essenceCost = GetSelectedEssenceCost();
+			if (!HasSouls(essenceCost))
 			{
 				return;
 			}
 
 			bool completed = SendShrineTransaction();
-			ShowFeedback(completed ? "Slime Essence condensed." : "Condensation request sent.", true);
+			string essenceName = selectedEssenceIndex == 0 ? "Slime Essence" : "Eye Essence";
+			ShowFeedback(completed ? $"{essenceName} condensed." : "Condensation request sent.", true);
 		}
 	}
 
 	private bool HasEnoughForSelectedEssence()
 	{
-		return Main.LocalPlayer.GetModPlayer<SoulPlayer>().SoulBalance >= SoulTransactions.SlimeEssenceCost;
+		return Main.LocalPlayer.GetModPlayer<SoulPlayer>().SoulBalance >= GetSelectedEssenceCost();
 	}
 
 	private void ApplyCondenseButtonStyle()
 	{
-		bool available = selectedEssenceIndex == 0 && NPC.downedSlimeKing;
+		bool available = IsSelectedEssenceUnlocked();
 		bool affordable = available && HasEnoughForSelectedEssence();
 		condenseButton.SetText(available ? "Condense" : "Locked");
 		condenseButton.BackgroundColor = !available ? new Color(43, 47, 51) : affordable ? new Color(43, 83, 70) : new Color(73, 52, 50);
@@ -515,17 +528,48 @@ internal sealed class SoulMenuState : UIState
 
 	private bool SendShrineTransaction()
 	{
+		SoulMessageType messageType = selectedEssenceIndex == 0
+			? SoulMessageType.RequestSlimeCondensation
+			: SoulMessageType.RequestEyeCondensation;
+
 		if (Main.netMode == NetmodeID.MultiplayerClient)
 		{
 			ModPacket packet = ModContent.GetInstance<SoulsOfTerra>().GetPacket();
-			packet.Write((byte)SoulMessageType.RequestSlimeCondensation);
+			packet.Write((byte)messageType);
 			packet.Write(shrinePosition.X);
 			packet.Write(shrinePosition.Y);
 			packet.Send();
 			return false;
 		}
 
-		return SoulTransactions.TryCondenseSlimeEssence(Main.LocalPlayer, shrinePosition);
+		return selectedEssenceIndex == 0
+			? SoulTransactions.TryCondenseSlimeEssence(Main.LocalPlayer, shrinePosition)
+			: SoulTransactions.TryCondenseEyeEssence(Main.LocalPlayer, shrinePosition);
+	}
+
+	private bool IsSelectedEssenceUnlocked()
+	{
+		return selectedEssenceIndex switch
+		{
+			0 => NPC.downedSlimeKing,
+			1 => NPC.downedBoss1 && SoulWorldSystem.TerraShrineTier >= 1,
+			_ => false
+		};
+	}
+
+	private long GetSelectedEssenceCost()
+	{
+		return selectedEssenceIndex == 1 ? SoulTransactions.EyeEssenceCost : SoulTransactions.SlimeEssenceCost;
+	}
+
+	private static string GetEyeEssenceRequirement()
+	{
+		if (!NPC.downedBoss1)
+		{
+			return "Requires Eye of Cthulhu";
+		}
+
+		return SoulWorldSystem.TerraShrineTier < 1 ? "Requires Terra Shrine tier 1" : string.Empty;
 	}
 
 	private void ShowFeedback(string message, bool success)

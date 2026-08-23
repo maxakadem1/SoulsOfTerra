@@ -4,7 +4,7 @@ using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
 
-namespace SoulsOfTerra.Content.Items;
+namespace SoulsOfTerra.Content.Items.Access;
 
 public class BrokenTerraBladeCore : ModItem
 {

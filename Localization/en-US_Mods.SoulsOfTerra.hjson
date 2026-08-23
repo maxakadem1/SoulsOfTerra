@@ -72,6 +72,11 @@ Items: {
 		Tooltip: A royal echo condensed from souls
 	}
 
+	EyeEssence: {
+		DisplayName: Eye Essence
+		Tooltip: A watchful crimson echo condensed from souls
+	}
+
 	SlimeboundBlade: {
 		DisplayName: Slimebound Blade
 		Tooltip:
