@@ -82,15 +82,15 @@ The accumulated payment is stored as a world-wide hidden value so it can influen
 
 ## Terra Shrine
 
-The Broken Terra Blade is an access item resembling a ruined Terra Blade rather than a direct copy of a coiled sword. Holding it and right-clicking a vanilla campfire transforms that campfire into a Terra Shrine.
+The Broken Terra Blade is an access item resembling a ruined Terra Blade rather than a direct copy of a coiled sword. Holding it and right-clicking an Iron or Lead Anvil transforms that anvil into a Terra Shrine when a clear, fully supported 4-by-2 area surrounds it. The blade acts as a ritual catalyst but is not visibly embedded in the completed station.
 
 A Terra Shrine:
 
-- Occupies the same 3-by-2 footprint as a campfire.
-- Retains the campfire's normal environmental benefit.
-- Displays the broken blade embedded in the fire.
+- Occupies a symmetrical 4-by-2 footprint centered around the original anvil.
+- Uses one dark, blackened-anvil appearance regardless of the source anvil material.
+- Renders only the Soul Anvil texture so the crafting station retains one cohesive silhouette.
 - Provides the interface for condensing souls into unlocked essences.
-- Drops both the Broken Terra Blade and a campfire when destroyed.
+- Drops both the Broken Terra Blade and the original Iron or Lead Anvil when destroyed.
 
 Shrine strength is world-wide. Players return to Soulless after each major milestone and pay souls to strengthen every Terra Shrine in that world.
 

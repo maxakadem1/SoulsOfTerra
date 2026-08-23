@@ -8,7 +8,7 @@
 2. Risk the complete carried balance on death.
 3. Right-click the resulting bloodstain to recover it before dying again.
 4. Speak to Soulless and purchase a Broken Terra Blade for 100 souls.
-5. Hold the blade and right-click a vanilla campfire to create a Terra Shrine.
+5. Hold the blade and right-click an Iron or Lead Anvil in a clear 4-by-2 area to create a Terra Shrine.
 6. Defeat King Slime, then spend 2,500 souls at the shrine to create Slime Essence.
 7. Craft the prototype Slimebound Blade at a normal anvil.
 
@@ -24,6 +24,7 @@
 - Exclusions for friendly, town, invulnerable, statue-spawned, and dummy NPCs.
 - Server-authoritative balance gain and spending with multiplayer synchronization.
 - UI counter and accumulated recent-gain notification.
+- Soul counter anchored to the bottom-right corner with an original nine-sliced dark frame, round soul icon, and subtle collection pulse.
 
 ### Soul orb presentation
 
@@ -58,15 +59,15 @@
 
 ### Terra Shrine and essence prototype
 
-- Right-click transformation of a complete vanilla campfire while holding the core.
-- Server validation of range, held item, target tiles, and all purchases.
-- Campfire-sized Terra Shrine using placeholder vanilla visuals.
-- Campfire adjacency and campfire tile classification.
-- Broken Hero Sword overlay as placeholder blade art.
+- Right-click transformation of a complete vanilla Iron or Lead Anvil while holding the core.
+- Server validation of range, held item, source anvil, clear 4-by-2 space, solid support, and all purchases.
+- Four-by-two Terra Shrine rendered solely with original static Soul Anvil art.
+- Hidden shrine style preserves which anvil material must be returned.
 - Shrine menu with King Slime progression check.
 - Slime Essence condensation for 2,500 souls.
-- Shrine destruction returns the core and campfire.
+- Shrine destruction returns the core and the original Iron or Lead Anvil.
 - Slimebound Blade standard anvil recipe for Magic Storage compatibility.
+- Slimebound Blade Royal Viscosity prototype: an exceptionally slow 1.6x sword with a miss-independent 1, 1, 3 firing cycle; its compact gel balls use closely matched damage and bounce areas, pierce enemies, and bounce up to three times.
 
 ## Current shrine upgrade table
 
@@ -88,9 +89,9 @@ These values have not been reconciled with measured boss rewards and are deliber
 
 - Soulless reuses and tints the Tax Collector sprite and head.
 - Broken Terra Blade reuses the Broken Hero Sword sprite.
-- Terra Shrine reuses the vanilla campfire texture with a Broken Hero Sword overlay.
+- Terra Shrine renderer scales its base art to 64 by 32; the intended source sprite is 32 by 16 for crisp 2x pixel clusters, and no blade is rendered.
 - Slime Essence has its first original 24-by-24 sprite with a royal crown core.
-- Slimebound Blade reuses Blue Phaseblade artwork and has prototype combat values.
+- Slimebound Blade has its first original 40-by-40 sprite and retains prototype combat values.
 - Menu text is functional but not yet visually themed.
 
 ## Known limitations and risks
@@ -98,7 +99,7 @@ These values have not been reconciled with measured boss rewards and are deliber
 - Only King Slime has an implemented essence and equipment demonstration.
 - Shrine upgrades currently unlock tiers but do not yet gate additional implemented recipes.
 - Upgrade costs require balance testing against actual soul payouts.
-- The campfire transformation and shrine behavior need multiplayer playtesting.
+- The anvil transformation, clearance checks, and shrine behavior need multiplayer playtesting.
 - The custom menu does not yet provide explicit success or failure messages.
 - Free-for-all bloodstains and orbs permit another player to take them by design.
 - Modded NPCs with unusual or misleading `value` data may need fallback logic or exceptions.
@@ -115,7 +116,7 @@ These values have not been reconciled with measured boss rewards and are deliber
 1. Build and reload from inside tModLoader.
 2. Confirm Soulless appears in both a new world and an existing test world.
 3. Purchase several cores and verify exact soul deductions.
-4. Transform campfires of several visual styles near the world center and edges.
+4. Transform both Iron and Lead Anvils on clear ground; verify blocked and unsupported transformations fail safely.
 5. Break and replace a shrine; confirm both items drop exactly once.
 6. Defeat King Slime and condense several essences.
 7. Confirm the Slimebound Blade appears and crafts in both vanilla recipe search and Magic Storage.

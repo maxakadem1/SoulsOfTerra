@@ -29,24 +29,30 @@ public class BrokenTerraBladeCore : ModItem
 		int tileX = Main.SmartInteractX >= 0 ? Main.SmartInteractX : (int)(Main.MouseWorld.X / 16f);
 		int tileY = Main.SmartInteractY >= 0 ? Main.SmartInteractY : (int)(Main.MouseWorld.Y / 16f);
 		Tile tile = Framing.GetTileSafely(tileX, tileY);
-		if (!tile.HasTile || tile.TileType != TileID.Campfire)
+		if (!tile.HasTile || tile.TileType != TileID.Anvils)
 		{
 			return;
 		}
 
 		Main.mouseRightRelease = false;
-		Point16 topLeft = SoulTransactions.GetCampfireTopLeft(tileX, tileY);
+		Point16 topLeft = SoulTransactions.GetAnvilTopLeft(tileX, tileY);
+		if (!SoulTransactions.TryGetAnvilTransformation(topLeft, out _, out _))
+		{
+			Main.NewText("The shrine requires open ground.", 110, 190, 160);
+			return;
+		}
+
 		if (Main.netMode == NetmodeID.MultiplayerClient)
 		{
 			ModPacket packet = Mod.GetPacket();
-			packet.Write((byte)SoulMessageType.RequestCampfireTransformation);
+			packet.Write((byte)SoulMessageType.RequestAnvilTransformation);
 			packet.Write(topLeft.X);
 			packet.Write(topLeft.Y);
 			packet.Send();
 		}
 		else
 		{
-			SoulTransactions.TryTransformCampfire(player, topLeft);
+			SoulTransactions.TryTransformAnvil(player, topLeft);
 		}
 	}
 }

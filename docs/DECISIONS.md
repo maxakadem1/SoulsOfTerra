@@ -47,7 +47,11 @@
 | Long-term role | Soulless secretly benefits from the player's payments and becomes a villain. | Turns routine economic progression into narrative setup. |
 | Initial access cost | Broken Terra Blade costs 100 souls. | Makes the system available early while teaching the first spending decision. |
 | Access item identity | Broken Terra Blade, not a coiled sword. | Preserves the Souls inspiration while grounding the object in Terraria. |
-| Shrine creation | Right-click a campfire while holding the blade. | Makes the ritual discoverable and ties it to an existing safe-place object. |
+| Shrine creation | Right-click an Iron or Lead Anvil while holding the blade. | Makes shrine creation a deliberate forging ritual grounded in Terraria. |
+| Shrine footprint | Replace the anvil with a supported 4-by-2 shrine if the area is clear. | Maps the 64-by-32 station art directly to Terraria's 16-pixel tile grid. |
+| Shrine art density | Author the base at 32 by 16 pixels and render it at 2x nearest-neighbor scale. | Produces deliberate 2-by-2 pixel clusters while retaining a substantial 4-by-2 world footprint. |
+| Shrine source variants | Iron and Lead Anvils share one appearance but return their original material when broken. | Supports both world ores without doubling sprite work. |
+| Shrine presentation | Render only the static Soul Anvil texture; the blade remains an invisible ritual catalyst. | Preserves the access-item loop without disrupting the station's cohesive sprite silhouette. |
 | Shrine name | Terra Shrine. | Connects the mechanic to Terraria's world and avoids direct imitation. |
 | Shrine scope | Upgrade level is world-wide. | Avoids forcing every player or every placed shrine through duplicate progression. |
 | Upgrade payment | Souls only. | Keeps the core economy central. |

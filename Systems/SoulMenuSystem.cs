@@ -369,7 +369,7 @@ internal sealed class SoulMenuState : UIState
 		long upgradeCost = SoulWorldSystem.GetNextUpgradeCost();
 		if (upgradeCost <= 0)
 		{
-			secondaryRow.SetContent(ItemID.Campfire, "Terra Shrine", "All known strength has awakened", "Complete", false);
+			secondaryRow.SetContent(ItemID.IronAnvil, "Terra Shrine", "All known strength has awakened", "Complete", false);
 			return;
 		}
 
@@ -378,7 +378,7 @@ internal sealed class SoulMenuState : UIState
 		string detail = milestoneUnlocked
 			? $"World-wide tier {SoulWorldSystem.TerraShrineTier + 1}  •  {upgradeCost:N0} souls"
 			: $"Requires {GetNextMilestoneName()}";
-		secondaryRow.SetContent(ItemID.Campfire, "Strengthen Terra Shrine", detail, milestoneUnlocked ? "Strengthen" : "Locked", milestoneUnlocked, canAfford);
+		secondaryRow.SetContent(ItemID.IronAnvil, "Strengthen Terra Shrine", detail, milestoneUnlocked ? "Strengthen" : "Locked", milestoneUnlocked, canAfford);
 	}
 
 	private void RefreshShrineContent()
