@@ -44,28 +44,31 @@ public static class SoulTransactions
 		return true;
 	}
 
-	public static bool TryTransformCampfire(Player player, Point16 topLeft)
+	public static bool TryTransformAnvil(Player player, Point16 anvilTopLeft)
 	{
-		if (!player.active || player.dead || Vector2.DistanceSquared(player.Center, topLeft.ToWorldCoordinates(24f, 16f)) > InteractionRange * InteractionRange)
+		if (!player.active || player.dead || Vector2.DistanceSquared(player.Center, anvilTopLeft.ToWorldCoordinates(16f, 8f)) > InteractionRange * InteractionRange)
 		{
 			return false;
 		}
 
 		Item heldItem = player.inventory[player.selectedItem];
-		if (heldItem.type != ModContent.ItemType<BrokenTerraBladeCore>() || heldItem.stack <= 0 || !IsCampfire(topLeft))
+		if (heldItem.type != ModContent.ItemType<BrokenTerraBladeCore>() || heldItem.stack <= 0
+			|| !TryGetAnvilTransformation(anvilTopLeft, out Point16 shrineTopLeft, out int anvilItemType))
 		{
 			return false;
 		}
 
+		int shrineStyle = anvilItemType == ItemID.LeadAnvil ? 1 : 0;
 		ushort shrineType = (ushort)ModContent.TileType<TerraShrineTile>();
-		for (int x = 0; x < 3; x++)
+		for (int x = 0; x < TerraShrineTile.Width; x++)
 		{
-			for (int y = 0; y < 2; y++)
+			for (int y = 0; y < TerraShrineTile.Height; y++)
 			{
-				Tile tile = Framing.GetTileSafely(topLeft.X + x, topLeft.Y + y);
+				Tile tile = Framing.GetTileSafely(shrineTopLeft.X + x, shrineTopLeft.Y + y);
 				tile.HasTile = true;
 				tile.TileType = shrineType;
-				tile.TileFrameX = (short)(x * 18);
+				// The horizontal style remembers whether the ritual consumed iron or lead.
+				tile.TileFrameX = (short)((shrineStyle * TerraShrineTile.Width + x) * 18);
 				tile.TileFrameY = (short)(y * 18);
 				tile.Slope = SlopeType.Solid;
 				tile.IsHalfBlock = false;
@@ -80,33 +83,64 @@ public static class SoulTransactions
 
 		if (Main.netMode == NetmodeID.Server)
 		{
-			NetMessage.SendTileSquare(-1, topLeft.X + 1, topLeft.Y + 1, 3, 2);
+			NetMessage.SendTileSquare(-1, shrineTopLeft.X + 2, shrineTopLeft.Y + 1, TerraShrineTile.Width, TerraShrineTile.Height);
 			NetMessage.SendData(MessageID.SyncEquipment, -1, -1, null, player.whoAmI, player.selectedItem);
 		}
 
 		return true;
 	}
 
-	public static Point16 GetCampfireTopLeft(int i, int j)
+	public static Point16 GetAnvilTopLeft(int i, int j)
 	{
 		Tile tile = Framing.GetTileSafely(i, j);
-		return new Point16(i - tile.TileFrameX / 18 % 3, j - tile.TileFrameY / 18 % 2);
+		return new Point16(i - tile.TileFrameX / 18 % 2, j);
 	}
 
-	private static bool IsCampfire(Point16 topLeft)
+	public static bool TryGetAnvilTransformation(Point16 anvilTopLeft, out Point16 shrineTopLeft, out int anvilItemType)
 	{
-		for (int x = 0; x < 3; x++)
+		shrineTopLeft = new Point16(anvilTopLeft.X - 1, anvilTopLeft.Y - (TerraShrineTile.Height - 1));
+		anvilItemType = ItemID.None;
+		if (!WorldGen.InWorld(shrineTopLeft.X, shrineTopLeft.Y, 2)
+			|| !WorldGen.InWorld(shrineTopLeft.X + TerraShrineTile.Width - 1, shrineTopLeft.Y + TerraShrineTile.Height, 2))
 		{
-			for (int y = 0; y < 2; y++)
+			return false;
+		}
+
+		Tile leftAnvil = Framing.GetTileSafely(anvilTopLeft.X, anvilTopLeft.Y);
+		int anvilStyle = leftAnvil.TileFrameX / 36;
+		if (anvilStyle is < 0 or > 1)
+		{
+			return false;
+		}
+
+		for (int x = 0; x < 2; x++)
+		{
+			Tile tile = Framing.GetTileSafely(anvilTopLeft.X + x, anvilTopLeft.Y);
+			if (!tile.HasTile || tile.TileType != TileID.Anvils || GetAnvilTopLeft(anvilTopLeft.X + x, anvilTopLeft.Y) != anvilTopLeft
+				|| tile.TileFrameX / 36 != anvilStyle)
 			{
-				Tile tile = Framing.GetTileSafely(topLeft.X + x, topLeft.Y + y);
-				if (!tile.HasTile || tile.TileType != TileID.Campfire || GetCampfireTopLeft(topLeft.X + x, topLeft.Y + y) != topLeft)
+				return false;
+			}
+		}
+
+		for (int x = 0; x < TerraShrineTile.Width; x++)
+		{
+			for (int y = 0; y < TerraShrineTile.Height; y++)
+			{
+				bool isSourceAnvil = y == TerraShrineTile.Height - 1 && x is 1 or 2;
+				if (!isSourceAnvil && Framing.GetTileSafely(shrineTopLeft.X + x, shrineTopLeft.Y + y).HasTile)
 				{
 					return false;
 				}
 			}
+
+			if (!WorldGen.SolidTile(shrineTopLeft.X + x, shrineTopLeft.Y + TerraShrineTile.Height))
+			{
+				return false;
+			}
 		}
 
+		anvilItemType = anvilStyle == 1 ? ItemID.LeadAnvil : ItemID.IronAnvil;
 		return true;
 	}
 

@@ -17,7 +17,7 @@ public enum SoulMessageType : byte
 	RequestCorePurchase,
 	RequestShrineUpgrade,
 	RequestSlimeCondensation,
-	RequestCampfireTransformation
+	RequestAnvilTransformation
 }
 
 public class SoulsOfTerra : Mod
@@ -43,8 +43,8 @@ public class SoulsOfTerra : Mod
 			case SoulMessageType.RequestSlimeCondensation:
 				HandleSlimeCondensation(reader, whoAmI);
 				break;
-			case SoulMessageType.RequestCampfireTransformation:
-				HandleCampfireTransformation(reader, whoAmI);
+			case SoulMessageType.RequestAnvilTransformation:
+				HandleAnvilTransformation(reader, whoAmI);
 				break;
 		}
 	}
@@ -139,13 +139,13 @@ public class SoulsOfTerra : Mod
 		}
 	}
 
-	private static void HandleCampfireTransformation(BinaryReader reader, int whoAmI)
+	private static void HandleAnvilTransformation(BinaryReader reader, int whoAmI)
 	{
-		Point16 campfirePosition = new(reader.ReadInt16(), reader.ReadInt16());
+		Point16 anvilPosition = new(reader.ReadInt16(), reader.ReadInt16());
 		Player player = GetRequestingPlayer(whoAmI);
 		if (player is not null)
 		{
-			SoulTransactions.TryTransformCampfire(player, campfirePosition);
+			SoulTransactions.TryTransformAnvil(player, anvilPosition);
 		}
 	}
 }

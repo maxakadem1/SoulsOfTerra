@@ -40,6 +40,8 @@ Configs: {
 Projectiles: {
 	SoulOrbProjectile.DisplayName: Soul Orb Projectile
 	SoulBloodstainProjectile.DisplayName: Soul Bloodstain Projectile
+	RoyalGelCrescentProjectile.DisplayName: Royal Gel Crescent Projectile
+	RoyalGelBallProjectile.DisplayName: Royal Gel Ball Projectile
 }
 
 NPCs: {
@@ -62,7 +64,7 @@ NPCs: {
 Items: {
 	BrokenTerraBladeCore: {
 		DisplayName: Broken Terra Blade
-		Tooltip: Right-click a campfire to form a Terra Shrine
+		Tooltip: Right-click an Iron or Lead Anvil on open ground to form a Terra Shrine
 	}
 
 	SlimeEssence: {
@@ -72,7 +74,11 @@ Items: {
 
 	SlimeboundBlade: {
 		DisplayName: Slimebound Blade
-		Tooltip: The edge flexes, but never yields
+		Tooltip:
+			'''
+			Every swing releases a large piercing gel ball
+			Every third swing releases three balls instead
+			'''
 	}
 }
 
