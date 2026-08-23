@@ -11,6 +11,7 @@
 5. Hold the blade and right-click an Iron or Lead Anvil in a clear 4-by-2 area to create a Terra Shrine.
 6. Defeat King Slime, then spend 2,500 souls at the shrine to create Slime Essence.
 7. Craft the prototype Slimebound Blade at a normal anvil.
+8. Defeat the Eye of Cthulhu, strengthen the shrine to tier 1, then spend 5,000 souls to create Eye Essence.
 
 ## Implemented
 
@@ -63,8 +64,9 @@
 - Server validation of range, held item, source anvil, clear 4-by-2 space, solid support, and all purchases.
 - Four-by-two Terra Shrine rendered solely with original static Soul Anvil art.
 - Hidden shrine style preserves which anvil material must be returned.
-- Shrine menu with King Slime progression check.
+- Shrine menu with King Slime and Eye of Cthulhu progression checks.
 - Slime Essence condensation for 2,500 souls.
+- Eye Essence condensation for 5,000 souls after the Eye is defeated and shrine tier 1 is purchased.
 - Shrine destruction returns the core and the original Iron or Lead Anvil.
 - Slimebound Blade standard anvil recipe for Magic Storage compatibility.
 - Slimebound Blade Royal Viscosity prototype: an exceptionally slow 1.6x sword with a miss-independent 1, 1, 3 firing cycle; its compact gel balls use closely matched damage and bounce areas, pierce enemies, and bounce up to three times.
@@ -96,7 +98,7 @@ These values have not been reconciled with measured boss rewards and are deliber
 
 ## Known limitations and risks
 
-- Only King Slime has an implemented essence and equipment demonstration.
+- King Slime and Eye of Cthulhu have implemented essences; only King Slime currently has an equipment demonstration.
 - Shrine upgrades currently unlock tiers but do not yet gate additional implemented recipes.
 - Upgrade costs require balance testing against actual soul payouts.
 - The anvil transformation, clearance checks, and shrine behavior need multiplayer playtesting.

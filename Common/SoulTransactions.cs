@@ -1,5 +1,6 @@
 using Microsoft.Xna.Framework;
-using SoulsOfTerra.Content.Items;
+using SoulsOfTerra.Content.Items.Access;
+using SoulsOfTerra.Content.Items.Materials;
 using SoulsOfTerra.Content.Tiles;
 using SoulsOfTerra.NPCs;
 using SoulsOfTerra.Players;
@@ -15,6 +16,7 @@ public static class SoulTransactions
 {
 	public const long CoreCost = 100;
 	public const long SlimeEssenceCost = 2_500;
+	public const long EyeEssenceCost = 5_000;
 	private const float InteractionRange = 12f * 16f;
 
 	public static bool TryPurchaseCore(Player player, int npcIndex)
@@ -141,6 +143,19 @@ public static class SoulTransactions
 		}
 
 		anvilItemType = anvilStyle == 1 ? ItemID.LeadAnvil : ItemID.IronAnvil;
+		return true;
+	}
+
+	public static bool TryCondenseEyeEssence(Player player, Point16 shrinePosition)
+	{
+		// Major-boss essences require both the kill and its paid shrine awakening.
+		if (!NPC.downedBoss1 || SoulWorldSystem.TerraShrineTier < 1 || !IsValidShrineInteraction(player, shrinePosition)
+			|| !player.GetModPlayer<SoulPlayer>().TrySpendSouls(EyeEssenceCost))
+		{
+			return false;
+		}
+
+		player.QuickSpawnItem(new EntitySource_Misc("SoulsOfTerra:EyeCondensation"), ModContent.ItemType<EyeEssence>());
 		return true;
 	}
 

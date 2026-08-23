@@ -22,8 +22,8 @@ public class SoulInterfaceSystem : ModSystem
 			return;
 		}
 
-		counterFrame = ModContent.Request<Texture2D>("SoulsOfTerra/Content/Items/SoulCounterFrame");
-		counterIcon = ModContent.Request<Texture2D>("SoulsOfTerra/Content/Items/SoulCounterIcon");
+		counterFrame = ModContent.Request<Texture2D>("SoulsOfTerra/Content/UI/SoulCounterFrame");
+		counterIcon = ModContent.Request<Texture2D>("SoulsOfTerra/Content/UI/SoulCounterIcon");
 	}
 
 	public override void Unload()

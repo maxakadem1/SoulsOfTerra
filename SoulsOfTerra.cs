@@ -17,6 +17,7 @@ public enum SoulMessageType : byte
 	RequestCorePurchase,
 	RequestShrineUpgrade,
 	RequestSlimeCondensation,
+	RequestEyeCondensation,
 	RequestAnvilTransformation
 }
 
@@ -42,6 +43,9 @@ public class SoulsOfTerra : Mod
 				break;
 			case SoulMessageType.RequestSlimeCondensation:
 				HandleSlimeCondensation(reader, whoAmI);
+				break;
+			case SoulMessageType.RequestEyeCondensation:
+				HandleEyeCondensation(reader, whoAmI);
 				break;
 			case SoulMessageType.RequestAnvilTransformation:
 				HandleAnvilTransformation(reader, whoAmI);
@@ -136,6 +140,16 @@ public class SoulsOfTerra : Mod
 		if (player is not null)
 		{
 			SoulTransactions.TryCondenseSlimeEssence(player, shrinePosition);
+		}
+	}
+
+	private static void HandleEyeCondensation(BinaryReader reader, int whoAmI)
+	{
+		Point16 shrinePosition = new(reader.ReadInt16(), reader.ReadInt16());
+		Player player = GetRequestingPlayer(whoAmI);
+		if (player is not null)
+		{
+			SoulTransactions.TryCondenseEyeEssence(player, shrinePosition);
 		}
 	}
 
