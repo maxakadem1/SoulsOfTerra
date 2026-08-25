@@ -4,14 +4,14 @@ using Terraria.ModLoader;
 
 namespace SoulsOfTerra.Content.Items.Materials;
 
-public class EyeEssence : BossEssenceItem
+public class MoonLordEssence : BossEssenceItem
 {
 	public override void SetDefaults()
 	{
 		Item.width = 16;
 		Item.height = 16;
 		Item.maxStack = Item.CommonMaxStack;
-		Item.rare = ItemRarityID.Blue;
+		Item.rare = ItemRarityID.Red;
 		Item.value = 0;
 	}
 }

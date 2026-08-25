@@ -1,5 +1,7 @@
 using Microsoft.Xna.Framework;
 using Terraria;
+using Terraria.Graphics;
+using Terraria.Graphics.Shaders;
 using Terraria.ID;
 using Terraria.ModLoader;
 
@@ -7,6 +9,7 @@ namespace SoulsOfTerra.Content.Projectiles;
 
 public class ServantEyeProjectile : ModProjectile
 {
+	private static readonly VertexStrip TrailStrip = new();
 	private const int AwakeningDelay = 60;
 	private const float TargetRange = 700f;
 	private const float HomingSpeed = 16f;
@@ -14,16 +17,19 @@ public class ServantEyeProjectile : ModProjectile
 	private const float ArcBias = 0.85f;
 	private const float ArcFadeDistance = 320f;
 
-	public override string Texture => $"Terraria/Images/NPC_{NPCID.ServantofCthulhu}";
+	public override string Texture => "SoulsOfTerra/Content/Projectiles/ServantsGaze_proj";
 
 	public override void SetStaticDefaults()
 	{
-		Main.projFrames[Type] = Main.npcFrameCount[NPCID.ServantofCthulhu];
+		Main.projFrames[Type] = 1;
 		ProjectileID.Sets.CultistIsResistantTo[Type] = true;
+		ProjectileID.Sets.TrailCacheLength[Type] = 6;
+		ProjectileID.Sets.TrailingMode[Type] = 2;
 	}
 
 	public override void SetDefaults()
 	{
+		// The custom servant uses a compact native-size sprite and matching collision box.
 		Projectile.width = 22;
 		Projectile.height = 22;
 		Projectile.friendly = false;
@@ -37,18 +43,22 @@ public class ServantEyeProjectile : ModProjectile
 	public override void AI()
 	{
 		Projectile.ai[0]++;
-		Animate();
 		Projectile.spriteDirection = 1;
-		// The vanilla servant artwork faces downward at zero rotation.
-		Projectile.rotation = Projectile.velocity.ToRotation() - MathHelper.PiOver2;
-		Lighting.AddLight(Projectile.Center, 0.22f, 0.025f, 0.035f);
+		// The side-profile artwork faces right at zero rotation.
+		Projectile.rotation = Projectile.velocity.ToRotation();
 
 		if (Projectile.ai[0] < AwakeningDelay)
 		{
+			float pulse = 0.75f + System.MathF.Sin(Projectile.ai[0] * 0.16f) * 0.25f;
+			Lighting.AddLight(Projectile.Center, 0.2f * pulse, 0.018f, 0.028f);
+			CreateDormantMote();
 			// A slight outward curl separates the volley before target acquisition.
 			Projectile.velocity = Projectile.velocity.RotatedBy(Projectile.ai[1] * 0.0018f);
 			return;
 		}
+
+		Lighting.AddLight(Projectile.Center, 0.28f, 0.055f, 0.07f);
+		CreateHomingGlint();
 
 		if (Projectile.ai[0] == AwakeningDelay)
 		{
@@ -77,15 +87,40 @@ public class ServantEyeProjectile : ModProjectile
 		}
 	}
 
-	private void Animate()
+	public override bool PreDraw(ref Color lightColor)
 	{
-		if (++Projectile.frameCounter < 6)
+		if (Projectile.ai[0] < AwakeningDelay)
 		{
-			return;
+			return true;
 		}
 
-		Projectile.frameCounter = 0;
-		Projectile.frame = (Projectile.frame + 1) % Main.projFrames[Type];
+		// Use the same primitive-strip shader pipeline as Terraria's Rainbow Rod.
+		GameShaders.Misc["RainbowRod"]
+			.UseSaturation(-2.8f)
+			.UseOpacity(4f)
+			.Apply();
+		TrailStrip.PrepareStripWithProceduralPadding(Projectile.oldPos, Projectile.oldRot, TrailColor, TrailWidth,
+			-Main.screenPosition + Projectile.Size * 0.5f, includeBacksides: false, tryStoppingOddBug: true);
+		TrailStrip.DrawTrail();
+		Main.pixelShader.CurrentTechnique.Passes[0].Apply();
+
+		return true;
+	}
+
+	private static Color TrailColor(float progress)
+	{
+		float colorProgress = Utils.GetLerpValue(-0.2f, 0.5f, progress, clamped: true);
+		Color color = Color.Lerp(new Color(255, 230, 200), new Color(175, 8, 24), colorProgress);
+		color *= 1f - Utils.GetLerpValue(0f, 0.98f, progress, clamped: false);
+		color.A = 0;
+		return color;
+	}
+
+	private static float TrailWidth(float progress)
+	{
+		float opening = Utils.GetLerpValue(0f, 0.2f, progress, clamped: true);
+		float curvedOpening = 1f - (1f - opening) * (1f - opening);
+		return MathHelper.Lerp(0f, 2.2f, curvedOpening);
 	}
 
 	private NPC FindNearestTarget()
@@ -120,10 +155,45 @@ public class ServantEyeProjectile : ModProjectile
 
 	private void CreateAwakeningPulse()
 	{
-		for (int index = 0; index < 5; index++)
+		// The blood ring ruptures outward while a warm iris flash wakes the eye.
+		for (int index = 0; index < 10; index++)
 		{
-			Dust dust = Dust.NewDustPerfect(Projectile.Center, DustID.Blood, Main.rand.NextVector2Circular(1.8f, 1.8f), 80, default, 0.8f);
+			Vector2 direction = Vector2.UnitX.RotatedBy(MathHelper.TwoPi * index / 10f);
+			Dust dust = Dust.NewDustPerfect(Projectile.Center, DustID.Blood, direction * 2.4f, 70, default, 0.9f);
 			dust.noGravity = true;
 		}
+
+		for (int index = 0; index < 6; index++)
+		{
+			Vector2 direction = Vector2.UnitX.RotatedBy(MathHelper.TwoPi * index / 6f);
+			Dust dust = Dust.NewDustPerfect(Projectile.Center, DustID.TintableDustLighted, direction * 1.4f,
+				80, new Color(255, 220, 184), 0.75f);
+			dust.noGravity = true;
+		}
+	}
+
+	private void CreateDormantMote()
+	{
+		if (!Main.rand.NextBool(7))
+		{
+			return;
+		}
+
+		Dust dust = Dust.NewDustPerfect(Projectile.Center + Main.rand.NextVector2Circular(7f, 7f), DustID.Blood,
+			-Projectile.velocity * 0.08f, 110, default, 0.65f);
+		dust.noGravity = true;
+	}
+
+	private void CreateHomingGlint()
+	{
+		if (!Main.rand.NextBool(5))
+		{
+			return;
+		}
+
+		Vector2 forward = Projectile.velocity.SafeNormalize(Vector2.UnitX);
+		Dust dust = Dust.NewDustPerfect(Projectile.Center + forward * 8f, DustID.TintableDustLighted,
+			-Projectile.velocity * 0.04f, 100, new Color(255, 220, 184), 0.65f);
+		dust.noGravity = true;
 	}
 }

@@ -54,7 +54,7 @@
 - Normal town NPC behavior, vulnerability, housing, combat, death, and respawning.
 - Context-sensitive introductory dialogue.
 - Shared left-anchored UI styling with compact typography, item icons, locked and unaffordable states, hover styling, and action feedback.
-- Row-based Soulless transactions and an eight-slot Terra Shrine essence grid with selection details and one Condense action.
+- Row-based Soulless transactions and a five-column, three-row-visible Terra Shrine catalogue with scrolling, self-contained essence cards, hover details, and one contextual Condense action.
 - Unlimited Broken Terra Blade purchases for 100 souls each.
 - Nine world-wide shrine upgrade tiers tied to major vanilla milestones.
 - Two-tab Soulless menu separating shrine services from Soul Crystal conversion.
@@ -74,7 +74,7 @@
 - Slimebound Blade standard anvil recipe for Magic Storage compatibility.
 - Slimebound Blade Royal Viscosity prototype: an exceptionally slow 1.6x sword with a miss-independent 1, 1, 3 firing cycle; its compact gel balls use closely matched damage and bounce areas, pierce enemies, and bounce up to three times.
 - Servant's Gaze magic staff recipe with Eye Essence, Lenses, and either Demonite or Crimtane Bars.
-- Servant's Gaze releases three harmless dispersing servants that awaken after one second, independently home through terrain, and rupture into small damaging gore bursts.
+- Servant's Gaze releases three custom-art harmless eye servants that awaken after one second, independently home through terrain, and rupture into small damaging gore bursts.
 
 ## Current shrine upgrade table
 
