@@ -18,6 +18,7 @@ public enum SoulMessageType : byte
 	RequestShrineUpgrade,
 	RequestSlimeCondensation,
 	RequestEyeCondensation,
+	RequestMoonLordCondensation,
 	RequestSoulCrystalConversion,
 	RequestAnvilTransformation
 }
@@ -47,6 +48,9 @@ public class SoulsOfTerra : Mod
 				break;
 			case SoulMessageType.RequestEyeCondensation:
 				HandleEyeCondensation(reader, whoAmI);
+				break;
+			case SoulMessageType.RequestMoonLordCondensation:
+				HandleMoonLordCondensation(reader, whoAmI);
 				break;
 			case SoulMessageType.RequestSoulCrystalConversion:
 				HandleSoulCrystalConversion(reader, whoAmI);
@@ -154,6 +158,16 @@ public class SoulsOfTerra : Mod
 		if (player is not null)
 		{
 			SoulTransactions.TryCondenseEyeEssence(player, shrinePosition);
+		}
+	}
+
+	private static void HandleMoonLordCondensation(BinaryReader reader, int whoAmI)
+	{
+		Point16 shrinePosition = new(reader.ReadInt16(), reader.ReadInt16());
+		Player player = GetRequestingPlayer(whoAmI);
+		if (player is not null)
+		{
+			SoulTransactions.TryCondenseMoonLordEssence(player, shrinePosition);
 		}
 	}
 

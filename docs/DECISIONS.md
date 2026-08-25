@@ -36,7 +36,7 @@
 | Trails | One attraction trail per orb. | Multiple trails were visually noisy and were removed after testing. |
 | Interior | Mostly transparent core with large rotating wisps and a bright border. | Keeps the internal motion visible instead of becoming a solid glowing disk. |
 | Gain text | Nearby rewards accumulate into one notification. | A small pickup should not overwrite a boss-sized reward before it can be read. |
-| Shrine catalogue | Compact selectable essence grid with one detail area and Condense button. | More essences fit on screen without repeating large action controls. |
+| Shrine catalogue | Five-column scrollable grid with self-contained essence cards, hover details, and one contextual Condense button. | Fifteen essences fit at once, the catalogue scales without placeholder cards, and descriptions consume no permanent space. |
 | Undiscovered essences | Show generic locked silhouettes without boss names. | Communicates future depth without spoiling encounters or rewards. |
 
 ## Soulless and shrines

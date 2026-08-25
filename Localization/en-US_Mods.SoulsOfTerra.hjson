@@ -46,6 +46,11 @@ Projectiles: {
 	ServantGoreExplosionProjectile.DisplayName: Gore Burst
 	CondensationSoulWispProjectile.DisplayName: Condensing Soul
 	SoulCrystalReleaseProjectile.DisplayName: Soul Crystal Release Projectile
+	MoonstoneChargeProjectile.DisplayName: Gathering Moonstone
+	MoonstoneBoltProjectile.DisplayName: Moonstone Bolt
+	MoonstoneExplosionProjectile.DisplayName: Moonstone Detonation
+	MoonstoneConvergenceProjectile.DisplayName: Moonstone Convergence
+	MoonstoneCollapseProjectile.DisplayName: Collapsing Moonstone
 }
 
 NPCs: {
@@ -81,6 +86,11 @@ Items: {
 		Tooltip: A watchful crimson echo condensed from souls
 	}
 
+	MoonLordEssence: {
+		DisplayName: Moon Lord Essence
+		Tooltip: A sovereign celestial echo condensed from souls
+	}
+
 	FaintSoulCrystal: {
 		DisplayName: Faint Soul Crystal
 		Tooltip: ""
@@ -111,6 +121,15 @@ Items: {
 			'''
 			Releases three dormant servants
 			They awaken after a moment and seek nearby enemies
+			'''
+	}
+
+	MoonstoneStaff: {
+		DisplayName: Moonstone Staff
+		Tooltip:
+			'''
+			Gathers celestial mana before releasing a devastating moonstone bolt
+			The bolt gently seeks enemies and erupts on impact
 			'''
 	}
 }

@@ -19,6 +19,7 @@ public static class SoulTransactions
 	public const long CoreCost = 100;
 	public const long SlimeEssenceCost = 2_500;
 	public const long EyeEssenceCost = 5_000;
+	public const long MoonLordEssenceCost = 100_000;
 	private static readonly long[] SoulCrystalCosts = { 1_250, 6_250, 31_250 };
 	private static readonly long[] SoulCrystalValues = { 1_000, 5_000, 25_000 };
 	private const float InteractionRange = 12f * 16f;
@@ -206,6 +207,20 @@ public static class SoulTransactions
 		}
 
 		player.QuickSpawnItem(new EntitySource_Misc("SoulsOfTerra:EyeCondensation"), ModContent.ItemType<EyeEssence>());
+		CondensationSoulWispProjectile.Spawn(player, shrinePosition);
+		return true;
+	}
+
+	public static bool TryCondenseMoonLordEssence(Player player, Point16 shrinePosition)
+	{
+		// The final essence requires both the victory and the world-wide tier-nine awakening.
+		if (!NPC.downedMoonlord || SoulWorldSystem.TerraShrineTier < 9 || !IsValidShrineInteraction(player, shrinePosition)
+			|| !player.GetModPlayer<SoulPlayer>().TrySpendSouls(MoonLordEssenceCost))
+		{
+			return false;
+		}
+
+		player.QuickSpawnItem(new EntitySource_Misc("SoulsOfTerra:MoonLordCondensation"), ModContent.ItemType<MoonLordEssence>());
 		CondensationSoulWispProjectile.Spawn(player, shrinePosition);
 		return true;
 	}

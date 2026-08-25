@@ -1,3 +1,3 @@
 displayName = Souls of Terra
 author = max.a.d.v
-version = 0.1
+version = 0.2
