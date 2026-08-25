@@ -6,6 +6,7 @@ using Microsoft.Xna.Framework.Input;
 using SoulsOfTerra.Common;
 using SoulsOfTerra.Content.Items.Consumables.SoulCrystals;
 using SoulsOfTerra.Content.Items.Materials;
+using SoulsOfTerra.Content.Projectiles;
 using SoulsOfTerra.Content.Tiles;
 using SoulsOfTerra.NPCs;
 using SoulsOfTerra.Players;
@@ -67,6 +68,13 @@ public class SoulMenuSystem : ModSystem
 	public static void Close()
 	{
 		soulInterface?.SetState(null);
+	}
+
+	public static bool TryGetShrinePreview(Point16 shrineTopLeft, out int itemType)
+	{
+		itemType = ItemID.None;
+		return soulInterface?.CurrentState == menuState && menuState is not null
+			&& menuState.TryGetShrinePreview(shrineTopLeft, out itemType);
 	}
 
 	public override void UpdateUI(GameTime gameTime)
@@ -171,6 +179,19 @@ internal sealed class SoulMenuState : UIState
 		Crystals
 	}
 
+	private enum ShrineTab
+	{
+		Condensation,
+		Imbuement
+	}
+
+	private enum ImbuementPicker
+	{
+		None,
+		Weapon,
+		Essence
+	}
+
 	private const int FeedbackDuration = 180;
 	private SoulMenuFramePanel panel;
 	private UIText title;
@@ -180,6 +201,8 @@ internal sealed class SoulMenuState : UIState
 	private SoulActionRow secondaryRow;
 	private UITextPanel<string> servicesTabButton;
 	private UITextPanel<string> crystalsTabButton;
+	private UITextPanel<string> condensationTabButton;
+	private UITextPanel<string> imbuementTabButton;
 	private UIElement crystalGrid;
 	private SoulEssenceCard[] crystalCards;
 	private UIElement essenceGrid;
@@ -193,15 +216,30 @@ internal sealed class SoulMenuState : UIState
 	private UIText detailDescription;
 	private UIText detailCost;
 	private UITextPanel<string> condenseButton;
+	private UIElement imbuementContent;
+	private ImbuementWeaponSocket imbuementWeaponSocket;
+	private ImbuementEssenceSocket imbuementEssenceSocket;
+	private UIText imbuementWeaponName;
+	private UIText imbuementEssenceName;
+	private UIElement imbuementPickerGrid;
+	private UIList imbuementPickerList;
+	private UIScrollbar imbuementPickerScrollBar;
+	private UIText imbuementPickerHint;
+	private UITextPanel<string> bindEssenceButton;
 	private UIText feedback;
 	private UITextPanel<string> closeButton;
 	private MenuKind kind;
 	private SoullessTab soullessTab;
+	private ShrineTab shrineTab;
+	private ImbuementPicker imbuementPicker;
 	private int npcIndex;
 	private Point16 shrinePosition;
 	private int feedbackTime;
 	private int selectedEssenceIndex;
 	private int selectedCrystalIndex;
+	private int selectedImbuementIndex;
+	private int linkedWeaponSlot;
+	private int linkedEssenceSlot;
 
 	public override void OnInitialize()
 	{
@@ -238,7 +276,9 @@ internal sealed class SoulMenuState : UIState
 		secondaryRow = CreateRow(168f);
 		secondaryRow.SetAction(UseSecondaryAction);
 		CreateSoullessTabs();
+		CreateShrineTabs();
 		CreateEssenceCatalogue();
+		CreateImbuementPage();
 		CreateCrystalCatalogue();
 
 		feedback = new UIText(string.Empty, 0.72f);
@@ -275,6 +315,11 @@ internal sealed class SoulMenuState : UIState
 	{
 		kind = MenuKind.Shrine;
 		shrinePosition = requestedShrinePosition;
+		shrineTab = ShrineTab.Condensation;
+		imbuementPicker = ImbuementPicker.None;
+		linkedWeaponSlot = -1;
+		linkedEssenceSlot = -1;
+		selectedImbuementIndex = -1;
 		selectedEssenceIndex = 0;
 		essenceScrollBar.ViewPosition = 0f;
 		BuildShrineLayout();
@@ -355,47 +400,37 @@ internal sealed class SoulMenuState : UIState
 		panel.Append(title);
 		panel.Append(subtitle);
 		panel.Append(balance);
-		panel.Append(essenceGrid);
-		condenseButton.Top.Set(306f, 0f);
-		panel.Append(condenseButton);
+		panel.Append(condensationTabButton);
+		panel.Append(imbuementTabButton);
+		if (shrineTab == ShrineTab.Condensation)
+		{
+			panel.Append(essenceGrid);
+			condenseButton.Top.Set(306f, 0f);
+			panel.Append(condenseButton);
+		}
+		else
+		{
+			panel.Append(imbuementContent);
+			bindEssenceButton.Top.Set(306f, 0f);
+			panel.Append(bindEssenceButton);
+		}
 		feedback.Top.Set(348f, 0f);
 		panel.Append(feedback);
 		closeButton.Top.Set(368f, 0f);
 		panel.Append(closeButton);
+		ApplyShrineTabStyles();
 	}
 
 	private void CreateEssenceCatalogue()
 	{
-		essenceDefinitions = new SoulEssenceDefinition[]
-		{
-			new(
-				ModContent.ItemType<SlimeEssence>(),
-				"Slime Essence",
-				SoulTransactions.SlimeEssenceCost,
-				"A royal, viscous echo condensed into matter.",
-				() => NPC.downedSlimeKing,
-				() => "Requires King Slime"),
-			new(
-				ModContent.ItemType<EyeEssence>(),
-				"Eye Essence",
-				SoulTransactions.EyeEssenceCost,
-				"A watchful crimson echo bound into matter.",
-				() => NPC.downedBoss1 && SoulWorldSystem.TerraShrineTier >= 1,
-				GetEyeEssenceRequirement),
-			new(
-				ModContent.ItemType<MoonLordEssence>(),
-				"Moon Lord Essence",
-				SoulTransactions.MoonLordEssenceCost,
-				"A celestial sovereign's echo condensed into matter.",
-				() => NPC.downedMoonlord && SoulWorldSystem.TerraShrineTier >= 9,
-				GetMoonLordEssenceRequirement)
-		};
+		// The shared registry keeps UI, server validation, and multiplayer IDs in one stable order.
+		essenceDefinitions = SoulEssenceRegistry.Definitions;
 
 		essenceGrid = new UIElement();
 		essenceGrid.Width.Set(-32f, 1f);
-		essenceGrid.Height.Set(228f, 0f);
+		essenceGrid.Height.Set(190f, 0f);
 		essenceGrid.Left.Set(16f, 0f);
-		essenceGrid.Top.Set(70f, 0f);
+		essenceGrid.Top.Set(106f, 0f);
 
 		essenceList = new UIList();
 		essenceList.Width.Set(0f, 1f);
@@ -598,6 +633,12 @@ internal sealed class SoulMenuState : UIState
 
 	private void RefreshShrineContent()
 	{
+		if (shrineTab == ShrineTab.Imbuement)
+		{
+			RefreshImbuementContent();
+			return;
+		}
+
 		title.SetText("Terra Shrine");
 		subtitle.SetText($"World-wide strength: tier {SoulWorldSystem.TerraShrineTier}");
 		long balanceValue = Main.LocalPlayer.GetModPlayer<SoulPlayer>().SoulBalance;
@@ -617,6 +658,66 @@ internal sealed class SoulMenuState : UIState
 		}
 
 		ApplyCurrentActionButtonStyle();
+	}
+
+	private void RefreshImbuementContent()
+	{
+		title.SetText("Terra Shrine");
+		subtitle.SetText("Bind a defeated foe's echo into its weapon.");
+		if (!InventorySlotAvailable(linkedWeaponSlot))
+		{
+			linkedWeaponSlot = -1;
+		}
+		if (!InventorySlotAvailable(linkedEssenceSlot))
+		{
+			linkedEssenceSlot = -1;
+		}
+
+		Item weapon = linkedWeaponSlot >= 0 ? Main.LocalPlayer.inventory[linkedWeaponSlot] : null;
+		Item essence = linkedEssenceSlot >= 0 ? Main.LocalPlayer.inventory[linkedEssenceSlot] : null;
+		bool validCombination = weapon is not null && essence is not null
+			&& EssenceImbuementRegistry.TryFind(weapon.type, essence.type, out selectedImbuementIndex, out _);
+		if (!validCombination)
+		{
+			selectedImbuementIndex = -1;
+		}
+
+		imbuementWeaponSocket.SetItem(weapon?.type ?? ItemID.None, validCombination);
+		imbuementEssenceSocket.SetItem(essence?.type ?? ItemID.None);
+		imbuementWeaponName.SetText(weapon?.Name ?? "Select Weapon");
+		imbuementEssenceName.SetText(essence?.Name ?? "Select Essence");
+		ApplyBindButtonStyle();
+	}
+
+	private bool InventorySlotAvailable(int slot)
+	{
+		return slot >= 0 && slot < Main.LocalPlayer.inventory.Length
+			&& Main.LocalPlayer.inventory[slot].stack > 0
+			&& !Main.LocalPlayer.inventory[slot].IsAir;
+	}
+
+	private bool InventorySlotMatches(int slot, int requiredType)
+	{
+		return slot >= 0 && slot < Main.LocalPlayer.inventory.Length
+			&& Main.LocalPlayer.inventory[slot].type == requiredType
+			&& Main.LocalPlayer.inventory[slot].stack > 0;
+	}
+
+	private bool CanBindSelectedImbuement()
+	{
+		return EssenceImbuementRegistry.TryGet(selectedImbuementIndex, out EssenceImbuementDefinition imbuement)
+			&& linkedWeaponSlot != linkedEssenceSlot
+			&& InventorySlotMatches(linkedWeaponSlot, imbuement.InputItemType)
+			&& InventorySlotMatches(linkedEssenceSlot, imbuement.EssenceItemType);
+	}
+
+	private void ApplyBindButtonStyle()
+	{
+		bool enabled = CanBindSelectedImbuement();
+		bindEssenceButton.SetText(enabled ? "Bind Essence" : "No Resonance");
+		bindEssenceButton.BackgroundColor = enabled ? new Color(54, 66, 76) : new Color(43, 47, 51);
+		bindEssenceButton.BorderColor = enabled ? new Color(111, 142, 137) : new Color(68, 72, 76);
+		bindEssenceButton.TextColor = enabled ? new Color(190, 214, 207) : new Color(125, 130, 132);
 	}
 
 	private void UsePrimaryAction()
@@ -681,6 +782,22 @@ internal sealed class SoulMenuState : UIState
 		ShowFeedback(completed ? "Soul Crystal bound." : "Conversion request sent.", true);
 	}
 
+	private void UseEssenceImbuement()
+	{
+		if (!CanBindSelectedImbuement())
+		{
+			ShowFeedback("Select both required items from your inventory.", false);
+			return;
+		}
+
+		bool completed = SendImbuementTransaction();
+		linkedWeaponSlot = -1;
+		linkedEssenceSlot = -1;
+		imbuementPicker = ImbuementPicker.None;
+		RebuildImbuementPicker();
+		ShowFeedback(completed ? "The binding ritual has begun." : "Binding request sent.", true);
+	}
+
 	private bool HasEnoughForSelectedEssence()
 	{
 		return Main.LocalPlayer.GetModPlayer<SoulPlayer>().SoulBalance >= GetSelectedEssenceCost();
@@ -702,6 +819,91 @@ internal sealed class SoulMenuState : UIState
 	{
 		servicesTabButton = CreateTabButton("Services", 16f, SoullessTab.Services);
 		crystalsTabButton = CreateTabButton("Soul Crystals", 144f, SoullessTab.Crystals);
+	}
+
+	private void CreateShrineTabs()
+	{
+		condensationTabButton = CreateShrineTabButton("Condensation", 16f, ShrineTab.Condensation);
+		imbuementTabButton = CreateShrineTabButton("Imbuement", 154f, ShrineTab.Imbuement);
+	}
+
+	private UITextPanel<string> CreateShrineTabButton(string text, float left, ShrineTab tab)
+	{
+		UITextPanel<string> button = new(text, 0.68f, false);
+		button.Width.Set(130f, 0f);
+		button.Height.Set(30f, 0f);
+		button.Left.Set(left, 0f);
+		button.Top.Set(68f, 0f);
+		button.OnLeftClick += (_, _) => SetShrineTab(tab);
+		button.OnMouseOut += (_, _) => ApplyShrineTabStyles();
+		return button;
+	}
+
+	private void CreateImbuementPage()
+	{
+		imbuementContent = new UIElement();
+		imbuementContent.Width.Set(-32f, 1f);
+		imbuementContent.Height.Set(190f, 0f);
+		imbuementContent.Left.Set(16f, 0f);
+		imbuementContent.Top.Set(108f, 0f);
+
+		// The authored frame is the ritual focus; only a valid pair awakens its glow.
+		imbuementWeaponSocket = new ImbuementWeaponSocket();
+		imbuementWeaponSocket.Left.Set(50f, 0f);
+		imbuementWeaponSocket.OnLeftClick += (_, _) => OpenImbuementPicker(ImbuementPicker.Weapon);
+		imbuementContent.Append(imbuementWeaponSocket);
+
+		imbuementWeaponName = new UIText("Select Weapon", 0.57f);
+		imbuementWeaponName.Width.Set(180f, 0f);
+		imbuementWeaponName.Left.Set(0f, 0f);
+		imbuementWeaponName.Top.Set(80f, 0f);
+		imbuementWeaponName.HAlign = 0.18f;
+		imbuementWeaponName.TextColor = new Color(205, 220, 212);
+		imbuementContent.Append(imbuementWeaponName);
+
+		imbuementEssenceSocket = new ImbuementEssenceSocket();
+		imbuementEssenceSocket.Left.Set(64f, 0f);
+		imbuementEssenceSocket.Top.Set(108f, 0f);
+		imbuementEssenceSocket.OnLeftClick += (_, _) => OpenImbuementPicker(ImbuementPicker.Essence);
+		imbuementContent.Append(imbuementEssenceSocket);
+
+		imbuementEssenceName = new UIText("Select Essence", 0.54f);
+		imbuementEssenceName.Width.Set(180f, 0f);
+		imbuementEssenceName.Left.Set(0f, 0f);
+		imbuementEssenceName.Top.Set(162f, 0f);
+		imbuementEssenceName.HAlign = 0.18f;
+		imbuementEssenceName.TextColor = new Color(166, 190, 181);
+		imbuementContent.Append(imbuementEssenceName);
+
+		imbuementPickerHint = new UIText("Select a slot to choose from your inventory.", 0.64f);
+		imbuementPickerHint.Left.Set(190f, 0f);
+		imbuementPickerHint.TextColor = new Color(154, 177, 169);
+		imbuementContent.Append(imbuementPickerHint);
+
+		imbuementPickerGrid = new UIElement();
+		imbuementPickerGrid.Width.Set(198f, 0f);
+		imbuementPickerGrid.Height.Set(158f, 0f);
+		imbuementPickerGrid.Left.Set(190f, 0f);
+		imbuementPickerGrid.Top.Set(25f, 0f);
+
+		imbuementPickerList = new UIList();
+		imbuementPickerList.Width.Set(-18f, 1f);
+		imbuementPickerList.Height.Set(0f, 1f);
+		imbuementPickerList.ListPadding = 4f;
+		imbuementPickerGrid.Append(imbuementPickerList);
+
+		imbuementPickerScrollBar = new UIScrollbar();
+		imbuementPickerScrollBar.Width.Set(14f, 0f);
+		imbuementPickerScrollBar.Height.Set(0f, 1f);
+		imbuementPickerScrollBar.HAlign = 1f;
+		imbuementPickerList.SetScrollbar(imbuementPickerScrollBar);
+
+		bindEssenceButton = new UITextPanel<string>("Bind Essence", 0.76f, false);
+		bindEssenceButton.Width.Set(220f, 0f);
+		bindEssenceButton.Height.Set(38f, 0f);
+		bindEssenceButton.HAlign = 0.5f;
+		bindEssenceButton.OnLeftClick += (_, _) => UseEssenceImbuement();
+		bindEssenceButton.OnMouseOut += (_, _) => ApplyBindButtonStyle();
 	}
 
 	private UITextPanel<string> CreateTabButton(string text, float left, SoullessTab tab)
@@ -727,6 +929,141 @@ internal sealed class SoulMenuState : UIState
 		ClearFeedback();
 		BuildSoullessLayout();
 		RefreshContent();
+	}
+
+	private void SetShrineTab(ShrineTab tab)
+	{
+		if (kind != MenuKind.Shrine || shrineTab == tab)
+		{
+			return;
+		}
+
+		shrineTab = tab;
+		imbuementPicker = ImbuementPicker.None;
+		RebuildImbuementPicker();
+		ClearFeedback();
+		BuildShrineLayout();
+		RefreshContent();
+	}
+
+	private void ApplyShrineTabStyles()
+	{
+		ApplyTabStyle(condensationTabButton, shrineTab == ShrineTab.Condensation);
+		ApplyTabStyle(imbuementTabButton, shrineTab == ShrineTab.Imbuement);
+	}
+
+	private void OpenImbuementPicker(ImbuementPicker picker)
+	{
+		imbuementPicker = picker;
+		RebuildImbuementPicker();
+	}
+
+	private void RebuildImbuementPicker()
+	{
+		imbuementPickerList?.Clear();
+		if (imbuementPicker == ImbuementPicker.None)
+		{
+			// Removing the container also hides its scrollbar while the picker is collapsed.
+			imbuementPickerGrid?.Remove();
+			imbuementPickerHint?.SetText("Select a slot to choose from your inventory.");
+			return;
+		}
+
+		if (imbuementPickerGrid.Parent is null)
+		{
+			imbuementContent.Append(imbuementPickerGrid);
+		}
+
+		bool choosingWeapon = imbuementPicker == ImbuementPicker.Weapon;
+		imbuementPickerHint.SetText(choosingWeapon ? "Choose an imbuable weapon:" : "Choose a compatible essence:");
+		List<int> candidates = new();
+		for (int slot = 0; slot < Main.LocalPlayer.inventory.Length; slot++)
+		{
+			Item item = Main.LocalPlayer.inventory[slot];
+			int otherSlot = choosingWeapon ? linkedEssenceSlot : linkedWeaponSlot;
+			if (item.IsAir || item.stack <= 0 || slot == otherSlot || !ItemFitsImbuementPicker(item.type, choosingWeapon, otherSlot))
+			{
+				continue;
+			}
+			candidates.Add(slot);
+		}
+
+		const int columns = 4;
+		const int visibleRows = 3;
+		for (int rowStart = 0; rowStart < candidates.Count; rowStart += columns)
+		{
+			UIElement row = new();
+			row.Width.Set(0f, 1f);
+			row.Height.Set(42f, 0f);
+			imbuementPickerList.Add(row);
+			for (int column = 0; column < columns && rowStart + column < candidates.Count; column++)
+			{
+				int selectedSlot = candidates[rowStart + column];
+				Item item = Main.LocalPlayer.inventory[selectedSlot];
+				ImbuementInventorySlot slot = new();
+				slot.Left.Set(column * 44f, 0f);
+				slot.SetItem(item.type, item.Name, choosingWeapon ? linkedWeaponSlot == selectedSlot : linkedEssenceSlot == selectedSlot);
+				slot.OnLeftClick += (_, _) => LinkInventorySlot(selectedSlot, choosingWeapon);
+				row.Append(slot);
+			}
+		}
+
+		if (candidates.Count == 0)
+		{
+			imbuementPickerHint.SetText(choosingWeapon
+				? "No imbuable weapons in your inventory."
+				: "No compatible essences in your inventory.");
+		}
+
+		// Keep the compact picker clean until its contents actually exceed the viewport.
+		bool needsScrollBar = candidates.Count > columns * visibleRows;
+		imbuementPickerList.Width.Set(needsScrollBar ? -18f : 0f, 1f);
+		if (needsScrollBar && imbuementPickerScrollBar.Parent is null)
+		{
+			imbuementPickerGrid.Append(imbuementPickerScrollBar);
+		}
+		else if (!needsScrollBar)
+		{
+			imbuementPickerScrollBar.Remove();
+		}
+	}
+
+	private static bool ItemFitsImbuementPicker(int itemType, bool choosingWeapon, int linkedOtherSlot)
+	{
+		int linkedOtherType = linkedOtherSlot >= 0 && linkedOtherSlot < Main.LocalPlayer.inventory.Length
+			? Main.LocalPlayer.inventory[linkedOtherSlot].type
+			: ItemID.None;
+		foreach (EssenceImbuementDefinition definition in EssenceImbuementRegistry.Definitions)
+		{
+			bool roleMatches = choosingWeapon
+				? definition.InputItemType == itemType
+				: definition.EssenceItemType == itemType;
+			bool linkedSideMatches = linkedOtherType <= ItemID.None
+				|| (choosingWeapon ? definition.EssenceItemType : definition.InputItemType) == linkedOtherType;
+			if (roleMatches && linkedSideMatches)
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	private void LinkInventorySlot(int slot, bool weapon)
+	{
+		if (weapon)
+		{
+			linkedWeaponSlot = linkedWeaponSlot == slot ? -1 : slot;
+		}
+		else
+		{
+			linkedEssenceSlot = linkedEssenceSlot == slot ? -1 : slot;
+		}
+
+		imbuementPicker = ImbuementPicker.None;
+		RebuildImbuementPicker();
+		ClearFeedback();
+		RefreshImbuementContent();
 	}
 
 	private void ApplySoullessTabStyles()
@@ -852,31 +1189,37 @@ internal sealed class SoulMenuState : UIState
 
 	private bool SendShrineTransaction()
 	{
-		SoulMessageType messageType = selectedEssenceIndex switch
-		{
-			0 => SoulMessageType.RequestSlimeCondensation,
-			1 => SoulMessageType.RequestEyeCondensation,
-			2 => SoulMessageType.RequestMoonLordCondensation,
-			_ => SoulMessageType.RequestSlimeCondensation
-		};
-
 		if (Main.netMode == NetmodeID.MultiplayerClient)
 		{
 			ModPacket packet = ModContent.GetInstance<SoulsOfTerra>().GetPacket();
-			packet.Write((byte)messageType);
+			packet.Write((byte)SoulMessageType.RequestEssenceCondensation);
+			packet.Write((byte)selectedEssenceIndex);
 			packet.Write(shrinePosition.X);
 			packet.Write(shrinePosition.Y);
 			packet.Send();
 			return false;
 		}
 
-		return selectedEssenceIndex switch
+		return SoulTransactions.TryCondenseEssence(Main.LocalPlayer, shrinePosition, selectedEssenceIndex);
+	}
+
+	private bool SendImbuementTransaction()
+	{
+		if (Main.netMode == NetmodeID.MultiplayerClient)
 		{
-			0 => SoulTransactions.TryCondenseSlimeEssence(Main.LocalPlayer, shrinePosition),
-			1 => SoulTransactions.TryCondenseEyeEssence(Main.LocalPlayer, shrinePosition),
-			2 => SoulTransactions.TryCondenseMoonLordEssence(Main.LocalPlayer, shrinePosition),
-			_ => false
-		};
+			ModPacket packet = ModContent.GetInstance<SoulsOfTerra>().GetPacket();
+			packet.Write((byte)SoulMessageType.RequestEssenceImbuement);
+			packet.Write((byte)selectedImbuementIndex);
+			packet.Write((byte)linkedWeaponSlot);
+			packet.Write((byte)linkedEssenceSlot);
+			packet.Write(shrinePosition.X);
+			packet.Write(shrinePosition.Y);
+			packet.Send();
+			return false;
+		}
+
+		return SoulTransactions.TryBeginEssenceImbuement(Main.LocalPlayer, shrinePosition,
+			selectedImbuementIndex, linkedWeaponSlot, linkedEssenceSlot);
 	}
 
 	private bool IsSelectedEssenceUnlocked()
@@ -891,26 +1234,6 @@ internal sealed class SoulMenuState : UIState
 		return selectedEssenceIndex >= 0 && selectedEssenceIndex < essenceDefinitions.Length
 			? essenceDefinitions[selectedEssenceIndex].Cost
 			: 0;
-	}
-
-	private static string GetEyeEssenceRequirement()
-	{
-		if (!NPC.downedBoss1)
-		{
-			return "Requires Eye of Cthulhu";
-		}
-
-		return SoulWorldSystem.TerraShrineTier < 1 ? "Requires Terra Shrine tier 1" : string.Empty;
-	}
-
-	private static string GetMoonLordEssenceRequirement()
-	{
-		if (!NPC.downedMoonlord)
-		{
-			return "Requires Moon Lord";
-		}
-
-		return SoulWorldSystem.TerraShrineTier < 9 ? "Requires Terra Shrine tier 9" : string.Empty;
 	}
 
 	private string GetSoulCrystalRequirement()
@@ -951,6 +1274,19 @@ internal sealed class SoulMenuState : UIState
 			8 => "the Moon Lord",
 			_ => "the next great foe"
 		};
+	}
+
+	public bool TryGetShrinePreview(Point16 requestedShrine, out int itemType)
+	{
+		itemType = ItemID.None;
+		if (kind != MenuKind.Shrine || shrineTab != ShrineTab.Imbuement || requestedShrine != shrinePosition
+			|| !InventorySlotAvailable(linkedWeaponSlot))
+		{
+			return false;
+		}
+
+		itemType = Main.LocalPlayer.inventory[linkedWeaponSlot].type;
+		return true;
 	}
 
 	private bool InteractionStillValid(Player player)
@@ -1054,26 +1390,6 @@ internal sealed class SoulActionRow : UIElement
 		actionButton.BackgroundColor = !enabled ? new Color(43, 47, 51) : affordable ? new Color(43, 83, 70) : new Color(73, 52, 50);
 		actionButton.BorderColor = !enabled ? new Color(68, 72, 76) : affordable ? new Color(90, 143, 121) : new Color(123, 78, 71);
 		actionButton.TextColor = !enabled ? new Color(125, 130, 132) : affordable ? new Color(215, 244, 229) : new Color(236, 183, 171);
-	}
-}
-
-internal sealed class SoulEssenceDefinition
-{
-	public int ItemType { get; }
-	public string Name { get; }
-	public long Cost { get; }
-	public string Description { get; }
-	public Func<bool> IsUnlocked { get; }
-	public Func<string> GetRequirement { get; }
-
-	public SoulEssenceDefinition(int itemType, string name, long cost, string description, Func<bool> isUnlocked, Func<string> getRequirement)
-	{
-		ItemType = itemType;
-		Name = name;
-		Cost = cost;
-		Description = description;
-		IsUnlocked = isUnlocked;
-		GetRequirement = getRequirement;
 	}
 }
 
@@ -1208,6 +1524,203 @@ internal sealed class SoulEssenceCard : UIElement
 		background.BackgroundColor = selected ? new Color(42, 72, 65) : new Color(26, 33, 39);
 		background.BorderColor = selected ? new Color(117, 182, 151) : new Color(57, 71, 71);
 	}
+}
+
+internal sealed class ImbuementWeaponSocket : UIElement
+{
+	private int itemType;
+	private bool resonating;
+
+	public ImbuementWeaponSocket()
+	{
+		Width.Set(80f, 0f);
+		Height.Set(80f, 0f);
+	}
+
+	public void SetItem(int requestedItemType, bool validCombination)
+	{
+		itemType = requestedItemType;
+		resonating = validCombination;
+	}
+
+	protected override void DrawSelf(SpriteBatch spriteBatch)
+	{
+		CalculatedStyle dimensions = GetDimensions();
+		Vector2 position = new(dimensions.X, dimensions.Y);
+		Vector2 center = dimensions.Center();
+		Texture2D frame = ModContent.Request<Texture2D>("SoulsOfTerra/Content/UI/ShopUI_weapon_frame").Value;
+		float impactPulse = 0f;
+
+		if (resonating)
+		{
+			impactPulse = DrawSoulTransfer(spriteBatch, center);
+			// A slow, broad breath makes resonance feel deliberate instead of reactive UI feedback.
+			float pulse = 0.5f + 0.2f * MathF.Sin(Main.GlobalTimeWrappedHourly * 2.15f) + impactPulse * 0.32f;
+			Color glow = new Color(48, 232, 205) * pulse;
+			// Offset silhouettes make the authored frame glow without changing SpriteBatch state.
+			for (int direction = 0; direction < 8; direction++)
+			{
+				float angle = MathHelper.TwoPi * direction / 8f;
+				Vector2 offset = angle.ToRotationVector2() * (3.75f + impactPulse * 2.25f);
+				spriteBatch.Draw(frame, position + offset, glow);
+			}
+		}
+
+		spriteBatch.Draw(frame, position, Color.White);
+		ImbuementSlotDrawing.DrawItem(spriteBatch, itemType, center, 44f);
+		if (resonating)
+		{
+			// A faint displaced copy gives the bound weapon a spectral shimmer.
+			Vector2 shimmer = new(MathF.Sin(Main.GlobalTimeWrappedHourly * 6f), MathF.Cos(Main.GlobalTimeWrappedHourly * 4f) * 0.5f);
+			ImbuementSlotDrawing.DrawItem(spriteBatch, itemType, center + shimmer, 44f, new Color(115, 255, 225) * (0.2f + impactPulse * 0.2f));
+			DrawOrbitingSouls(spriteBatch, center);
+			spriteBatch.Draw(frame, position, new Color(75, 245, 215) * (0.18f + impactPulse * 0.32f));
+		}
+		if (IsMouseHovering)
+		{
+			Main.instance.MouseText(itemType > ItemID.None ? Lang.GetItemNameValue(itemType) : "Select Weapon");
+		}
+	}
+
+	private static float DrawSoulTransfer(SpriteBatch spriteBatch, Vector2 weaponCenter)
+	{
+		Texture2D glow = SoulOrbProjectile.GetGlowTexture();
+		Texture2D ring = SoulOrbProjectile.GetRingTexture();
+		Vector2 origin = glow.Size() * 0.5f;
+		Vector2 essenceCenter = weaponCenter + new Vector2(0f, 94f);
+		float strongestImpact = 0f;
+		for (int index = 0; index < 3; index++)
+		{
+			float cycle = (Main.GlobalTimeWrappedHourly * 0.58f + index / 3f) % 1f;
+			float side = index == 1 ? 1f : -1f;
+			Vector2 control = Vector2.Lerp(essenceCenter, weaponCenter, 0.52f) + new Vector2(side * (18f + index * 4f), 0f);
+			for (int trailIndex = 5; trailIndex >= 0; trailIndex--)
+			{
+				float trailProgress = MathHelper.Clamp(cycle - trailIndex * 0.027f, 0f, 1f);
+				Vector2 trailPosition = QuadraticBezier(essenceCenter, control, weaponCenter, trailProgress);
+				float strength = 1f - trailIndex / 6f;
+				spriteBatch.Draw(glow, trailPosition, null, new Color(70, 235, 207) * (strength * 0.42f), 0f, origin,
+					0.075f + strength * 0.045f, SpriteEffects.None, 0f);
+			}
+
+			Vector2 wispPosition = QuadraticBezier(essenceCenter, control, weaponCenter, cycle);
+			float soulPulse = 0.92f + MathF.Sin((Main.GlobalTimeWrappedHourly + index) * 8f) * 0.08f;
+			spriteBatch.Draw(glow, wispPosition, null, new Color(92, 255, 220) * 0.72f, 0f, origin, 0.19f * soulPulse, SpriteEffects.None, 0f);
+			spriteBatch.Draw(ring, wispPosition, null, new Color(205, 255, 241) * 0.92f, 0f, origin, 0.13f * soulPulse, SpriteEffects.None, 0f);
+
+			float arrival = MathHelper.Clamp((cycle - 0.84f) / 0.16f, 0f, 1f);
+			strongestImpact = Math.Max(strongestImpact, MathF.Sin(arrival * MathHelper.Pi));
+		}
+
+		return strongestImpact;
+	}
+
+	private static void DrawOrbitingSouls(SpriteBatch spriteBatch, Vector2 center)
+	{
+		Texture2D glow = SoulOrbProjectile.GetGlowTexture();
+		Texture2D ring = SoulOrbProjectile.GetRingTexture();
+		Vector2 origin = glow.Size() * 0.5f;
+		for (int index = 0; index < 2; index++)
+		{
+			float direction = index == 0 ? 1f : -1f;
+			float phase = Main.GlobalTimeWrappedHourly * (2.2f + index * 0.35f) * direction + index * MathHelper.Pi;
+			Vector2 orbit = new(MathF.Cos(phase) * 28f, MathF.Sin(phase) * 15f);
+			float depth = MathHelper.Lerp(0.65f, 1f, (MathF.Sin(phase) + 1f) * 0.5f);
+			Vector2 soulPosition = center + orbit;
+			spriteBatch.Draw(glow, soulPosition, null, new Color(74, 242, 213) * (0.65f * depth), 0f, origin, 0.17f * depth, SpriteEffects.None, 0f);
+			spriteBatch.Draw(ring, soulPosition, null, new Color(220, 255, 244) * depth, 0f, origin, 0.105f * depth, SpriteEffects.None, 0f);
+		}
+	}
+
+	private static Vector2 QuadraticBezier(Vector2 start, Vector2 control, Vector2 end, float progress)
+	{
+		float inverse = 1f - progress;
+		return inverse * inverse * start + 2f * inverse * progress * control + progress * progress * end;
+	}
+}
+
+internal sealed class ImbuementEssenceSocket : UIElement
+{
+	private int itemType;
+
+	public ImbuementEssenceSocket()
+	{
+		Width.Set(52f, 0f);
+		Height.Set(52f, 0f);
+	}
+
+	public void SetItem(int requestedItemType)
+	{
+		itemType = requestedItemType;
+	}
+
+	protected override void DrawSelf(SpriteBatch spriteBatch)
+	{
+		CalculatedStyle dimensions = GetDimensions();
+		Rectangle area = dimensions.ToRectangle();
+		ImbuementSlotDrawing.DrawSlot(spriteBatch, area, false);
+		ImbuementSlotDrawing.DrawItem(spriteBatch, itemType, area.Center.ToVector2(), 34f);
+		if (IsMouseHovering)
+		{
+			Main.instance.MouseText(itemType > ItemID.None ? Lang.GetItemNameValue(itemType) : "Select Essence");
+		}
+	}
+}
+
+internal sealed class ImbuementInventorySlot : UIElement
+{
+	private int itemType;
+	private string itemName = string.Empty;
+	private bool selected;
+
+	public ImbuementInventorySlot()
+	{
+		Width.Set(40f, 0f);
+		Height.Set(40f, 0f);
+	}
+
+	public void SetItem(int requestedItemType, string requestedName, bool isSelected)
+	{
+		itemType = requestedItemType;
+		itemName = requestedName;
+		selected = isSelected;
+	}
+
+	protected override void DrawSelf(SpriteBatch spriteBatch)
+	{
+		CalculatedStyle dimensions = GetDimensions();
+		Rectangle area = dimensions.ToRectangle();
+		ImbuementSlotDrawing.DrawSlot(spriteBatch, area, selected || IsMouseHovering);
+		ImbuementSlotDrawing.DrawItem(spriteBatch, itemType, area.Center.ToVector2(), 30f);
+		if (IsMouseHovering)
+		{
+			Main.instance.MouseText(itemName);
+		}
+	}
+}
+
+internal static class ImbuementSlotDrawing
+{
+	public static void DrawSlot(SpriteBatch spriteBatch, Rectangle area, bool highlighted)
+	{
+		Texture2D pixel = TextureAssets.MagicPixel.Value;
+		Color border = highlighted ? new Color(102, 201, 177) : new Color(66, 79, 81);
+		spriteBatch.Draw(pixel, area, border);
+		spriteBatch.Draw(pixel, new Rectangle(area.X + 2, area.Y + 2, area.Width - 4, area.Height - 4), new Color(28, 36, 43, 245));
+	}
+
+	public static void DrawItem(SpriteBatch spriteBatch, int itemType, Vector2 center, float maximumSize, Color? drawColor = null)
+	{
+		if (itemType <= ItemID.None)
+		{
+			return;
+		}
+
+		Texture2D texture = TextureAssets.Item[itemType].Value;
+		float scale = Math.Min(1f, maximumSize / Math.Max(texture.Width, texture.Height));
+		spriteBatch.Draw(texture, center, null, drawColor ?? Color.White, 0f, texture.Size() * 0.5f, scale, SpriteEffects.None, 0f);
+	}
+
 }
 
 internal sealed class SoulItemIcon : UIElement

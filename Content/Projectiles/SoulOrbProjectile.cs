@@ -141,8 +141,8 @@ public class SoulOrbProjectile : ModProjectile
 	internal static void DrawSoulVisual(Projectile projectile, long visualSouls, bool containsBossReward, float opacity = 1f,
 		float scaleMultiplier = 1f, Vector2[] trailPositions = null, float trailScaleMultiplier = 1f)
 	{
-		glowTexture ??= CreateGlowTexture();
-		ringTexture ??= CreateRingTexture();
+		Texture2D glowTexture = GetGlowTexture();
+		Texture2D ringTexture = GetRingTexture();
 		Vector2 origin = glowTexture.Size() * 0.5f;
 		float pulse = 1f + 0.06f * (float)System.Math.Sin(Main.GlobalTimeWrappedHourly * 5f + projectile.whoAmI);
 		float valueLog = (float)System.Math.Log10(System.Math.Max(1, visualSouls));
@@ -188,6 +188,18 @@ public class SoulOrbProjectile : ModProjectile
 			float wispScale = MathHelper.Lerp(0.13f, 0.205f, visualProgress) * depthFactor * scaleMultiplier;
 			Main.EntitySpriteDraw(glowTexture, drawPosition + orbit, null, animatedWispColor, 0f, origin, wispScale, SpriteEffects.None);
 		}
+	}
+
+	internal static Texture2D GetGlowTexture()
+	{
+		glowTexture ??= CreateGlowTexture();
+		return glowTexture;
+	}
+
+	internal static Texture2D GetRingTexture()
+	{
+		ringTexture ??= CreateRingTexture();
+		return ringTexture;
 	}
 
 	public override void OnKill(int timeLeft)

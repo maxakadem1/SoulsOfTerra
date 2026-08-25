@@ -4,7 +4,7 @@ using Terraria.ModLoader;
 
 namespace SoulsOfTerra.Content.Items.Materials;
 
-public class SlimeEssence : ModItem
+public class SlimeEssence : BossEssenceItem
 {
 	public override void SetDefaults()
 	{

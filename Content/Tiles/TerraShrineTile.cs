@@ -5,6 +5,7 @@ using SoulsOfTerra.Systems;
 using Terraria;
 using Terraria.DataStructures;
 using Terraria.Enums;
+using Terraria.GameContent;
 using Terraria.ID;
 using Terraria.ModLoader;
 using Terraria.ObjectData;
@@ -87,6 +88,18 @@ public class TerraShrineTile : ModTile
 		Vector2 anvilScale = new(Width * 16f / anvil.Width, Height * 16f / anvil.Height);
 		spriteBatch.Draw(anvil, drawPosition, null, lightColor, 0f,
 			anvil.Size() * 0.5f, anvilScale, SpriteEffects.None, 0f);
+
+		Point16 topLeft = new(i, j);
+		if (SoulMenuSystem.TryGetShrinePreview(topLeft, out int previewItemType))
+		{
+			Texture2D itemTexture = TextureAssets.Item[previewItemType].Value;
+			float itemScale = System.MathF.Min(44f / itemTexture.Width, 44f / itemTexture.Height);
+			Vector2 floatPosition = drawPosition + new Vector2(0f,
+				-30f + System.MathF.Sin(Main.GlobalTimeWrappedHourly * 3f) * 3f);
+			// The preview is client-local until the server accepts and broadcasts the ritual.
+			spriteBatch.Draw(itemTexture, floatPosition, null, Color.White, 0f,
+				itemTexture.Size() * 0.5f, itemScale, SpriteEffects.None, 0f);
+		}
 	}
 
 	public override void KillMultiTile(int i, int j, int frameX, int frameY)

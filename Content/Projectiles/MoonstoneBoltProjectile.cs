@@ -135,9 +135,16 @@ public class MoonstoneBoltProjectile : ModProjectile
 		Projectile.NewProjectile(Projectile.GetSource_FromThis(), Projectile.Center, Vector2.Zero,
 			ModContent.ProjectileType<MoonstoneExplosionProjectile>(), (int)(Projectile.damage * 0.6f),
 			Projectile.knockBack, Projectile.owner);
-		Projectile.NewProjectile(Projectile.GetSource_FromThis(), Projectile.Center, Vector2.Zero,
-			ModContent.ProjectileType<MoonstoneConvergenceProjectile>(), (int)(Projectile.damage * 0.8f),
-			Projectile.knockBack, Projectile.owner);
+
+		// The impact blooms into six independently homing warheads instead of the old convergence moon.
+		float angleOffset = Projectile.identity * 0.37f;
+		for (int index = 0; index < 6; index++)
+		{
+			Vector2 velocity = (angleOffset + MathHelper.TwoPi * index / 6f).ToRotationVector2() * 9f;
+			Projectile.NewProjectile(Projectile.GetSource_FromThis(), Projectile.Center, velocity,
+				ModContent.ProjectileType<MoonstonePackRocketProjectile>(),
+				System.Math.Max(1, (int)(Projectile.damage * 0.1f)), Projectile.knockBack * 0.45f, Projectile.owner);
+		}
 	}
 
 	private static Color TrailColor(float progress)

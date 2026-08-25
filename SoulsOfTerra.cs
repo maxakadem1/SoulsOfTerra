@@ -16,9 +16,8 @@ public enum SoulMessageType : byte
 	RequestBloodstainRecovery,
 	RequestCorePurchase,
 	RequestShrineUpgrade,
-	RequestSlimeCondensation,
-	RequestEyeCondensation,
-	RequestMoonLordCondensation,
+	RequestEssenceCondensation,
+	RequestEssenceImbuement,
 	RequestSoulCrystalConversion,
 	RequestAnvilTransformation
 }
@@ -43,14 +42,11 @@ public class SoulsOfTerra : Mod
 			case SoulMessageType.RequestShrineUpgrade:
 				HandleShrineUpgrade(reader, whoAmI);
 				break;
-			case SoulMessageType.RequestSlimeCondensation:
-				HandleSlimeCondensation(reader, whoAmI);
+			case SoulMessageType.RequestEssenceCondensation:
+				HandleEssenceCondensation(reader, whoAmI);
 				break;
-			case SoulMessageType.RequestEyeCondensation:
-				HandleEyeCondensation(reader, whoAmI);
-				break;
-			case SoulMessageType.RequestMoonLordCondensation:
-				HandleMoonLordCondensation(reader, whoAmI);
+			case SoulMessageType.RequestEssenceImbuement:
+				HandleEssenceImbuement(reader, whoAmI);
 				break;
 			case SoulMessageType.RequestSoulCrystalConversion:
 				HandleSoulCrystalConversion(reader, whoAmI);
@@ -141,33 +137,27 @@ public class SoulsOfTerra : Mod
 		}
 	}
 
-	private static void HandleSlimeCondensation(BinaryReader reader, int whoAmI)
+	private static void HandleEssenceCondensation(BinaryReader reader, int whoAmI)
 	{
+		int essenceIndex = reader.ReadByte();
 		Point16 shrinePosition = new(reader.ReadInt16(), reader.ReadInt16());
 		Player player = GetRequestingPlayer(whoAmI);
 		if (player is not null)
 		{
-			SoulTransactions.TryCondenseSlimeEssence(player, shrinePosition);
+			SoulTransactions.TryCondenseEssence(player, shrinePosition, essenceIndex);
 		}
 	}
 
-	private static void HandleEyeCondensation(BinaryReader reader, int whoAmI)
+	private static void HandleEssenceImbuement(BinaryReader reader, int whoAmI)
 	{
+		int imbuementIndex = reader.ReadByte();
+		int weaponSlot = reader.ReadByte();
+		int essenceSlot = reader.ReadByte();
 		Point16 shrinePosition = new(reader.ReadInt16(), reader.ReadInt16());
 		Player player = GetRequestingPlayer(whoAmI);
 		if (player is not null)
 		{
-			SoulTransactions.TryCondenseEyeEssence(player, shrinePosition);
-		}
-	}
-
-	private static void HandleMoonLordCondensation(BinaryReader reader, int whoAmI)
-	{
-		Point16 shrinePosition = new(reader.ReadInt16(), reader.ReadInt16());
-		Player player = GetRequestingPlayer(whoAmI);
-		if (player is not null)
-		{
-			SoulTransactions.TryCondenseMoonLordEssence(player, shrinePosition);
+			SoulTransactions.TryBeginEssenceImbuement(player, shrinePosition, imbuementIndex, weaponSlot, essenceSlot);
 		}
 	}
 

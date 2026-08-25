@@ -17,9 +17,6 @@ namespace SoulsOfTerra.Common;
 public static class SoulTransactions
 {
 	public const long CoreCost = 100;
-	public const long SlimeEssenceCost = 2_500;
-	public const long EyeEssenceCost = 5_000;
-	public const long MoonLordEssenceCost = 100_000;
 	private static readonly long[] SoulCrystalCosts = { 1_250, 6_250, 31_250 };
 	private static readonly long[] SoulCrystalValues = { 1_000, 5_000, 25_000 };
 	private const float InteractionRange = 12f * 16f;
@@ -85,16 +82,63 @@ public static class SoulTransactions
 		};
 	}
 
-	public static bool TryCondenseSlimeEssence(Player player, Point16 shrinePosition)
+	public static bool TryCondenseEssence(Player player, Point16 shrinePosition, int essenceIndex)
 	{
-		if (!NPC.downedSlimeKing || !IsValidShrineInteraction(player, shrinePosition) || !player.GetModPlayer<SoulPlayer>().TrySpendSouls(SlimeEssenceCost))
+		if (!SoulEssenceRegistry.TryGet(essenceIndex, out SoulEssenceDefinition essence)
+			|| !essence.IsUnlocked() || !IsValidShrineInteraction(player, shrinePosition)
+			|| !player.GetModPlayer<SoulPlayer>().TrySpendSouls(essence.Cost))
 		{
 			return false;
 		}
 
-		player.QuickSpawnItem(new EntitySource_Misc("SoulsOfTerra:SlimeCondensation"), ModContent.ItemType<SlimeEssence>());
+		// The registry ID keeps source diagnostics useful without one method per boss.
+		player.QuickSpawnItem(new EntitySource_Misc($"SoulsOfTerra:{essence.Id}Condensation"), essence.ItemType);
 		CondensationSoulWispProjectile.Spawn(player, shrinePosition);
 		return true;
+	}
+
+	public static bool TryBeginEssenceImbuement(Player player, Point16 shrinePosition, int imbuementIndex,
+		int weaponSlot, int essenceSlot)
+	{
+		if (!EssenceImbuementRegistry.TryGet(imbuementIndex, out EssenceImbuementDefinition imbuement)
+			|| !IsValidShrineInteraction(player, shrinePosition) || weaponSlot == essenceSlot
+			|| weaponSlot < 0 || weaponSlot >= player.inventory.Length
+			|| essenceSlot < 0 || essenceSlot >= player.inventory.Length)
+		{
+			return false;
+		}
+
+		Item weapon = player.inventory[weaponSlot];
+		Item essence = player.inventory[essenceSlot];
+		if (weapon.type != imbuement.InputItemType || weapon.stack <= 0
+			|| essence.type != imbuement.EssenceItemType || essence.stack <= 0)
+		{
+			return false;
+		}
+
+		int preservedPrefix = weapon.prefix;
+		ConsumeOne(weapon);
+		ConsumeOne(essence);
+		if (Main.netMode == NetmodeID.Server)
+		{
+			NetMessage.SendData(MessageID.SyncEquipment, -1, -1, null, player.whoAmI, weaponSlot);
+			NetMessage.SendData(MessageID.SyncEquipment, -1, -1, null, player.whoAmI, essenceSlot);
+		}
+
+		Vector2 ritualCenter = shrinePosition.ToWorldCoordinates(TerraShrineTile.Width * 8f, -12f);
+		Projectile.NewProjectile(new EntitySource_Misc("SoulsOfTerra:EssenceImbuement"), ritualCenter, Vector2.Zero,
+			ModContent.ProjectileType<EssenceBindingRitualProjectile>(), 0, 0f, player.whoAmI,
+			imbuementIndex, preservedPrefix);
+		CondensationSoulWispProjectile.Spawn(player, shrinePosition);
+		return true;
+	}
+
+	private static void ConsumeOne(Item item)
+	{
+		if (--item.stack <= 0)
+		{
+			item.TurnToAir();
+		}
 	}
 
 	public static bool TryTransformAnvil(Player player, Point16 anvilTopLeft)
@@ -194,34 +238,6 @@ public static class SoulTransactions
 		}
 
 		anvilItemType = anvilStyle == 1 ? ItemID.LeadAnvil : ItemID.IronAnvil;
-		return true;
-	}
-
-	public static bool TryCondenseEyeEssence(Player player, Point16 shrinePosition)
-	{
-		// Major-boss essences require both the kill and its paid shrine awakening.
-		if (!NPC.downedBoss1 || SoulWorldSystem.TerraShrineTier < 1 || !IsValidShrineInteraction(player, shrinePosition)
-			|| !player.GetModPlayer<SoulPlayer>().TrySpendSouls(EyeEssenceCost))
-		{
-			return false;
-		}
-
-		player.QuickSpawnItem(new EntitySource_Misc("SoulsOfTerra:EyeCondensation"), ModContent.ItemType<EyeEssence>());
-		CondensationSoulWispProjectile.Spawn(player, shrinePosition);
-		return true;
-	}
-
-	public static bool TryCondenseMoonLordEssence(Player player, Point16 shrinePosition)
-	{
-		// The final essence requires both the victory and the world-wide tier-nine awakening.
-		if (!NPC.downedMoonlord || SoulWorldSystem.TerraShrineTier < 9 || !IsValidShrineInteraction(player, shrinePosition)
-			|| !player.GetModPlayer<SoulPlayer>().TrySpendSouls(MoonLordEssenceCost))
-		{
-			return false;
-		}
-
-		player.QuickSpawnItem(new EntitySource_Misc("SoulsOfTerra:MoonLordCondensation"), ModContent.ItemType<MoonLordEssence>());
-		CondensationSoulWispProjectile.Spawn(player, shrinePosition);
 		return true;
 	}
 

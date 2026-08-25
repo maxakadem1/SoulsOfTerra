@@ -51,6 +51,11 @@ Projectiles: {
 	MoonstoneExplosionProjectile.DisplayName: Moonstone Detonation
 	MoonstoneConvergenceProjectile.DisplayName: Moonstone Convergence
 	MoonstoneCollapseProjectile.DisplayName: Collapsing Moonstone
+	MoonstoneChildExplosionProjectile.DisplayName: Moonstone Child Explosion Projectile
+	MoonstonePackRocketProjectile.DisplayName: Moonstone Pack Rocket Projectile
+	MoonstoneShardRocketProjectile.DisplayName: Moonstone Shard Rocket Projectile
+	FleshRuptureProjectile.DisplayName: Flesh Rupture
+	EssenceBindingRitualProjectile.DisplayName: Essence Binding Ritual
 }
 
 NPCs: {
@@ -86,6 +91,81 @@ Items: {
 		Tooltip: A watchful crimson echo condensed from souls
 	}
 
+	WallOfFleshEssence: {
+		DisplayName: Wall of Flesh Essence
+		Tooltip: A ravenous infernal echo condensed from souls
+	}
+
+	DeerclopsEssence: {
+		DisplayName: Deerclops Essence
+		Tooltip: A frozen echo condensed from souls
+	}
+
+	EaterOfWorldsEssence: {
+		DisplayName: Eater of Worlds Essence
+		Tooltip: A devouring corrupt echo condensed from souls
+	}
+
+	BrainOfCthulhuEssence: {
+		DisplayName: Brain of Cthulhu Essence
+		Tooltip: A crimson consciousness condensed from souls
+	}
+
+	QueenBeeEssence: {
+		DisplayName: Queen Bee Essence
+		Tooltip: A honeyed royal echo condensed from souls
+	}
+
+	SkeletronEssence: {
+		DisplayName: Skeletron Essence
+		Tooltip: A dungeon curse condensed from souls
+	}
+
+	QueenSlimeEssence: {
+		DisplayName: Queen Slime Essence
+		Tooltip: A crystalline royal echo condensed from souls
+	}
+
+	DestroyerEssence: {
+		DisplayName: Destroyer Essence
+		Tooltip: A relentless mechanical echo condensed from souls
+	}
+
+	TwinsEssence: {
+		DisplayName: Twins Essence
+		Tooltip: Two murderous gazes condensed into one essence
+	}
+
+	SkeletronPrimeEssence: {
+		DisplayName: Skeletron Prime Essence
+		Tooltip: A mechanized curse condensed from souls
+	}
+
+	PlanteraEssence: {
+		DisplayName: Plantera Essence
+		Tooltip: The jungle's wrath condensed from souls
+	}
+
+	GolemEssence: {
+		DisplayName: Golem Essence
+		Tooltip: An ancient guardian's echo condensed from souls
+	}
+
+	DukeFishronEssence: {
+		DisplayName: Duke Fishron Essence
+		Tooltip: A tempestuous mutant echo condensed from souls
+	}
+
+	EmpressOfLightEssence: {
+		DisplayName: Empress of Light Essence
+		Tooltip: A prismatic sovereign's echo condensed from souls
+	}
+
+	LunaticCultistEssence: {
+		DisplayName: Lunatic Cultist Essence
+		Tooltip: A forbidden ritual's echo condensed from souls
+	}
+
 	MoonLordEssence: {
 		DisplayName: Moon Lord Essence
 		Tooltip: A sovereign celestial echo condensed from souls
@@ -112,6 +192,16 @@ Items: {
 			'''
 			Every swing releases a large piercing gel ball
 			Every third swing releases three balls instead
+			'''
+	}
+
+	EssenceboundBreakerBlade: {
+		DisplayName: Essencebound Breaker Blade
+		Tooltip:
+			'''
+			Hits embed a rupture mark in enemies
+			Every third mark erupts in a damaging fleshy burst
+			Opening strikes apply two marks
 			'''
 	}
 

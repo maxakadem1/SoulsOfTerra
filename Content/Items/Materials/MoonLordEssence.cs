@@ -4,11 +4,8 @@ using Terraria.ModLoader;
 
 namespace SoulsOfTerra.Content.Items.Materials;
 
-public class MoonLordEssence : ModItem
+public class MoonLordEssence : BossEssenceItem
 {
-	// A vanilla lunar fragment stands in until the authored essence sprite is ready.
-	public override string Texture => $"Terraria/Images/Item_{ItemID.FragmentNebula}";
-
 	public override void SetDefaults()
 	{
 		Item.width = 16;
