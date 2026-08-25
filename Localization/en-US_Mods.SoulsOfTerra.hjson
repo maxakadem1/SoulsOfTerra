@@ -54,7 +54,9 @@ Projectiles: {
 	MoonstoneChildExplosionProjectile.DisplayName: Moonstone Child Explosion Projectile
 	MoonstonePackRocketProjectile.DisplayName: Moonstone Pack Rocket Projectile
 	MoonstoneShardRocketProjectile.DisplayName: Moonstone Shard Rocket Projectile
-	FleshRuptureProjectile.DisplayName: Flesh Rupture
+	SoulBandageTetherProjectile.DisplayName: Soul Binding
+	SoulBandageImpactProjectile.DisplayName: Binding Impact
+	BandageExecutionProjectile.DisplayName: Bound Cleave
 	EssenceBindingRitualProjectile.DisplayName: Essence Binding Ritual
 }
 
@@ -199,9 +201,10 @@ Items: {
 		DisplayName: Essencebound Breaker Blade
 		Tooltip:
 			'''
-			Hits embed a rupture mark in enemies
-			Every third mark erupts in a damaging fleshy burst
-			Opening strikes apply two marks
+			Striking enemies binds them to the blade
+			Right-click pulls every bound enemy into a devastating cleave
+			Distant bindings pull harder and deal more damage
+			Bindings snap at extreme range or when obstructed
 			'''
 	}
 
