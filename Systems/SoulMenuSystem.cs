@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using SoulsOfTerra.Common;
+using SoulsOfTerra.Content.Items.Access;
 using SoulsOfTerra.Content.Items.Consumables.SoulCrystals;
 using SoulsOfTerra.Content.Items.Materials;
 using SoulsOfTerra.Content.Projectiles;
@@ -199,6 +200,7 @@ internal sealed class SoulMenuState : UIState
 	private UIText balance;
 	private SoulActionRow primaryRow;
 	private SoulActionRow secondaryRow;
+	private SoulActionRow tertiaryRow;
 	private UITextPanel<string> servicesTabButton;
 	private UITextPanel<string> crystalsTabButton;
 	private UITextPanel<string> condensationTabButton;
@@ -275,6 +277,8 @@ internal sealed class SoulMenuState : UIState
 		primaryRow.SetAction(UsePrimaryAction);
 		secondaryRow = CreateRow(168f);
 		secondaryRow.SetAction(UseSecondaryAction);
+		tertiaryRow = CreateRow(258f);
+		tertiaryRow.SetAction(UseTertiaryAction);
 		CreateSoullessTabs();
 		CreateShrineTabs();
 		CreateEssenceCatalogue();
@@ -363,7 +367,7 @@ internal sealed class SoulMenuState : UIState
 	private void BuildSoullessLayout()
 	{
 		panel.RemoveAllChildren();
-		panel.Height.Set(400f, 0f);
+		panel.Height.Set(soullessTab == SoullessTab.Services ? 490f : 400f, 0f);
 		panel.Append(title);
 		panel.Append(subtitle);
 		panel.Append(balance);
@@ -373,8 +377,10 @@ internal sealed class SoulMenuState : UIState
 		{
 			primaryRow.Top.Set(108f, 0f);
 			secondaryRow.Top.Set(198f, 0f);
+			tertiaryRow.Top.Set(288f, 0f);
 			panel.Append(primaryRow);
 			panel.Append(secondaryRow);
+			panel.Append(tertiaryRow);
 		}
 		else
 		{
@@ -386,9 +392,9 @@ internal sealed class SoulMenuState : UIState
 			panel.Append(condenseButton);
 		}
 
-		feedback.Top.Set(326f, 0f);
+		feedback.Top.Set(soullessTab == SoullessTab.Services ? 416f : 326f, 0f);
 		panel.Append(feedback);
-		closeButton.Top.Set(358f, 0f);
+		closeButton.Top.Set(soullessTab == SoullessTab.Services ? 448f : 358f, 0f);
 		panel.Append(closeButton);
 		ApplySoullessTabStyles();
 	}
@@ -590,15 +596,26 @@ internal sealed class SoulMenuState : UIState
 		if (upgradeCost <= 0)
 		{
 			secondaryRow.SetContent(ItemID.IronAnvil, "Terra Shrine", "All known strength has awakened", "Complete", false);
-			return;
+		}
+		else
+		{
+			bool milestoneUnlocked = SoulWorldSystem.IsNextUpgradeUnlocked();
+			bool canAfford = Main.LocalPlayer.GetModPlayer<SoulPlayer>().SoulBalance >= upgradeCost;
+			string detail = milestoneUnlocked
+				? $"World-wide tier {SoulWorldSystem.TerraShrineTier + 1}  •  {upgradeCost:N0} souls"
+				: $"Requires {GetNextMilestoneName()}";
+			secondaryRow.SetContent(ItemID.IronAnvil, "Strengthen Terra Shrine", detail, milestoneUnlocked ? "Strengthen" : "Locked", milestoneUnlocked, canAfford);
 		}
 
-		bool milestoneUnlocked = SoulWorldSystem.IsNextUpgradeUnlocked();
-		bool canAfford = Main.LocalPlayer.GetModPlayer<SoulPlayer>().SoulBalance >= upgradeCost;
-		string detail = milestoneUnlocked
-			? $"World-wide tier {SoulWorldSystem.TerraShrineTier + 1}  •  {upgradeCost:N0} souls"
-			: $"Requires {GetNextMilestoneName()}";
-		secondaryRow.SetContent(ItemID.IronAnvil, "Strengthen Terra Shrine", detail, milestoneUnlocked ? "Strengthen" : "Locked", milestoneUnlocked, canAfford);
+		bool keyUnlocked = NPC.downedBoss3;
+		bool canAffordKey = Main.LocalPlayer.GetModPlayer<SoulPlayer>().SoulBalance >= SoulTransactions.WardensFragmentCost;
+		tertiaryRow.SetContent(
+			ModContent.ItemType<WardensFragment>(),
+			"Warden's Fragment",
+			keyUnlocked ? $"Reusable Buried Court key  •  {SoulTransactions.WardensFragmentCost:N0} souls" : "Requires Skeletron",
+			keyUnlocked ? "Purchase" : "Locked",
+			keyUnlocked,
+			canAffordKey);
 	}
 
 	private void RefreshCrystalContent()
@@ -1170,6 +1187,29 @@ internal sealed class SoulMenuState : UIState
 		}
 
 		return singlePlayerAction();
+	}
+
+	private void UseTertiaryAction()
+	{
+		if (kind != MenuKind.Soulless || soullessTab != SoullessTab.Services)
+		{
+			return;
+		}
+
+		if (!NPC.downedBoss3)
+		{
+			ShowFeedback("Defeat Skeletron first.", false);
+			return;
+		}
+
+		if (!HasSouls(SoulTransactions.WardensFragmentCost))
+		{
+			return;
+		}
+
+		bool completed = SendNpcTransaction(SoulMessageType.RequestWardenFragmentPurchase,
+			() => SoulTransactions.TryPurchaseWardensFragment(Main.LocalPlayer, npcIndex));
+		ShowFeedback(completed ? "Warden's Fragment acquired." : "Purchase request sent.", true);
 	}
 
 	private bool SendCrystalTransaction()

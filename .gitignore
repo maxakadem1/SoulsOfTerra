@@ -25,6 +25,9 @@ coverage/
 *.bak
 *~
 
+# Optional local development tools
+.tools/
+
 # Operating-system metadata
 .DS_Store
 Thumbs.db

@@ -10,6 +10,8 @@ Mods: {
 				Introduction: So another bearer wakes. Keep close the souls you gather; death is eager to loosen your grasp.
 				BloodstainHint: What spills from you does not vanish. Return to the stain, reach into it, and take back what remains.
 				AfterKingSlime: Even a crown of gel leaves an echo. A Terra Shrine can press that echo into useful form.
+				BuriedCourtHint: Beneath where you first woke lies a court without a king. Take my fragment to its altar. The prisoners there have suffered long enough.
+				AfterCongregation: So the court is silent. Strange... I can almost remember the voices you freed.
 			}
 		}
 
@@ -58,9 +60,17 @@ Projectiles: {
 	SoulBandageImpactProjectile.DisplayName: Binding Impact
 	BandageExecutionProjectile.DisplayName: Bound Cleave
 	EssenceBindingRitualProjectile.DisplayName: Essence Binding Ritual
+	CongregationSoulBoltProjectile.DisplayName: Processional Soul
+	CongregationLanceProjectile.DisplayName: Crossed Sentence
+	CongregationBenedictionWaveProjectile.DisplayName: Hollow Benediction
+	CongregationConfessionProjectile.DisplayName: Final Confession
+	CongregationJudgmentBeamProjectile.DisplayName: Choir of Judgment
 }
 
 NPCs: {
+	SealedCongregationBoss.DisplayName: The Sealed Congregation
+	SealedCongregationSeal.DisplayName: Congregation Seal
+
 	SoullessNPC: {
 		DisplayName: Soulless
 
@@ -78,6 +88,16 @@ NPCs: {
 }
 
 Items: {
+	WardensFragment: {
+		DisplayName: Warden's Fragment
+		Tooltip: Hold and right-click the altar in the Buried Court to summon The Sealed Congregation
+	}
+
+	CongregationEssence: {
+		DisplayName: Congregation Essence
+		Tooltip: Many imprisoned echoes condensed into one essence
+	}
+
 	BrokenTerraBladeCore: {
 		DisplayName: Broken Terra Blade
 		Tooltip: Right-click an Iron or Lead Anvil on open ground to form a Terra Shrine

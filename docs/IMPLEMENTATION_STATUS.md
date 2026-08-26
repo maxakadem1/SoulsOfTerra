@@ -1,6 +1,6 @@
 # Souls of Terra — Implementation Status
 
-> This document describes the current prototype, not every intended feature. Last reviewed: 2026-08-23.
+> This document describes the current prototype, not every intended feature. Last reviewed: 2026-08-25.
 
 ## Current playable loop
 
@@ -13,6 +13,9 @@
 7. Craft the prototype Slimebound Blade at a normal anvil.
 8. Defeat the Eye of Cthulhu, strengthen the shrine to tier 1, then spend 5,000 souls to create Eye Essence.
 9. Craft Servant's Gaze at a normal anvil and release delayed homing servant volleys.
+10. In a newly generated world, discover the Buried Court beneath spawn after Skeletron.
+11. Purchase a reusable Warden's Fragment for 10,000 souls and use it on the court altar.
+12. Break all four seals, defeat The Sealed Congregation, and condense Congregation Essence at shrine tier 3.
 
 ## Implemented
 
@@ -76,6 +79,20 @@
 - Servant's Gaze magic staff recipe with Eye Essence, Lenses, and either Demonite or Crimtane Bars.
 - Servant's Gaze releases three custom-art harmless eye servants that awaken after one second, independently home through terrain, and rupture into small damaging gore bursts.
 
+### Buried Court and Sealed Congregation
+
+- New-world generation of a 168-by-84 ruined castle beneath spawn with a 144-by-60 combat interior and collapsed physical passage.
+- Saved and multiplayer-synchronized arena bounds, dais coordinates, and boss-defeat state.
+- Protected temporary Demon Altar dais with server-validated interaction range, progression, held key, and duplicate-boss checks.
+- Unlimited reusable Warden's Fragment purchases from Soulless for 10,000 souls after Skeletron.
+- Procedurally rendered transparent core, internal wisps/faces, chains, glow, pulses, and phase-two afterimages.
+- Four simultaneously vulnerable orbiting seal NPCs with independent health, clean/broken textures, synchronized formations, and chain-breaking deaths.
+- Coordinated phase-one attacks: Crossed Sentence, Processional Arc, and Hollow Benediction.
+- Released phase-two attacks: Choir of Judgment, Final Confession, and Collapse of the Many. Choir of Judgment replaces the contact-charge sequence with a warned, movement-biased slow beam sweep that can hit each player once; its custom shader renders separate animated spectral-body and bloom ribbons with shaped endpoints.
+- One aggregate boss bar representing the core plus every surviving seal.
+- Arena retreat behavior with a three-second grace period and encounter-projectile cleanup.
+- Congregation Essence unlock at Terra Shrine tier 3 for 20,000 souls.
+
 ## Current shrine upgrade table
 
 | Tier unlocked | Milestone | Prototype cost |
@@ -100,6 +117,8 @@ These values have not been reconciled with measured boss rewards and are deliber
 - Slime Essence has its first original 24-by-24 sprite with a royal crown core.
 - Slimebound Blade has its first original 40-by-40 sprite and retains prototype combat values.
 - Menu text is functional but not yet visually themed.
+- The Buried Court uses vanilla masonry and a protected Demon Altar until original castle and dais tiles are authored.
+- Warden's Fragment and Congregation Essence temporarily reuse existing placeholder essence art.
 
 ## Known limitations and risks
 
@@ -111,6 +130,9 @@ These values have not been reconciled with measured boss rewards and are deliber
 - Free-for-all bloodstains and orbs permit another player to take them by design.
 - Modded NPCs with unusual or misleading `value` data may need fallback logic or exceptions.
 - The complete `.tmod` package cannot be replaced externally while tModLoader has it loaded; compile-only validation still succeeds.
+- Existing worlds do not receive a Buried Court; the first implementation requires a newly generated world.
+- The arena layout, multi-tile altar framing, seal hitboxes, attack timings, and procedural collision visuals require in-game validation.
+- The Sealed Congregation currently has no unique equipment pool, treasure bag, trophy, relic, or dedicated music.
 
 ## Verification status
 
@@ -129,6 +151,13 @@ These values have not been reconciled with measured boss rewards and are deliber
 7. Confirm the Slimebound Blade appears and crafts in both vanilla recipe search and Magic Storage.
 8. Repeat purchase, transformation, condensation, and recovery with a multiplayer client.
 9. Save and reload; verify shrine tier, Soulless state, player balance, and bloodstains.
+10. Generate a new world and verify the Buried Court is centered beneath spawn in the Underground layer without damaging the surface spawn.
+11. Confirm the collapsed passage, castle framing, floor, and temporary altar render and collide correctly.
+12. Defeat Skeletron, buy multiple Warden's Fragments, and confirm none are consumed by summoning.
+13. Test all phase-one formations, damage every seal into its broken state, and confirm the combined boss bar falls correctly.
+14. Verify Choir of Judgment's warning, 24-degree sweep, single-hit rule, camera feedback, and terrain piercing at several resolutions.
+15. Complete phase two, verify Congregation Essence unlocks at shrine tier 3, then save and reload the defeat flag.
+16. Repeat summoning, seal synchronization, retreat, projectile cleanup, and victory with a multiplayer client.
 
 ## Near-term implementation backlog
 

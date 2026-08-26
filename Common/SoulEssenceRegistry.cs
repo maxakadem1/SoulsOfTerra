@@ -24,6 +24,8 @@ public static class SoulEssenceRegistry
 			() => NPC.downedQueenBee, "Queen Bee", 2),
 		Create<SkeletronEssence>("skeletron", "Skeletron Essence", 15_000, "A dungeon curse condensed into matter.",
 			() => NPC.downedBoss3, "Skeletron", 3),
+		Create<CongregationEssence>("congregation", "Congregation Essence", 20_000, "A chorus of imprisoned souls condensed into one echo.",
+			() => BuriedCourtSystem.DownedSealedCongregation, "The Sealed Congregation", 3),
 		Create<WallOfFleshEssence>("wall", "Wall of Flesh Essence", 25_000, "An infernal prison's ravenous echo condensed into matter.",
 			() => Main.hardMode, "Wall of Flesh", 4),
 		Create<QueenSlimeEssence>("queenSlime", "Queen Slime Essence", 25_000, "A crystalline royal echo bound into matter.",

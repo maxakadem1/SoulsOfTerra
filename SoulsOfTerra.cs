@@ -19,7 +19,9 @@ public enum SoulMessageType : byte
 	RequestEssenceCondensation,
 	RequestEssenceImbuement,
 	RequestSoulCrystalConversion,
-	RequestAnvilTransformation
+	RequestAnvilTransformation,
+	RequestWardenFragmentPurchase,
+	RequestCongregationSummon
 }
 
 public class SoulsOfTerra : Mod
@@ -53,6 +55,12 @@ public class SoulsOfTerra : Mod
 				break;
 			case SoulMessageType.RequestAnvilTransformation:
 				HandleAnvilTransformation(reader, whoAmI);
+				break;
+			case SoulMessageType.RequestWardenFragmentPurchase:
+				HandleWardenFragmentPurchase(reader, whoAmI);
+				break;
+			case SoulMessageType.RequestCongregationSummon:
+				HandleCongregationSummon(reader, whoAmI);
 				break;
 		}
 	}
@@ -179,6 +187,26 @@ public class SoulsOfTerra : Mod
 		if (player is not null)
 		{
 			SoulTransactions.TryTransformAnvil(player, anvilPosition);
+		}
+	}
+
+	private static void HandleWardenFragmentPurchase(BinaryReader reader, int whoAmI)
+	{
+		int npcIndex = reader.ReadInt16();
+		Player player = GetRequestingPlayer(whoAmI);
+		if (player is not null)
+		{
+			SoulTransactions.TryPurchaseWardensFragment(player, npcIndex);
+		}
+	}
+
+	private static void HandleCongregationSummon(BinaryReader reader, int whoAmI)
+	{
+		Point16 clickedTile = new(reader.ReadInt16(), reader.ReadInt16());
+		Player player = GetRequestingPlayer(whoAmI);
+		if (player is not null)
+		{
+			Systems.BuriedCourtSystem.TrySummonBoss(player, clickedTile);
 		}
 	}
 }

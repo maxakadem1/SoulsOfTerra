@@ -71,6 +71,22 @@
 | Initial prototype | King Slime → Slime Essence → Slimebound Blade. | Exercises the entire architecture with an early, easy-to-test boss. |
 | Initial essence cost | 2,500 souls. | Starting balance point; explicitly subject to playtesting. |
 
+## Buried Court and Sealed Congregation
+
+| Topic | Decision | Reason |
+|---|---|---|
+| Progression position | After Skeletron and before Wall of Flesh. | Establishes an original late-pre-Hardmode encounter. |
+| Arena | A 168-by-84 ruined underground castle centered beneath spawn, with a 144-by-60 combat chamber. | Creates a permanent narrative location reusable for Soulless. |
+| Discovery | Physical collapsed passage; arena accessible before its altar activates. | Builds anticipation without an artificial entrance lock. |
+| Existing worlds | Initial arena generation requires a new world. | Silent retroactive generation could destroy player or mod structures. |
+| Summoning key | Unlimited non-consumable Warden's Fragment sold by Soulless for 10,000 souls after Skeletron. | Makes access permanent while retaining a soul-economy purchase. |
+| Summon cost | No cost beyond holding the key at the dais. | Repeat attempts and farming remain frictionless after access is purchased. |
+| Phase one | Four simultaneously vulnerable, independently destructible seals protect an invulnerable core. | Makes the seal art mechanically meaningful and supports player target choice. |
+| Phase-two identity | A released, highly mobile procedural congregation. | Contrasts ritual order with unstable freedom without requiring more sprite animation. |
+| Phase-two beam | Choir of Judgment uses a 1.5-second charge, a locked warning direction, and a 2.5-second 24-degree sweep that can hit each player once. | Replaces overwhelming contact charges with a readable signature attack that still controls arena space. |
+| Health bar | One combined core-and-seal bar. | Accurately reports progress while the core is invulnerable. |
+| Essence reward | Congregation Essence, tier 3, 20,000 souls. | Integrates the original boss with established shrine progression. |
+
 ## Decisions intentionally deferred
 
 - Exact final reward formula and exception policy for unusual modded NPCs.

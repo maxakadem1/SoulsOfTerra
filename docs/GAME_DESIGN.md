@@ -130,6 +130,21 @@ Final equipment is crafted at a normal station appropriate to its tier. This del
 
 Current costs and equipment statistics are prototypes, not final balance.
 
+## The Buried Court and The Sealed Congregation
+
+The Buried Court is a ruined underground castle arena generated beneath world spawn in new worlds. Players can discover it immediately through a collapsed physical passage, but its central altar remains dormant until Skeletron is defeated. The arena is a permanent narrative location intended for The Sealed Congregation, repeat encounters, and Soulless's eventual confrontation.
+
+After Skeletron, Soulless sells unlimited Warden's Fragments for 10,000 souls. The fragment is a non-consumable key: holding it and right-clicking the court's altar summons The Sealed Congregation without an additional soul cost.
+
+The encounter has two stages:
+
+- Four simultaneously vulnerable seals orbit an invulnerable procedural soul core. The seals coordinate geometric lance, curved-bolt, and chain-sweep formations. Each uses a broken visual below 35% health and snaps its chain when destroyed.
+- Once every seal breaks, the released congregation becomes vulnerable and highly mobile. It charges Choir of Judgment above the player, commits to a warned direction, and slowly sweeps the spectral beam toward the player's prior movement. Delayed confessions and a major implosion-to-radial-eruption complete the phase.
+
+The core, chains, internal faces, glow, telegraphs, and trails are code-driven. One clean seal sprite and one broken variant provide the authored boss art. The combined boss bar includes core and seal health so phase-one damage is always represented accurately.
+
+Defeating the boss sets a world-wide progression flag and unlocks Congregation Essence at Terra Shrine tier 3 for a prototype cost of 20,000 souls.
+
 ## Multiplayer model
 
 - Enemy orbs and bloodstains are free-for-all.

@@ -17,6 +17,7 @@ namespace SoulsOfTerra.Common;
 public static class SoulTransactions
 {
 	public const long CoreCost = 100;
+	public const long WardensFragmentCost = 10_000;
 	private static readonly long[] SoulCrystalCosts = { 1_250, 6_250, 31_250 };
 	private static readonly long[] SoulCrystalValues = { 1_000, 5_000, 25_000 };
 	private const float InteractionRange = 12f * 16f;
@@ -35,6 +36,19 @@ public static class SoulTransactions
 	public static bool TryUpgradeShrine(Player player, int npcIndex)
 	{
 		return IsValidSoullessInteraction(player, npcIndex) && SoulWorldSystem.TryUpgradeShrine(player);
+	}
+
+	public static bool TryPurchaseWardensFragment(Player player, int npcIndex)
+	{
+		if (!NPC.downedBoss3 || !IsValidSoullessInteraction(player, npcIndex)
+			|| !player.GetModPlayer<SoulPlayer>().TrySpendSouls(WardensFragmentCost))
+		{
+			return false;
+		}
+
+		// The fragment is a permanent reusable key, but spare copies remain purchasable.
+		player.QuickSpawnItem(new EntitySource_Misc("SoulsOfTerra:WardensFragmentPurchase"), ModContent.ItemType<WardensFragment>());
+		return true;
 	}
 
 	public static bool TryConvertSoulCrystal(Player player, int npcIndex, int crystalIndex)
