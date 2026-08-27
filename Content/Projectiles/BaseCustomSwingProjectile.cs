@@ -8,8 +8,8 @@ using Terraria.ModLoader;
 namespace SoulsOfTerra.Content.Projectiles;
 
 /// <summary>
-/// Reusable custom melee swing base with rising diagonal arc.
-/// Swords derive from this to avoid vanilla overhead chop feel.
+/// Reusable custom melee swing base. Sword snaps toward aim while slash hitbox
+/// travels forward through enemies, not rotating around player like vanilla chop.
 /// </summary>
 public abstract class BaseCustomSwingProjectile : ModProjectile
 {
@@ -23,8 +23,8 @@ public abstract class BaseCustomSwingProjectile : ModProjectile
 	protected abstract int WindupEnd { get; }
 	protected abstract int SnapStart { get; }
 	protected abstract int SnapEnd { get; }
-	protected abstract float SwingReach { get; }
-	protected abstract float CollisionWidth { get; }
+	protected abstract float SlashReach { get; }        // How far the slash travels forward
+	protected abstract float SlashWidth { get; }        // Width of the slash hitbox
 	protected virtual int HitstopFrames => 3;
 	protected virtual int TrailLength => 12;
 
@@ -38,12 +38,9 @@ public abstract class BaseCustomSwingProjectile : ModProjectile
 			: new Vector2(texture.Width * 0.15f, texture.Height * 0.15f);
 	}
 
-	// Arc definition - horizontal sword swing centered on aim direction
-	// Tight fan (~80-90°) that stays in front of player at chest height
-	// Offsets are relative to cursor/aim direction
-	protected virtual float GetWindupOffset() => -0.65f;     // Coil slightly above aim
-	protected virtual float GetSnapOffset() => 0.75f;        // Follow through slightly below aim
-	protected virtual float GetWindupSlowdown() => 0.75f;
+	// Sword rotation - small snap around aim, NOT a wide arc
+	protected virtual float GetWindupRotation() => -0.25f;   // Small pullback
+	protected virtual float GetSnapRotation() => 0.15f;      // Small snap through
 
 	public override void SetStaticDefaults()
 	{
@@ -94,7 +91,7 @@ public abstract class BaseCustomSwingProjectile : ModProjectile
 
 		int direction = Projectile.velocity.X >= 0f ? 1 : -1;
 		player.ChangeDir(direction);
-		float swordAngle = GetSwordAngle(Age, direction);
+		float swordAngle = GetSwordAngle(Age);
 		Projectile.Center = GetHandPosition(player, swordAngle);
 		player.heldProj = Projectile.whoAmI;
 		player.itemTime = 2;
@@ -103,12 +100,6 @@ public abstract class BaseCustomSwingProjectile : ModProjectile
 		player.itemRotation = MathHelper.WrapAngle(swordAngle - (direction < 0 ? MathHelper.Pi : 0f));
 		player.SetCompositeArmFront(true, Player.CompositeArmStretchAmount.Full, swordAngle - MathHelper.PiOver2);
 
-		// Windup slows player
-		if (Age < WindupEnd)
-		{
-			player.velocity.X *= GetWindupSlowdown();
-		}
-
 		OnSwingTick(player, Age, direction, swordAngle);
 	}
 
@@ -116,12 +107,19 @@ public abstract class BaseCustomSwingProjectile : ModProjectile
 
 	public override bool? Colliding(Rectangle projectileHitbox, Rectangle targetHitbox)
 	{
+		// Slash travels forward along aim direction, not rotating around player
+		if (Age < SnapStart || Age > SnapEnd) return false;
+
 		Player player = Main.player[Projectile.owner];
-		float angle = GetSwordAngle(Age, player.direction);
-		Vector2 start = GetHandPosition(player, angle);
-		Vector2 end = start + angle.ToRotationVector2() * SwingReach;
+		float slashProgress = (Age - SnapStart) / (float)(SnapEnd - SnapStart);
+		
+		// Slash starts near player and extends forward along aim
+		Vector2 slashStart = player.MountedCenter + AimAngle.ToRotationVector2() * 20f;
+		Vector2 slashEnd = slashStart + AimAngle.ToRotationVector2() * (SlashReach * slashProgress);
+		
 		float collisionPoint = 0f;
-		return Collision.CheckAABBvLineCollision(targetHitbox.TopLeft(), targetHitbox.Size(), start, end, CollisionWidth, ref collisionPoint);
+		return Collision.CheckAABBvLineCollision(targetHitbox.TopLeft(), targetHitbox.Size(), 
+			slashStart, slashEnd, SlashWidth, ref collisionPoint);
 	}
 
 	public sealed override void ModifyHitNPC(NPC target, ref NPC.HitModifiers modifiers)
@@ -144,27 +142,13 @@ public abstract class BaseCustomSwingProjectile : ModProjectile
 		Player player = Main.player[Projectile.owner];
 		Texture2D blade = Terraria.GameContent.TextureAssets.Item[SwordItemType].Value;
 		int direction = Projectile.velocity.X >= 0f ? 1 : -1;
-		float currentAngle = GetSwordAngle(Age, direction);
+		float currentAngle = GetSwordAngle(Age);
 		Vector2 handPosition = GetHandPosition(player, currentAngle);
 
-		// Trail during snap phase
-		if (Age >= SnapStart)
+		// Draw slash trail during snap phase
+		if (Age >= SnapStart && Age <= SnapEnd)
 		{
-			for (int ghost = Projectile.oldRot.Length - 1; ghost >= 1; ghost--)
-			{
-				if (ghost > Age - SnapStart + 1)
-				{
-					continue;
-				}
-
-				float ghostAngle = Projectile.oldRot[ghost];
-				float strength = 1f - ghost / (float)Projectile.oldRot.Length;
-				Color trailColor = GetTrailColor(strength);
-				if (trailColor.A > 0)
-				{
-					DrawBlade(Main.spriteBatch, blade, handPosition, ghostAngle, direction, trailColor);
-				}
-			}
+			DrawSlashTrail(player, Main.spriteBatch);
 		}
 
 		DrawBlade(Main.spriteBatch, blade, handPosition, currentAngle, direction, lightColor);
@@ -177,32 +161,27 @@ public abstract class BaseCustomSwingProjectile : ModProjectile
 	protected virtual void OnFirstHit(NPC target) { }
 	protected virtual void OnModifyHit(NPC target, ref NPC.HitModifiers modifiers) { }
 	protected abstract void OnImpact(NPC target, NPC.HitInfo hit, int damageDone, bool alreadyHit);
-	protected abstract Color GetTrailColor(float strength);
+	protected abstract void DrawSlashTrail(Player player, SpriteBatch spriteBatch);
 
-	// Horizontal sword swing centered on cursor/aim direction
-	// Tight fan that sweeps through the target, never overhead or underfoot
-	private float GetSwordAngle(int age, int direction)
+	// Sword snaps toward aim with small rotation, NOT wide arc
+	private float GetSwordAngle(int age)
 	{
-		// Windup coil
+		// Windup - small pullback
 		if (age < WindupEnd)
 		{
-			float windupProgress = age / (float)WindupEnd;
-			float wobble = GetWindupWobble(windupProgress, direction);
-			return AimAngle + GetWindupOffset() + wobble;
+			return AimAngle + GetWindupRotation();
 		}
 
-		// Fast snap through target
+		// Snap - small rotation through aim
 		if (age < SnapEnd)
 		{
 			float snapProgress = (age - WindupEnd) / (float)(SnapEnd - WindupEnd);
-			return MathHelper.Lerp(AimAngle + GetWindupOffset(), AimAngle + GetSnapOffset(), EaseOutCubic(snapProgress));
+			return MathHelper.Lerp(AimAngle + GetWindupRotation(), AimAngle + GetSnapRotation(), EaseOutCubic(snapProgress));
 		}
 
 		// Recovery hold
-		return AimAngle + GetSnapOffset();
+		return AimAngle + GetSnapRotation();
 	}
-
-	protected virtual float GetWindupWobble(float windupProgress, int direction) => 0f;
 
 	private void DrawBlade(SpriteBatch spriteBatch, Texture2D texture, Vector2 handPosition,
 		float bladeAngle, int direction, Color color)
@@ -222,6 +201,5 @@ public abstract class BaseCustomSwingProjectile : ModProjectile
 		return handPosition;
 	}
 
-	protected static float EaseInOut(float progress) => progress * progress * (3f - 2f * progress);
 	protected static float EaseOutCubic(float progress) => 1f - MathF.Pow(1f - progress, 3f);
 }
