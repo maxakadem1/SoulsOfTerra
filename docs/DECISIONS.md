@@ -67,7 +67,7 @@
 | Essence supply | Unlimited condensation after the boss is defeated. | Avoids requiring one boss kill for every individual equipment piece. |
 | Conversion direction | Souls condense irreversibly into physical essences. | Creates a meaningful spending commitment and tradable crafting material. |
 | Essence quantity | Roughly one expensive essence per weapon or armor piece. | Each piece has a meaningful soul cost without recipes demanding large essence stacks. |
-| Final crafting | Use normal stations appropriate to the equipment tier. | Preserves Terraria's crafting language and Magic Storage compatibility. |
+| Final equipment acquisition | All mod weapons are created exclusively through Terra Shrine imbuement; armor, accessories, and non-weapon equipment continue using normal tier-appropriate stations. | Gives weapons one distinctive acquisition language without duplicating essence crafting and imbuement. |
 | Initial prototype | King Slime → Slime Essence → Slimebound Blade. | Exercises the entire architecture with an early, easy-to-test boss. |
 | Initial essence cost | 2,500 souls. | Starting balance point; explicitly subject to playtesting. |
 
@@ -76,16 +76,36 @@
 | Topic | Decision | Reason |
 |---|---|---|
 | Progression position | After Skeletron and before Wall of Flesh. | Establishes an original late-pre-Hardmode encounter. |
-| Arena | A 168-by-84 ruined underground castle centered beneath spawn, with a 144-by-60 combat chamber. | Creates a permanent narrative location reusable for Soulless. |
-| Discovery | Physical collapsed passage; arena accessible before its altar activates. | Builds anticipation without an artificial entrance lock. |
+| Arena | A 168-by-84 grand vaulted castle hall centered beneath spawn, with a flat 144-by-60 combat chamber. | Creates a readable boss arena and a permanent narrative location reusable for Soulless. |
+| Architecture | Vanilla masonry arranged as pointed vaults, recessed wall bays, ruined side galleries, controlled edge collapse, and a throne-like central dais. | Establishes the authored silhouette before committing to a custom court tileset. |
+| Discovery | A collapsed physical passage descends through a ruined side staircase; the arena remains accessible before its altar activates. | Gives the hall a staged reveal without an artificial entrance lock. |
+| Location reveal | Entering the hall displays a six-second top-center title with restrained teal bloom; it can retrigger only after ten minutes. | Establishes the Court without obscuring combat or becoming noisy near its boundary. |
+| Court music | Vanilla Dungeon music plays throughout the hall and yields to boss-priority music. | Gives the location an immediate atmosphere while dedicated original music remains deferred. |
 | Existing worlds | Initial arena generation requires a new world. | Silent retroactive generation could destroy player or mod structures. |
 | Summoning key | Unlimited non-consumable Warden's Fragment sold by Soulless for 10,000 souls after Skeletron. | Makes access permanent while retaining a soul-economy purchase. |
+| Fragment identity | A broken ward-sigil with forged authority, an incomplete ring, teal fracture, and severed chain links. | Connects Soulless, the reliquary, and the Congregation while hiding the full betrayal behind ambiguous clues. |
 | Summon cost | No cost beyond holding the key at the dais. | Repeat attempts and farming remain frictionless after access is purchased. |
+| Summon presentation | The reliquary gathers rising souls, manifests four spectral seals, implodes, and releases a refractive shockwave before the boss appears. | Gives the permanent monument and first boss reveal a distinct ritual identity instead of spawning the NPC instantly. |
 | Phase one | Four simultaneously vulnerable, independently destructible seals protect an invulnerable core. | Makes the seal art mechanically meaningful and supports player target choice. |
 | Phase-two identity | A released, highly mobile procedural congregation. | Contrasts ritual order with unstable freedom without requiring more sprite animation. |
 | Phase-two beam | Choir of Judgment uses a 1.5-second charge, a locked warning direction, and a 2.5-second 24-degree sweep that can hit each player once. | Replaces overwhelming contact charges with a readable signature attack that still controls arena space. |
 | Health bar | One combined core-and-seal bar. | Accurately reports progress while the core is invulnerable. |
 | Essence reward | Congregation Essence, tier 3, 20,000 souls. | Integrates the original boss with established shrine progression. |
+| Summon reward | Imp Staff + Congregation Essence produces Compeditus, a shared core with up to four one-slot seals. | Converts the boss's defining formation into a distinctive summon while respecting imbuement-only weapon acquisition. |
+| Compeditus combat | Non-contact seals perform a staggered lance verse followed by a localized implosion judgment; the formation crosses terrain but attacks require line of sight. | Provides reliable summon damage and a coordinated payoff without enabling passive through-wall farming. |
+
+## Essence imbuement discovery
+
+| Topic | Decision | Reason |
+|---|---|---|
+| Recipe discovery | An imbuement becomes visible when the boss associated with its essence is defeated. | Makes discoveries world-progression rewards rather than inventory accidents. |
+| Tier gating | Discovered recipes remain visible before their required shrine tier, with the missing tier stated. | Teases future options without bypassing essence progression. |
+| Recipe-first flow | Opening Imbuement shows the recipe catalogue; only a recipe with both ingredients present can open the focused ritual screen. | Makes the available binding the player's first decision and removes the redundant inventory picker grid. |
+| Ingredient linking | Selecting a ready recipe links the first matching weapon and essence from the player's inventory without consuming them. | Removes inventory-search friction while preserving the ritual as the deliberate confirmation step. |
+| Ritual completion | Successful binding returns to the recipe catalogue; the focused screen also provides Back to Recipes. | Keeps repeated bindings and cancellation predictable without exposing an empty ritual screen. |
+| Imbuement cost | One valid base weapon and one matching essence, with no additional materials. | The expensive essence already carries the soul and progression cost. |
+| Current bindings | Any Copper-through-Platinum broadsword + Slime Essence; Ruby Staff + Eye Essence; Breaker Blade + Wall of Flesh Essence; Imp Staff + Congregation Essence; Diamond Staff + Moon Lord Essence. | Establishes flexible early bases and precise thematic bases where desired. |
+| Future enforcement | Every mod weapon inherits `ImbuementWeaponItem`, must be a registry output, and may not have a conventional recipe. | Turns the design rule into a load-time invariant instead of documentation alone. |
 
 ## Decisions intentionally deferred
 

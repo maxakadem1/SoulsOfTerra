@@ -26,6 +26,28 @@ public enum SoulMessageType : byte
 
 public class SoulsOfTerra : Mod
 {
+	private static readonly (string Key, string DefaultValue)[] CustomLocalizations =
+	{
+		("UI.RecoverBloodstain", "Right-click to recover {0} souls"),
+		("UI.Commune", "Commune"),
+		("Dialogue.Soulless.Introduction", "So another bearer wakes. Keep close the souls you gather; death is eager to loosen your grasp."),
+		("Dialogue.Soulless.BloodstainHint", "What spills from you does not vanish. Return to the stain, reach into it, and take back what remains."),
+		("Dialogue.Soulless.AfterKingSlime", "Even a crown of gel leaves an echo. A Terra Shrine can press that echo into useful form."),
+		("Dialogue.Soulless.BuriedCourtHint", "Take this fragment. The reliquary remembers the office, not the hand. Let the prisoners mistake you for their keeper."),
+		("Dialogue.Soulless.AfterCongregation", "So the court is silent. Strange... I remember every voice you freed, though none of them were mine."),
+		("Dialogue.Court.ReliquaryAccepts", "The reliquary accepts an authority it should not remember."),
+		("Dialogue.Court.CongregationDeath", "The final voices fade: The hand behind the mark... is hollow.")
+	};
+
+	public override void Load()
+	{
+		// Custom keys must be registered while the mod loads for HJSON values to bind to them.
+		foreach ((string key, string defaultValue) in CustomLocalizations)
+		{
+			GetLocalization(key, () => defaultValue);
+		}
+	}
+
 	public override void HandlePacket(BinaryReader reader, int whoAmI)
 	{
 		SoulMessageType messageType = (SoulMessageType)reader.ReadByte();

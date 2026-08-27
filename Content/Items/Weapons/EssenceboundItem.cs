@@ -3,7 +3,7 @@ using Terraria.ModLoader;
 
 namespace SoulsOfTerra.Content.Items.Weapons;
 
-public abstract class EssenceboundItem : ModItem
+public abstract class EssenceboundItem : ImbuementWeaponItem
 {
 	public sealed override void SetDefaults()
 	{

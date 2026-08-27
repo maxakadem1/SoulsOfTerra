@@ -186,13 +186,6 @@ internal sealed class SoulMenuState : UIState
 		Imbuement
 	}
 
-	private enum ImbuementPicker
-	{
-		None,
-		Weapon,
-		Essence
-	}
-
 	private const int FeedbackDuration = 180;
 	private SoulMenuFramePanel panel;
 	private UIText title;
@@ -223,17 +216,19 @@ internal sealed class SoulMenuState : UIState
 	private ImbuementEssenceSocket imbuementEssenceSocket;
 	private UIText imbuementWeaponName;
 	private UIText imbuementEssenceName;
-	private UIElement imbuementPickerGrid;
-	private UIList imbuementPickerList;
-	private UIScrollbar imbuementPickerScrollBar;
-	private UIText imbuementPickerHint;
 	private UITextPanel<string> bindEssenceButton;
+	private UITextPanel<string> imbuementRecipesButton;
+	private UIElement imbuementRecipeContent;
+	private UIList imbuementRecipeList;
+	private UIScrollbar imbuementRecipeScrollBar;
+	private UIText imbuementRecipeHint;
+	private readonly List<ImbuementRecipeRow> imbuementRecipeRows = new();
+	private readonly List<int> visibleImbuementRecipeIndices = new();
 	private UIText feedback;
 	private UITextPanel<string> closeButton;
 	private MenuKind kind;
 	private SoullessTab soullessTab;
 	private ShrineTab shrineTab;
-	private ImbuementPicker imbuementPicker;
 	private int npcIndex;
 	private Point16 shrinePosition;
 	private int feedbackTime;
@@ -242,6 +237,7 @@ internal sealed class SoulMenuState : UIState
 	private int selectedImbuementIndex;
 	private int linkedWeaponSlot;
 	private int linkedEssenceSlot;
+	private bool showingImbuementRecipes;
 
 	public override void OnInitialize()
 	{
@@ -283,6 +279,7 @@ internal sealed class SoulMenuState : UIState
 		CreateShrineTabs();
 		CreateEssenceCatalogue();
 		CreateImbuementPage();
+		CreateImbuementRecipePage();
 		CreateCrystalCatalogue();
 
 		feedback = new UIText(string.Empty, 0.72f);
@@ -320,9 +317,9 @@ internal sealed class SoulMenuState : UIState
 		kind = MenuKind.Shrine;
 		shrinePosition = requestedShrinePosition;
 		shrineTab = ShrineTab.Condensation;
-		imbuementPicker = ImbuementPicker.None;
 		linkedWeaponSlot = -1;
 		linkedEssenceSlot = -1;
+		showingImbuementRecipes = false;
 		selectedImbuementIndex = -1;
 		selectedEssenceIndex = 0;
 		essenceScrollBar.ViewPosition = 0f;
@@ -416,9 +413,17 @@ internal sealed class SoulMenuState : UIState
 		}
 		else
 		{
-			panel.Append(imbuementContent);
-			bindEssenceButton.Top.Set(306f, 0f);
-			panel.Append(bindEssenceButton);
+			if (showingImbuementRecipes)
+			{
+				panel.Append(imbuementRecipeContent);
+			}
+			else
+			{
+				panel.Append(imbuementContent);
+				panel.Append(imbuementRecipesButton);
+				bindEssenceButton.Top.Set(306f, 0f);
+				panel.Append(bindEssenceButton);
+			}
 		}
 		feedback.Top.Set(348f, 0f);
 		panel.Append(feedback);
@@ -680,6 +685,13 @@ internal sealed class SoulMenuState : UIState
 	private void RefreshImbuementContent()
 	{
 		title.SetText("Terra Shrine");
+		if (showingImbuementRecipes)
+		{
+			subtitle.SetText("Known bindings revealed by defeated foes.");
+			RefreshImbuementRecipeRows();
+			return;
+		}
+
 		subtitle.SetText("Bind a defeated foe's echo into its weapon.");
 		if (!InventorySlotAvailable(linkedWeaponSlot))
 		{
@@ -723,9 +735,18 @@ internal sealed class SoulMenuState : UIState
 	private bool CanBindSelectedImbuement()
 	{
 		return EssenceImbuementRegistry.TryGet(selectedImbuementIndex, out EssenceImbuementDefinition imbuement)
+			&& SoulEssenceRegistry.TryFindByItemType(imbuement.EssenceItemType, out SoulEssenceDefinition essence)
+			&& essence.IsUnlocked()
 			&& linkedWeaponSlot != linkedEssenceSlot
-			&& InventorySlotMatches(linkedWeaponSlot, imbuement.InputItemType)
+			&& InventorySlotMatchesImbuement(linkedWeaponSlot, imbuement)
 			&& InventorySlotMatches(linkedEssenceSlot, imbuement.EssenceItemType);
+	}
+
+	private static bool InventorySlotMatchesImbuement(int slot, EssenceImbuementDefinition imbuement)
+	{
+		return slot >= 0 && slot < Main.LocalPlayer.inventory.Length
+			&& Main.LocalPlayer.inventory[slot].stack > 0
+			&& imbuement.AcceptsInput(Main.LocalPlayer.inventory[slot].type);
 	}
 
 	private void ApplyBindButtonStyle()
@@ -810,9 +831,12 @@ internal sealed class SoulMenuState : UIState
 		bool completed = SendImbuementTransaction();
 		linkedWeaponSlot = -1;
 		linkedEssenceSlot = -1;
-		imbuementPicker = ImbuementPicker.None;
-		RebuildImbuementPicker();
+		selectedImbuementIndex = -1;
+		showingImbuementRecipes = true;
+		RebuildImbuementRecipes();
+		BuildShrineLayout();
 		ShowFeedback(completed ? "The binding ritual has begun." : "Binding request sent.", true);
+		RefreshContent();
 	}
 
 	private bool HasEnoughForSelectedEssence()
@@ -866,54 +890,27 @@ internal sealed class SoulMenuState : UIState
 
 		// The authored frame is the ritual focus; only a valid pair awakens its glow.
 		imbuementWeaponSocket = new ImbuementWeaponSocket();
-		imbuementWeaponSocket.Left.Set(50f, 0f);
-		imbuementWeaponSocket.OnLeftClick += (_, _) => OpenImbuementPicker(ImbuementPicker.Weapon);
+		imbuementWeaponSocket.HAlign = 0.5f;
 		imbuementContent.Append(imbuementWeaponSocket);
 
 		imbuementWeaponName = new UIText("Select Weapon", 0.57f);
 		imbuementWeaponName.Width.Set(180f, 0f);
-		imbuementWeaponName.Left.Set(0f, 0f);
 		imbuementWeaponName.Top.Set(80f, 0f);
-		imbuementWeaponName.HAlign = 0.18f;
+		imbuementWeaponName.HAlign = 0.5f;
 		imbuementWeaponName.TextColor = new Color(205, 220, 212);
 		imbuementContent.Append(imbuementWeaponName);
 
 		imbuementEssenceSocket = new ImbuementEssenceSocket();
-		imbuementEssenceSocket.Left.Set(64f, 0f);
+		imbuementEssenceSocket.HAlign = 0.5f;
 		imbuementEssenceSocket.Top.Set(108f, 0f);
-		imbuementEssenceSocket.OnLeftClick += (_, _) => OpenImbuementPicker(ImbuementPicker.Essence);
 		imbuementContent.Append(imbuementEssenceSocket);
 
 		imbuementEssenceName = new UIText("Select Essence", 0.54f);
 		imbuementEssenceName.Width.Set(180f, 0f);
-		imbuementEssenceName.Left.Set(0f, 0f);
 		imbuementEssenceName.Top.Set(162f, 0f);
-		imbuementEssenceName.HAlign = 0.18f;
+		imbuementEssenceName.HAlign = 0.5f;
 		imbuementEssenceName.TextColor = new Color(166, 190, 181);
 		imbuementContent.Append(imbuementEssenceName);
-
-		imbuementPickerHint = new UIText("Select a slot to choose from your inventory.", 0.64f);
-		imbuementPickerHint.Left.Set(190f, 0f);
-		imbuementPickerHint.TextColor = new Color(154, 177, 169);
-		imbuementContent.Append(imbuementPickerHint);
-
-		imbuementPickerGrid = new UIElement();
-		imbuementPickerGrid.Width.Set(198f, 0f);
-		imbuementPickerGrid.Height.Set(158f, 0f);
-		imbuementPickerGrid.Left.Set(190f, 0f);
-		imbuementPickerGrid.Top.Set(25f, 0f);
-
-		imbuementPickerList = new UIList();
-		imbuementPickerList.Width.Set(-18f, 1f);
-		imbuementPickerList.Height.Set(0f, 1f);
-		imbuementPickerList.ListPadding = 4f;
-		imbuementPickerGrid.Append(imbuementPickerList);
-
-		imbuementPickerScrollBar = new UIScrollbar();
-		imbuementPickerScrollBar.Width.Set(14f, 0f);
-		imbuementPickerScrollBar.Height.Set(0f, 1f);
-		imbuementPickerScrollBar.HAlign = 1f;
-		imbuementPickerList.SetScrollbar(imbuementPickerScrollBar);
 
 		bindEssenceButton = new UITextPanel<string>("Bind Essence", 0.76f, false);
 		bindEssenceButton.Width.Set(220f, 0f);
@@ -921,6 +918,49 @@ internal sealed class SoulMenuState : UIState
 		bindEssenceButton.HAlign = 0.5f;
 		bindEssenceButton.OnLeftClick += (_, _) => UseEssenceImbuement();
 		bindEssenceButton.OnMouseOut += (_, _) => ApplyBindButtonStyle();
+	}
+
+	private void CreateImbuementRecipePage()
+	{
+		imbuementRecipesButton = new UITextPanel<string>("Back to Recipes", 0.64f, false);
+		imbuementRecipesButton.Width.Set(140f, 0f);
+		imbuementRecipesButton.Height.Set(30f, 0f);
+		imbuementRecipesButton.Left.Set(292f, 0f);
+		imbuementRecipesButton.Top.Set(68f, 0f);
+		imbuementRecipesButton.BackgroundColor = new Color(40, 54, 58);
+		imbuementRecipesButton.BorderColor = new Color(78, 105, 100);
+		imbuementRecipesButton.OnMouseOver += (_, _) => imbuementRecipesButton.BackgroundColor = new Color(54, 75, 74);
+		imbuementRecipesButton.OnMouseOut += (_, _) => imbuementRecipesButton.BackgroundColor = new Color(40, 54, 58);
+		imbuementRecipesButton.OnLeftClick += (_, _) => OpenImbuementRecipes();
+
+		imbuementRecipeContent = new UIElement();
+		imbuementRecipeContent.Width.Set(-32f, 1f);
+		imbuementRecipeContent.Height.Set(190f, 0f);
+		imbuementRecipeContent.Left.Set(16f, 0f);
+		imbuementRecipeContent.Top.Set(108f, 0f);
+
+		imbuementRecipeHint = new UIText("Defeat bosses to reveal their bindings.", 0.62f);
+		imbuementRecipeHint.TextColor = new Color(154, 177, 169);
+		imbuementRecipeContent.Append(imbuementRecipeHint);
+
+		UIElement listContainer = new();
+		listContainer.Width.Set(0f, 1f);
+		listContainer.Height.Set(158f, 0f);
+		listContainer.Top.Set(25f, 0f);
+		imbuementRecipeContent.Append(listContainer);
+
+		imbuementRecipeList = new UIList();
+		imbuementRecipeList.Width.Set(0f, 1f);
+		imbuementRecipeList.Height.Set(0f, 1f);
+		imbuementRecipeList.ListPadding = 5f;
+		listContainer.Append(imbuementRecipeList);
+
+		imbuementRecipeScrollBar = new UIScrollbar();
+		imbuementRecipeScrollBar.Width.Set(14f, 0f);
+		imbuementRecipeScrollBar.Height.Set(0f, 1f);
+		imbuementRecipeScrollBar.HAlign = 1f;
+		imbuementRecipeList.SetScrollbar(imbuementRecipeScrollBar);
+
 	}
 
 	private UITextPanel<string> CreateTabButton(string text, float left, SoullessTab tab)
@@ -956,8 +996,11 @@ internal sealed class SoulMenuState : UIState
 		}
 
 		shrineTab = tab;
-		imbuementPicker = ImbuementPicker.None;
-		RebuildImbuementPicker();
+		showingImbuementRecipes = tab == ShrineTab.Imbuement;
+		if (showingImbuementRecipes)
+		{
+			RebuildImbuementRecipes();
+		}
 		ClearFeedback();
 		BuildShrineLayout();
 		RefreshContent();
@@ -969,118 +1012,152 @@ internal sealed class SoulMenuState : UIState
 		ApplyTabStyle(imbuementTabButton, shrineTab == ShrineTab.Imbuement);
 	}
 
-	private void OpenImbuementPicker(ImbuementPicker picker)
+	private void OpenImbuementRecipes()
 	{
-		imbuementPicker = picker;
-		RebuildImbuementPicker();
+		showingImbuementRecipes = true;
+		linkedWeaponSlot = -1;
+		linkedEssenceSlot = -1;
+		selectedImbuementIndex = -1;
+		RebuildImbuementRecipes();
+		ClearFeedback();
+		BuildShrineLayout();
+		RefreshContent();
 	}
 
-	private void RebuildImbuementPicker()
+	private void RebuildImbuementRecipes()
 	{
-		imbuementPickerList?.Clear();
-		if (imbuementPicker == ImbuementPicker.None)
-		{
-			// Removing the container also hides its scrollbar while the picker is collapsed.
-			imbuementPickerGrid?.Remove();
-			imbuementPickerHint?.SetText("Select a slot to choose from your inventory.");
-			return;
-		}
+		imbuementRecipeList.Clear();
+		imbuementRecipeRows.Clear();
+		visibleImbuementRecipeIndices.Clear();
 
-		if (imbuementPickerGrid.Parent is null)
+		for (int index = 0; index < EssenceImbuementRegistry.Definitions.Length; index++)
 		{
-			imbuementContent.Append(imbuementPickerGrid);
-		}
-
-		bool choosingWeapon = imbuementPicker == ImbuementPicker.Weapon;
-		imbuementPickerHint.SetText(choosingWeapon ? "Choose an imbuable weapon:" : "Choose a compatible essence:");
-		List<int> candidates = new();
-		for (int slot = 0; slot < Main.LocalPlayer.inventory.Length; slot++)
-		{
-			Item item = Main.LocalPlayer.inventory[slot];
-			int otherSlot = choosingWeapon ? linkedEssenceSlot : linkedWeaponSlot;
-			if (item.IsAir || item.stack <= 0 || slot == otherSlot || !ItemFitsImbuementPicker(item.type, choosingWeapon, otherSlot))
+			EssenceImbuementDefinition definition = EssenceImbuementRegistry.Definitions[index];
+			if (!SoulEssenceRegistry.TryFindByItemType(definition.EssenceItemType, out SoulEssenceDefinition essence)
+				|| !essence.IsDiscovered())
 			{
 				continue;
 			}
-			candidates.Add(slot);
-		}
 
-		const int columns = 4;
-		const int visibleRows = 3;
-		for (int rowStart = 0; rowStart < candidates.Count; rowStart += columns)
-		{
-			UIElement row = new();
+			int recipeIndex = index;
+			ImbuementRecipeRow row = new();
 			row.Width.Set(0f, 1f);
-			row.Height.Set(42f, 0f);
-			imbuementPickerList.Add(row);
-			for (int column = 0; column < columns && rowStart + column < candidates.Count; column++)
-			{
-				int selectedSlot = candidates[rowStart + column];
-				Item item = Main.LocalPlayer.inventory[selectedSlot];
-				ImbuementInventorySlot slot = new();
-				slot.Left.Set(column * 44f, 0f);
-				slot.SetItem(item.type, item.Name, choosingWeapon ? linkedWeaponSlot == selectedSlot : linkedEssenceSlot == selectedSlot);
-				slot.OnLeftClick += (_, _) => LinkInventorySlot(selectedSlot, choosingWeapon);
-				row.Append(slot);
-			}
+			row.Height.Set(72f, 0f);
+			row.SetAction(() => SelectImbuementRecipe(recipeIndex));
+			imbuementRecipeList.Add(row);
+			imbuementRecipeRows.Add(row);
+			visibleImbuementRecipeIndices.Add(index);
 		}
 
-		if (candidates.Count == 0)
-		{
-			imbuementPickerHint.SetText(choosingWeapon
-				? "No imbuable weapons in your inventory."
-				: "No compatible essences in your inventory.");
-		}
+		bool hasRecipes = imbuementRecipeRows.Count > 0;
+		imbuementRecipeHint.SetText(hasRecipes
+			? "Select a complete recipe to begin its binding ritual."
+			: "No imbuements have been revealed yet.");
 
-		// Keep the compact picker clean until its contents actually exceed the viewport.
-		bool needsScrollBar = candidates.Count > columns * visibleRows;
-		imbuementPickerList.Width.Set(needsScrollBar ? -18f : 0f, 1f);
-		if (needsScrollBar && imbuementPickerScrollBar.Parent is null)
+		// Two complete rows fit without scrolling in the compact shrine frame.
+		bool needsScrollBar = imbuementRecipeRows.Count > 2;
+		imbuementRecipeList.Width.Set(needsScrollBar ? -18f : 0f, 1f);
+		if (needsScrollBar && imbuementRecipeScrollBar.Parent is null)
 		{
-			imbuementPickerGrid.Append(imbuementPickerScrollBar);
+			imbuementRecipeContent.Append(imbuementRecipeScrollBar);
+			imbuementRecipeScrollBar.Top.Set(25f, 0f);
+			imbuementRecipeScrollBar.Height.Set(158f, 0f);
 		}
 		else if (!needsScrollBar)
 		{
-			imbuementPickerScrollBar.Remove();
+			imbuementRecipeScrollBar.Remove();
 		}
 	}
 
-	private static bool ItemFitsImbuementPicker(int itemType, bool choosingWeapon, int linkedOtherSlot)
+	private void RefreshImbuementRecipeRows()
 	{
-		int linkedOtherType = linkedOtherSlot >= 0 && linkedOtherSlot < Main.LocalPlayer.inventory.Length
-			? Main.LocalPlayer.inventory[linkedOtherSlot].type
-			: ItemID.None;
-		foreach (EssenceImbuementDefinition definition in EssenceImbuementRegistry.Definitions)
+		for (int rowIndex = 0; rowIndex < imbuementRecipeRows.Count; rowIndex++)
 		{
-			bool roleMatches = choosingWeapon
-				? definition.InputItemType == itemType
-				: definition.EssenceItemType == itemType;
-			bool linkedSideMatches = linkedOtherType <= ItemID.None
-				|| (choosingWeapon ? definition.EssenceItemType : definition.InputItemType) == linkedOtherType;
-			if (roleMatches && linkedSideMatches)
+			EssenceImbuementDefinition definition = EssenceImbuementRegistry.Definitions[visibleImbuementRecipeIndices[rowIndex]];
+			SoulEssenceRegistry.TryFindByItemType(definition.EssenceItemType, out SoulEssenceDefinition essence);
+			int weaponSlot = FindInventorySlot(definition);
+			int essenceSlot = FindInventorySlot(definition.EssenceItemType);
+			bool essenceUnlocked = essence is not null && essence.IsUnlocked();
+			bool ready = essenceUnlocked && weaponSlot >= 0 && essenceSlot >= 0;
+			string status = GetImbuementRecipeStatus(definition, essence, weaponSlot, essenceSlot, ready);
+			imbuementRecipeRows[rowIndex].SetContent(definition, ready, status);
+		}
+	}
+
+	private void SelectImbuementRecipe(int recipeIndex)
+	{
+		if (!EssenceImbuementRegistry.TryGet(recipeIndex, out EssenceImbuementDefinition definition)
+			|| !SoulEssenceRegistry.TryFindByItemType(definition.EssenceItemType, out SoulEssenceDefinition essence)
+			|| !essence.IsUnlocked())
+		{
+			return;
+		}
+
+		int weaponSlot = FindInventorySlot(definition);
+		int essenceSlot = FindInventorySlot(definition.EssenceItemType);
+		if (weaponSlot < 0 || essenceSlot < 0)
+		{
+			return;
+		}
+
+		linkedWeaponSlot = weaponSlot;
+		linkedEssenceSlot = essenceSlot;
+		selectedImbuementIndex = recipeIndex;
+		showingImbuementRecipes = false;
+		BuildShrineLayout();
+		ShowFeedback("The ingredients resonate.", true);
+		RefreshContent();
+	}
+
+	private static int FindInventorySlot(int itemType)
+	{
+		for (int slot = 0; slot < Main.LocalPlayer.inventory.Length; slot++)
+		{
+			Item item = Main.LocalPlayer.inventory[slot];
+			if (!item.IsAir && item.stack > 0 && item.type == itemType)
 			{
-				return true;
+				return slot;
 			}
 		}
 
-		return false;
+		return -1;
 	}
 
-	private void LinkInventorySlot(int slot, bool weapon)
+	private static int FindInventorySlot(EssenceImbuementDefinition imbuement)
 	{
-		if (weapon)
+		for (int slot = 0; slot < Main.LocalPlayer.inventory.Length; slot++)
 		{
-			linkedWeaponSlot = linkedWeaponSlot == slot ? -1 : slot;
-		}
-		else
-		{
-			linkedEssenceSlot = linkedEssenceSlot == slot ? -1 : slot;
+			Item item = Main.LocalPlayer.inventory[slot];
+			if (!item.IsAir && item.stack > 0 && imbuement.AcceptsInput(item.type))
+			{
+				return slot;
+			}
 		}
 
-		imbuementPicker = ImbuementPicker.None;
-		RebuildImbuementPicker();
-		ClearFeedback();
-		RefreshImbuementContent();
+		return -1;
+	}
+
+	private static string GetImbuementRecipeStatus(EssenceImbuementDefinition definition,
+		SoulEssenceDefinition essence, int weaponSlot, int essenceSlot, bool ready)
+	{
+		if (ready)
+		{
+			return "Ready — select recipe";
+		}
+
+		if (essence is not null && !essence.IsUnlocked())
+		{
+			return essence.GetRequirement();
+		}
+
+		if (weaponSlot < 0 && essenceSlot < 0)
+		{
+			return $"Missing {definition.InputDisplayName} and {Lang.GetItemNameValue(definition.EssenceItemType)}";
+		}
+
+		return weaponSlot < 0
+			? $"Missing {definition.InputDisplayName}"
+			: $"Missing {Lang.GetItemNameValue(definition.EssenceItemType)}";
 	}
 
 	private void ApplySoullessTabStyles()
@@ -1566,6 +1643,153 @@ internal sealed class SoulEssenceCard : UIElement
 	}
 }
 
+internal sealed class ImbuementRecipeRow : UIElement
+{
+	private readonly UIPanel background;
+	private readonly ImbuementRecipeItemSlot weaponSlot;
+	private readonly ImbuementRecipeItemSlot essenceSlot;
+	private readonly ImbuementRecipeItemSlot outputSlot;
+	private readonly UIPanel detailsPanel;
+	private readonly UIText resultName;
+	private readonly UIText ingredients;
+	private readonly UIText status;
+	private Action action;
+	private bool ready;
+
+	public ImbuementRecipeRow()
+	{
+		background = new UIPanel();
+		background.Width.Set(0f, 1f);
+		background.Height.Set(0f, 1f);
+		background.PaddingTop = 0f;
+		background.PaddingBottom = 0f;
+		Append(background);
+
+		weaponSlot = CreateSlot(10f);
+		CreateOperator("+", 53f, 0.58f);
+		essenceSlot = CreateSlot(69f);
+		CreateOperator("→", 112f, 0.58f);
+		outputSlot = CreateSlot(139f);
+
+		// The inset separates readable recipe details from the compact visual equation.
+		detailsPanel = new UIPanel();
+		detailsPanel.Left.Set(190f, 0f);
+		detailsPanel.Top.Set(5f, 0f);
+		detailsPanel.Width.Set(-196f, 1f);
+		detailsPanel.Height.Set(62f, 0f);
+		detailsPanel.PaddingTop = 0f;
+		detailsPanel.PaddingBottom = 0f;
+		detailsPanel.PaddingLeft = 9f;
+		detailsPanel.PaddingRight = 7f;
+		background.Append(detailsPanel);
+
+		resultName = new UIText(string.Empty, 0.54f);
+		resultName.Top.Set(5f, 0f);
+		detailsPanel.Append(resultName);
+
+		ingredients = new UIText(string.Empty, 0.46f);
+		ingredients.Top.Set(24f, 0f);
+		detailsPanel.Append(ingredients);
+
+		status = new UIText(string.Empty, 0.48f);
+		status.Top.Set(43f, 0f);
+		detailsPanel.Append(status);
+
+		OnLeftClick += (_, _) =>
+		{
+			if (ready)
+			{
+				action?.Invoke();
+			}
+		};
+		OnMouseOver += (_, _) => ApplyStyle(true);
+		OnMouseOut += (_, _) => ApplyStyle(false);
+	}
+
+	public void SetAction(Action requestedAction) => action = requestedAction;
+
+	public void SetContent(EssenceImbuementDefinition definition, bool canSelect, string statusText)
+	{
+		string essenceName = Lang.GetItemNameValue(definition.EssenceItemType);
+		weaponSlot.SetItem(definition.PreviewInputItemType, definition.InputDisplayName);
+		essenceSlot.SetItem(definition.EssenceItemType, essenceName);
+		outputSlot.SetItem(definition.OutputItemType, definition.OutputName);
+		resultName.SetText(definition.OutputName);
+		ingredients.SetText($"{definition.InputDisplayName} + {essenceName}");
+		status.SetText(statusText);
+		ready = canSelect;
+		float opacity = ready ? 1f : 0.55f;
+		weaponSlot.Opacity = opacity;
+		essenceSlot.Opacity = opacity;
+		outputSlot.Opacity = opacity;
+		resultName.TextColor = ready ? new Color(137, 235, 205) : new Color(154, 168, 163);
+		ingredients.TextColor = ready ? new Color(210, 229, 220) : new Color(142, 153, 151);
+		status.TextColor = ready ? new Color(144, 226, 190) : new Color(207, 164, 135);
+		ApplyStyle(false);
+	}
+
+	private ImbuementRecipeItemSlot CreateSlot(float left)
+	{
+		ImbuementRecipeItemSlot slot = new();
+		slot.Left.Set(left, 0f);
+		slot.VAlign = 0.5f;
+		background.Append(slot);
+		return slot;
+	}
+
+	private void CreateOperator(string text, float left, float scale)
+	{
+		UIText operation = new(text, scale)
+		{
+			TextColor = new Color(165, 203, 190),
+			VAlign = 0.5f
+		};
+		operation.Left.Set(left, 0f);
+		background.Append(operation);
+	}
+
+	private void ApplyStyle(bool hovered)
+	{
+		background.BackgroundColor = hovered
+			? ready ? new Color(43, 73, 65) : new Color(42, 48, 51)
+			: new Color(26, 33, 39);
+		background.BorderColor = ready ? new Color(103, 171, 143) : new Color(60, 70, 71);
+		detailsPanel.BackgroundColor = hovered ? new Color(30, 43, 46) : new Color(22, 29, 35);
+		detailsPanel.BorderColor = ready ? new Color(75, 120, 105) : new Color(53, 64, 65);
+	}
+}
+
+internal sealed class ImbuementRecipeItemSlot : UIElement
+{
+	private int itemType;
+	private string tooltip = string.Empty;
+
+	public float Opacity { get; set; } = 1f;
+
+	public ImbuementRecipeItemSlot()
+	{
+		Width.Set(40f, 0f);
+		Height.Set(40f, 0f);
+	}
+
+	public void SetItem(int requestedItemType, string requestedTooltip)
+	{
+		itemType = requestedItemType;
+		tooltip = requestedTooltip;
+	}
+
+	protected override void DrawSelf(SpriteBatch spriteBatch)
+	{
+		Rectangle area = GetDimensions().ToRectangle();
+		ImbuementSlotDrawing.DrawSlot(spriteBatch, area, IsMouseHovering);
+		ImbuementSlotDrawing.DrawItem(spriteBatch, itemType, area.Center.ToVector2(), 30f, Color.White * Opacity);
+		if (IsMouseHovering && !string.IsNullOrWhiteSpace(tooltip))
+		{
+			Main.instance.MouseText(tooltip);
+		}
+	}
+}
+
 internal sealed class ImbuementWeaponSocket : UIElement
 {
 	private int itemType;
@@ -1707,38 +1931,6 @@ internal sealed class ImbuementEssenceSocket : UIElement
 	}
 }
 
-internal sealed class ImbuementInventorySlot : UIElement
-{
-	private int itemType;
-	private string itemName = string.Empty;
-	private bool selected;
-
-	public ImbuementInventorySlot()
-	{
-		Width.Set(40f, 0f);
-		Height.Set(40f, 0f);
-	}
-
-	public void SetItem(int requestedItemType, string requestedName, bool isSelected)
-	{
-		itemType = requestedItemType;
-		itemName = requestedName;
-		selected = isSelected;
-	}
-
-	protected override void DrawSelf(SpriteBatch spriteBatch)
-	{
-		CalculatedStyle dimensions = GetDimensions();
-		Rectangle area = dimensions.ToRectangle();
-		ImbuementSlotDrawing.DrawSlot(spriteBatch, area, selected || IsMouseHovering);
-		ImbuementSlotDrawing.DrawItem(spriteBatch, itemType, area.Center.ToVector2(), 30f);
-		if (IsMouseHovering)
-		{
-			Main.instance.MouseText(itemName);
-		}
-	}
-}
-
 internal static class ImbuementSlotDrawing
 {
 	public static void DrawSlot(SpriteBatch spriteBatch, Rectangle area, bool highlighted)
@@ -1756,6 +1948,8 @@ internal static class ImbuementSlotDrawing
 			return;
 		}
 
+		// Vanilla item textures are loaded lazily and may not have appeared elsewhere yet.
+		Main.instance.LoadItem(itemType);
 		Texture2D texture = TextureAssets.Item[itemType].Value;
 		float scale = Math.Min(1f, maximumSize / Math.Max(texture.Width, texture.Height));
 		spriteBatch.Draw(texture, center, null, drawColor ?? Color.White, 0f, texture.Size() * 0.5f, scale, SpriteEffects.None, 0f);
@@ -1776,6 +1970,7 @@ internal sealed class SoulItemIcon : UIElement
 			return;
 		}
 
+		Main.instance.LoadItem(ItemType);
 		Texture2D texture = TextureAssets.Item[ItemType].Value;
 		CalculatedStyle dimensions = GetDimensions();
 		float scale = Math.Min(1f, 40f / Math.Max(texture.Width, texture.Height));

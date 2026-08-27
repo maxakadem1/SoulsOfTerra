@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
-using SoulsOfTerra.Content.Items.Materials;
+using SoulsOfTerra.Content.Items.Weapons;
 using SoulsOfTerra.Content.Projectiles;
 using Terraria;
 using Terraria.Audio;
@@ -9,7 +9,7 @@ using Terraria.ModLoader;
 
 namespace SoulsOfTerra.Content.Items.Weapons.Melee;
 
-public class SlimeboundBlade : ModItem
+public class SlimeboundBlade : ImbuementWeaponItem
 {
 	private const int SwingsPerVolley = 3;
 	private int swingCounter;
@@ -73,14 +73,4 @@ public class SlimeboundBlade : ModItem
 		tooltips.Add(chargeLine);
 	}
 
-	public override void AddRecipes()
-	{
-		// A standard recipe keeps the weapon compatible with Magic Storage.
-		CreateRecipe()
-			.AddIngredient<SlimeEssence>()
-			.AddIngredient(ItemID.Gel, 30)
-			.AddRecipeGroup(RecipeGroupID.IronBar, 8)
-			.AddTile(TileID.Anvils)
-			.Register();
-	}
 }

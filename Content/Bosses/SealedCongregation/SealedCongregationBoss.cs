@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using SoulsOfTerra.Content.Items.BossBags;
 using SoulsOfTerra.Content.Projectiles;
 using SoulsOfTerra.Systems;
 using Terraria;
@@ -204,12 +205,19 @@ public class SealedCongregationBoss : ModNPC
 
 	public override void ModifyNPCLoot(NPCLoot npcLoot)
 	{
-		npcLoot.Add(ItemDropRule.Common(ItemID.HealingPotion, 1, 5, 8));
+		npcLoot.Add(ItemDropRule.BossBag(ModContent.ItemType<SealedCongregationBag>()));
+
+		// Classic receives the potion reward directly; higher difficulties receive it inside the bag.
+		LeadingConditionRule classicLoot = new(new Conditions.NotExpert());
+		classicLoot.OnSuccess(ItemDropRule.Common(ItemID.HealingPotion, 1, 5, 8));
+		npcLoot.Add(classicLoot);
 	}
 
 	public override void OnKill()
 	{
 		BuriedCourtSystem.MarkBossDefeated();
+		BuriedCourtSystem.BroadcastCourtMessage("Mods.SoulsOfTerra.Dialogue.Court.CongregationDeath",
+			new Color(142, 220, 207));
 		ClearEncounterProjectiles();
 	}
 

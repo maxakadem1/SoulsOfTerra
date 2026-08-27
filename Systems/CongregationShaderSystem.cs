@@ -12,9 +12,11 @@ namespace SoulsOfTerra.Systems;
 public class CongregationShaderSystem : ModSystem
 {
 	private const string ShockwaveKey = "SoulsOfTerra:CongregationShockwave";
+	private const string ShrineRefractionKey = "SoulsOfTerra:ShrineRefraction";
 	private const string BeamKey = "SoulsOfTerra:CongregationBeam";
 	private static bool registered;
 	private static CongregationShockwaveShaderData shaderData;
+	private static ShrineRefractionShaderData shrineShaderData;
 	private static Asset<Effect> beamEffect;
 	private static MiscShaderData beamShaderData;
 	private static Texture2D beamNoiseTexture;
@@ -29,6 +31,8 @@ public class CongregationShaderSystem : ModSystem
 		Asset<Effect> effect = Mod.Assets.Request<Effect>("Effects/CongregationShockwave", AssetRequestMode.ImmediateLoad);
 		shaderData = new CongregationShockwaveShaderData(effect, "ScreenPass");
 		Filters.Scene[ShockwaveKey] = new Filter(shaderData, EffectPriority.VeryHigh);
+		shrineShaderData = new ShrineRefractionShaderData(effect, "ScreenPass");
+		Filters.Scene[ShrineRefractionKey] = new Filter(shrineShaderData, EffectPriority.Low);
 		beamEffect = Mod.Assets.Request<Effect>("Effects/CongregationBeam", AssetRequestMode.ImmediateLoad);
 		beamShaderData = new MiscShaderData(beamEffect, "BeamPass");
 		GameShaders.Misc[BeamKey] = beamShaderData;
@@ -42,10 +46,12 @@ public class CongregationShaderSystem : ModSystem
 		if (registered && !Main.dedServ)
 		{
 			Filters.Scene[ShockwaveKey].Deactivate();
+			Filters.Scene[ShrineRefractionKey].Deactivate();
 		}
 
 		registered = false;
 		shaderData = null;
+		shrineShaderData = null;
 		beamShaderData = null;
 		beamEffect = null;
 		if (noiseToDispose is not null)
@@ -125,6 +131,26 @@ public class CongregationShaderSystem : ModSystem
 			.UseOpacity(fade);
 	}
 
+	public static void UpdateShrineRefraction(Vector2 worldCenter, float intensity)
+	{
+		if (!registered || Main.dedServ || shrineShaderData is null)
+		{
+			return;
+		}
+
+		Filter filter = Filters.Scene[ShrineRefractionKey];
+		if (!filter.IsActive())
+		{
+			Filters.Scene.Activate(ShrineRefractionKey, worldCenter);
+		}
+
+		shrineShaderData.Configure(worldCenter, intensity);
+		filter.GetShader()
+			.UseTargetPosition(worldCenter)
+			.UseIntensity(intensity)
+			.UseOpacity(intensity);
+	}
+
 	private sealed class CongregationShockwaveShaderData : ScreenShaderData
 	{
 		private Vector2 epicenter;
@@ -161,11 +187,53 @@ public class CongregationShaderSystem : ModSystem
 		}
 	}
 
+	private sealed class ShrineRefractionShaderData : ScreenShaderData
+	{
+		private Vector2 epicenter;
+		private float radius;
+		private float strength;
+		private float interpolation;
+
+		public ShrineRefractionShaderData(Asset<Effect> shader, string passName) : base(shader, passName)
+		{
+		}
+
+		public void Configure(Vector2 worldCenter, float intensity)
+		{
+			Vector2 resolution = new(Main.screenWidth, Main.screenHeight);
+			Vector2 screenCenter = resolution * 0.5f;
+			Vector2 zoom = Main.GameViewMatrix.Zoom;
+			Vector2 targetOnScreen = screenCenter + (worldCenter - Main.screenPosition - screenCenter) * zoom;
+			epicenter = targetOnScreen / resolution;
+			radius = 42f * zoom.Y / resolution.Y;
+			strength = 0.0022f * intensity;
+			interpolation = intensity;
+		}
+
+		public override void Apply()
+		{
+			// A narrow refractive halo makes the dormant socket feel spatial without obscuring tiles.
+			Shader.Parameters["epicenter"].SetValue(epicenter);
+			Shader.Parameters["radius"].SetValue(radius);
+			Shader.Parameters["strength"].SetValue(strength);
+			Shader.Parameters["interp"].SetValue(interpolation);
+			base.Apply();
+		}
+	}
+
 	public static void StopShockwave()
 	{
 		if (registered && !Main.dedServ && Filters.Scene[ShockwaveKey].IsActive())
 		{
 			Filters.Scene.Deactivate(ShockwaveKey);
+		}
+	}
+
+	public static void StopShrineRefraction()
+	{
+		if (registered && !Main.dedServ && Filters.Scene[ShrineRefractionKey].IsActive())
+		{
+			Filters.Scene[ShrineRefractionKey].Deactivate();
 		}
 	}
 }

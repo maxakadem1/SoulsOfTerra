@@ -115,6 +115,8 @@ public static class SoulTransactions
 		int weaponSlot, int essenceSlot)
 	{
 		if (!EssenceImbuementRegistry.TryGet(imbuementIndex, out EssenceImbuementDefinition imbuement)
+			|| !SoulEssenceRegistry.TryFindByItemType(imbuement.EssenceItemType, out SoulEssenceDefinition essenceDefinition)
+			|| !essenceDefinition.IsUnlocked()
 			|| !IsValidShrineInteraction(player, shrinePosition) || weaponSlot == essenceSlot
 			|| weaponSlot < 0 || weaponSlot >= player.inventory.Length
 			|| essenceSlot < 0 || essenceSlot >= player.inventory.Length)
@@ -124,7 +126,7 @@ public static class SoulTransactions
 
 		Item weapon = player.inventory[weaponSlot];
 		Item essence = player.inventory[essenceSlot];
-		if (weapon.type != imbuement.InputItemType || weapon.stack <= 0
+		if (!imbuement.AcceptsInput(weapon.type) || weapon.stack <= 0
 			|| essence.type != imbuement.EssenceItemType || essence.stack <= 0)
 		{
 			return false;
@@ -142,7 +144,7 @@ public static class SoulTransactions
 		Vector2 ritualCenter = shrinePosition.ToWorldCoordinates(TerraShrineTile.Width * 8f, -12f);
 		Projectile.NewProjectile(new EntitySource_Misc("SoulsOfTerra:EssenceImbuement"), ritualCenter, Vector2.Zero,
 			ModContent.ProjectileType<EssenceBindingRitualProjectile>(), 0, 0f, player.whoAmI,
-			imbuementIndex, preservedPrefix);
+			imbuementIndex, preservedPrefix, weapon.type);
 		CondensationSoulWispProjectile.Spawn(player, shrinePosition);
 		return true;
 	}

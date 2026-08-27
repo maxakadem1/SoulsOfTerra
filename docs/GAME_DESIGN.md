@@ -6,15 +6,15 @@
 
 Souls of Terra is intended to grow into a broad content mod in the spirit of mods such as Thorium: new progression, bosses, equipment, characters, and systems that coexist with Terraria's normal structure.
 
-The soul economy is the foundation connecting that future content. It should make ordinary exploration and combat meaningful without replacing Terraria's materials, crafting stations, equipment progression, or class identity.
+The soul economy is the foundation connecting that future content. It should make ordinary exploration and combat meaningful while preserving Terraria's broader equipment progression and class identity.
 
 ## Design pillars
 
 1. **Every real fight has value.** Genuine hostile creatures release souls without requiring a hand-authored reward for every vanilla or modded NPC.
 2. **Carried wealth creates tension.** Souls are abstract currency that drop on every genuine player death and must be deliberately recovered.
 3. **Souls expand choices, not base statistics.** There are no permanent health, damage, defense, or attribute levels purchased with souls.
-4. **Progression remains recognizably Terraria.** Souls unlock and condense special materials, while final equipment uses ordinary recipes and appropriately tiered crafting stations.
-5. **Compatibility is structural.** Global rules derive from existing NPC data, and ordinary recipes allow systems such as Magic Storage to discover and craft mod equipment normally.
+4. **Progression remains recognizably Terraria.** Souls unlock and condense special materials; weapons transform from familiar vanilla bases, while armor, accessories, and supporting equipment retain ordinary materials and stations.
+5. **One weapon-acquisition language.** Every Souls of Terra weapon is created by essence imbuement at a Terra Shrine rather than splitting weapons between imbuement and conventional crafting.
 
 ## Soul acquisition
 
@@ -118,23 +118,25 @@ Optional bosses do not add mandatory shrine tiers. Instead, they unlock their ow
 
 Each supported boss should eventually unlock a distinct essence. After its boss is defeated, a Terra Shrine can irreversibly condense abstract souls into that essence. Defeating a boss unlocks unlimited condensation; the boss does not need to be killed once per essence.
 
-Essences should be expensive enough that one is a meaningful purchase. The baseline recipe language is approximately one essence per weapon or armor piece, with ordinary Terraria materials supplying the rest of the recipe.
+Essences should be expensive enough that one is a meaningful purchase. Every mod weapon consumes exactly one valid vanilla base weapon and one matching essence through the Terra Shrine's Imbuement page. No bars, fragments, lenses, gel, or adjacent crafting station are added to weapon bindings. Armor, accessories, and other non-weapon equipment continue using ordinary Terraria materials and tier-appropriate stations so those categories remain compatible with normal crafting integrations.
 
-Final equipment is crafted at a normal station appropriate to its tier. This deliberately keeps equipment recipes visible to Magic Storage and other crafting integrations. A Terra Shrine is not a required adjacent station for final equipment crafting.
+The imbuement registry is the authoritative weapon catalogue. It supports precise inputs such as Ruby Staff and grouped inputs such as any Copper-through-Platinum metal broadsword. Every mod weapon must inherit the imbuement-only base type, appear as a registry output, and have no conventional crafting recipe; load-time validation enforces these invariants for future content.
 
 ### Initial vertical slice
 
 - King Slime unlocks Slime Essence.
 - One Slime Essence costs 2,500 souls.
-- Slimebound Blade demonstrates a normal anvil recipe using one essence, Gel, and Iron or Lead Bars.
+- Any Copper-through-Platinum metal broadsword plus one Slime Essence binds into Slimebound Blade.
 
 Current costs and equipment statistics are prototypes, not final balance.
 
 ## The Buried Court and The Sealed Congregation
 
-The Buried Court is a ruined underground castle arena generated beneath world spawn in new worlds. Players can discover it immediately through a collapsed physical passage, but its central altar remains dormant until Skeletron is defeated. The arena is a permanent narrative location intended for The Sealed Congregation, repeat encounters, and Soulless's eventual confrontation.
+The Buried Court is a grand, vaulted underground castle hall generated beneath world spawn in new worlds. A collapsed passage leads down a ruined side staircase into an upper gallery, revealing a broad flat combat floor, pointed wall bays, fractured vaults, and a throne-like central dais. Damage is concentrated around the outer galleries and floor edges so the architecture feels ancient without compromising boss readability. Entering the hall fades in its authored title near the top of the screen while Dungeon music establishes the location; the title lasts six seconds and cannot retrigger for ten minutes. Players can discover the Court immediately, but its central altar remains dormant until Skeletron is defeated. The arena is a permanent narrative location intended for The Sealed Congregation, repeat encounters, and Soulless's eventual confrontation.
 
-After Skeletron, Soulless sells unlimited Warden's Fragments for 10,000 souls. The fragment is a non-consumable key: holding it and right-clicking the court's altar summons The Sealed Congregation without an additional soul cost.
+After Skeletron, Soulless sells unlimited Warden's Fragments for 10,000 souls. The fragment is a broken ward-sigil carrying forged, borrowed authority rather than a conventional key. Soulless claims the reliquary remembers the warden's office rather than the hand presenting its mark, quietly foreshadowing his knowledge of the prison and his interest in the souls within it. Holding the fragment and right-clicking the court's Warden's Reliquary begins a short summoning ritual without an additional soul cost. The dormant socket bends nearby light and emits a restrained teal pulse. Once activated, rising souls assemble four spectral seals above the court, collapse into the future core, and release a refractive shockwave as The Sealed Congregation manifests.
+
+The reliquary's acceptance message implies that the fragment's authority is false. The Congregation's final voices describe the unseen hand behind the mark as hollow, creating an early clue about Soulless without explicitly revealing his future role.
 
 The encounter has two stages:
 
@@ -144,6 +146,10 @@ The encounter has two stages:
 The core, chains, internal faces, glow, telegraphs, and trails are code-driven. One clean seal sprite and one broken variant provide the authored boss art. The combined boss bar includes core and seal health so phase-one damage is always represented accurately.
 
 Defeating the boss sets a world-wide progression flag and unlocks Congregation Essence at Terra Shrine tier 3 for a prototype cost of 20,000 souls.
+
+The Congregation's first equipment reward is **Compeditus**, created by binding Congregation Essence into an Imp Staff. It summons one shared spectral core surrounded by up to four seals, each consuming one minion slot. The formation passes through terrain but only attacks with clear line of sight. Seals deal no contact damage; instead, they fire restrained-homing lances in a staggered verse. Completing a verse expands and arrests the formation before its threads collapse into a localized judgment burst. The initial balance target is 22 summon damage, low knockback, a four-seal maximum, and one lance per seal per roughly 60-tick verse.
+
+The Terra Shrine's Imbuement page opens directly into its recipe catalogue. Each binding is revealed when the boss associated with its essence is defeated, even if the shrine still lacks the tier required to condense that essence. Revealed rows show framed input, essence, and result slots alongside their requirements. A row becomes selectable only when both ingredients are present and the essence tier is available; selection links both inventory items and opens the focused ritual screen. That screen contains no secondary inventory grid, offers Back to Recipes, and returns to the catalogue after a binding begins.
 
 ## Multiplayer model
 

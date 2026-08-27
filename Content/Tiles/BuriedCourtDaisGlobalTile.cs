@@ -13,7 +13,7 @@ public class BuriedCourtDaisGlobalTile : GlobalTile
 	public override void RightClick(int i, int j, int type)
 	{
 		Player player = Main.LocalPlayer;
-		if (type != TileID.DemonAltar || !BuriedCourtSystem.IsDaisTile(i, j)
+		if (type != ModContent.TileType<SoulShrineTile>() || !BuriedCourtSystem.IsDaisTile(i, j)
 			|| player.HeldItem.type != ModContent.ItemType<WardensFragment>())
 		{
 			return;
@@ -36,11 +36,21 @@ public class BuriedCourtDaisGlobalTile : GlobalTile
 
 	public override bool CanKillTile(int i, int j, int type, ref bool blockDamaged)
 	{
-		return !BuriedCourtSystem.IsDaisTile(i, j);
+		return !BuriedCourtSystem.IsDaisStructureTile(i, j);
 	}
 
 	public override bool CanExplode(int i, int j, int type)
 	{
-		return !BuriedCourtSystem.IsDaisTile(i, j);
+		return !BuriedCourtSystem.IsDaisStructureTile(i, j);
+	}
+
+	public override bool CanReplace(int i, int j, int type, int tileTypeBeingPlaced)
+	{
+		return !BuriedCourtSystem.IsDaisStructureTile(i, j);
+	}
+
+	public override bool Slope(int i, int j, int type)
+	{
+		return !BuriedCourtSystem.IsDaisStructureTile(i, j);
 	}
 }

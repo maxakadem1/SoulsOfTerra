@@ -1,41 +1,31 @@
-Mods: {
-	SoulsOfTerra: {
-		UI: {
-			RecoverBloodstain: Right-click to recover {0} souls
-			Commune: Commune
-		}
+UI: {
+	RecoverBloodstain: Right-click to recover {0} souls
+	Commune: Commune
+}
 
-		Dialogue: {
-			Soulless: {
-				Introduction: So another bearer wakes. Keep close the souls you gather; death is eager to loosen your grasp.
-				BloodstainHint: What spills from you does not vanish. Return to the stain, reach into it, and take back what remains.
-				AfterKingSlime: Even a crown of gel leaves an echo. A Terra Shrine can press that echo into useful form.
-				BuriedCourtHint: Beneath where you first woke lies a court without a king. Take my fragment to its altar. The prisoners there have suffered long enough.
-				AfterCongregation: So the court is silent. Strange... I can almost remember the voices you freed.
-			}
-		}
+Dialogue: {
+	Soulless: {
+		Introduction: So another bearer wakes. Keep close the souls you gather; death is eager to loosen your grasp.
+		BloodstainHint: What spills from you does not vanish. Return to the stain, reach into it, and take back what remains.
+		AfterKingSlime: Even a crown of gel leaves an echo. A Terra Shrine can press that echo into useful form.
+		BuriedCourtHint: Take this fragment. The reliquary remembers the office, not the hand. Let the prisoners mistake you for their keeper.
+		AfterCongregation: So the court is silent. Strange... I remember every voice you freed, though none of them were mine.
+	}
 
-		Configs: {
-			SoulServerConfig: {
-				DisplayName: Soul Economy
-
-				SoulRewardMultiplier: {
-					Label: Soul reward multiplier
-					Tooltip: Multiplies every automatic enemy soul reward. Set to 0 to disable enemy rewards.
-				}
-			}
-		}
+	Court: {
+		ReliquaryAccepts: The reliquary accepts an authority it should not remember.
+		CongregationDeath: The final voices fade: The hand behind the mark... is hollow.
 	}
 }
 
 Configs: {
 	SoulServerConfig: {
 		SoulRewardMultiplier: {
-			Tooltip: ""
-			Label: Soul Reward Multiplier
+			Tooltip: Multiplies every automatic enemy soul reward. Set to 0 to disable enemy rewards.
+			Label: Soul reward multiplier
 		}
 
-		DisplayName: Soul Server Config
+		DisplayName: Soul Economy
 	}
 }
 
@@ -65,6 +55,18 @@ Projectiles: {
 	CongregationBenedictionWaveProjectile.DisplayName: Hollow Benediction
 	CongregationConfessionProjectile.DisplayName: Final Confession
 	CongregationJudgmentBeamProjectile.DisplayName: Choir of Judgment
+	CongregationSummonRitualProjectile.DisplayName: Opening the Reliquary
+	CompeditusCoreProjectile.DisplayName: Shackled Choir
+	CompeditusSealMinionProjectile.DisplayName: Compeditus Seal
+	CompeditusLanceProjectile.DisplayName: Unbound Verse
+	CompeditusJudgmentProjectile.DisplayName: Compeditus Judgment
+}
+
+Buffs: {
+	CompeditusBuff: {
+		DisplayName: Compeditus
+		Description: A shackled choir fights at your command
+	}
 }
 
 NPCs: {
@@ -87,10 +89,33 @@ NPCs: {
 	}
 }
 
+Tiles: {
+	SoulShrineTile.MapEntry: Warden's Reliquary
+	TerraShrineTile.MapEntry: Terra Shrine
+}
+
 Items: {
+	Compeditus: {
+		DisplayName: Compeditus
+		Tooltip:
+			'''
+			Summons a shared core surrounded by up to four Congregation seals
+			The choir no longer answers its wardens
+			'''
+	}
+
+	SealedCongregationBag: {
+		DisplayName: The Sealed Congregation Treasure Bag
+		Tooltip: Right-click to open
+	}
+
 	WardensFragment: {
 		DisplayName: Warden's Fragment
-		Tooltip: Hold and right-click the altar in the Buried Court to summon The Sealed Congregation
+		Tooltip:
+			'''
+			A fractured ward-sigil, warm with borrowed authority
+			Right-click the Warden's Reliquary to open the court
+			'''
 	}
 
 	CongregationEssence: {
@@ -246,5 +271,3 @@ Items: {
 			'''
 	}
 }
-
-Tiles.TerraShrineTile.MapEntry: Terra Shrine

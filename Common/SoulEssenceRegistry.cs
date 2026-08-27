@@ -56,6 +56,21 @@ public static class SoulEssenceRegistry
 		return definition is not null;
 	}
 
+	public static bool TryFindByItemType(int itemType, out SoulEssenceDefinition definition)
+	{
+		foreach (SoulEssenceDefinition candidate in Definitions)
+		{
+			if (candidate.ItemType == itemType)
+			{
+				definition = candidate;
+				return true;
+			}
+		}
+
+		definition = null;
+		return false;
+	}
+
 	private static SoulEssenceDefinition Create<T>(string id, string name, long cost, string description,
 		Func<bool> bossDefeated, string bossName, int shrineTier, Func<bool> isAvailable = null,
 		string unavailableRequirement = null) where T : ModItem
@@ -97,9 +112,10 @@ public sealed class SoulEssenceDefinition
 
 	public bool IsUnlocked()
 	{
-		return (isAvailable is null || isAvailable()) && bossDefeated()
-			&& SoulWorldSystem.TerraShrineTier >= ShrineTier;
+		return IsDiscovered() && SoulWorldSystem.TerraShrineTier >= ShrineTier;
 	}
+
+	public bool IsDiscovered() => (isAvailable is null || isAvailable()) && bossDefeated();
 
 	public string GetRequirement()
 	{
