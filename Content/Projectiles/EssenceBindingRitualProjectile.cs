@@ -64,7 +64,12 @@ public class EssenceBindingRitualProjectile : ModProjectile
 		float rise = MathHelper.SmoothStep(10f, 0f, Utils.GetLerpValue(0f, 24f, age, true));
 		float bob = System.MathF.Sin(age * 0.12f) * 3f;
 		Vector2 center = Projectile.Center - Main.screenPosition + new Vector2(0f, rise + bob);
-		int displayedItem = age < RevealTime ? imbuement.InputItemType : imbuement.OutputItemType;
+		int consumedInputType = (int)Projectile.ai[2];
+		if (!imbuement.AcceptsInput(consumedInputType))
+		{
+			consumedInputType = imbuement.PreviewInputItemType;
+		}
+		int displayedItem = age < RevealTime ? consumedInputType : imbuement.OutputItemType;
 		float revealScale = age < RevealTime ? 1f : MathHelper.SmoothStep(0.2f, 1f,
 			Utils.GetLerpValue(RevealTime, RevealTime + 10f, age, true));
 		DrawItem(displayedItem, center, revealScale, lightColor);

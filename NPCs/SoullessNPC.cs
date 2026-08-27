@@ -54,6 +54,16 @@ public class SoullessNPC : ModNPC
 
 	public override string GetChat()
 	{
+		if (NPC.downedBoss3 && !BuriedCourtSystem.DownedSealedCongregation)
+		{
+			return Language.GetTextValue("Mods.SoulsOfTerra.Dialogue.Soulless.BuriedCourtHint");
+		}
+
+		if (BuriedCourtSystem.DownedSealedCongregation)
+		{
+			return Language.GetTextValue("Mods.SoulsOfTerra.Dialogue.Soulless.AfterCongregation");
+		}
+
 		if (NPC.downedSlimeKing)
 		{
 			return Language.GetTextValue("Mods.SoulsOfTerra.Dialogue.Soulless.AfterKingSlime");

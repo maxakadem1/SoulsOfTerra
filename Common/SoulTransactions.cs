@@ -17,6 +17,7 @@ namespace SoulsOfTerra.Common;
 public static class SoulTransactions
 {
 	public const long CoreCost = 100;
+	public const long WardensFragmentCost = 10_000;
 	private static readonly long[] SoulCrystalCosts = { 1_250, 6_250, 31_250 };
 	private static readonly long[] SoulCrystalValues = { 1_000, 5_000, 25_000 };
 	private const float InteractionRange = 12f * 16f;
@@ -35,6 +36,19 @@ public static class SoulTransactions
 	public static bool TryUpgradeShrine(Player player, int npcIndex)
 	{
 		return IsValidSoullessInteraction(player, npcIndex) && SoulWorldSystem.TryUpgradeShrine(player);
+	}
+
+	public static bool TryPurchaseWardensFragment(Player player, int npcIndex)
+	{
+		if (!NPC.downedBoss3 || !IsValidSoullessInteraction(player, npcIndex)
+			|| !player.GetModPlayer<SoulPlayer>().TrySpendSouls(WardensFragmentCost))
+		{
+			return false;
+		}
+
+		// The fragment is a permanent reusable key, but spare copies remain purchasable.
+		player.QuickSpawnItem(new EntitySource_Misc("SoulsOfTerra:WardensFragmentPurchase"), ModContent.ItemType<WardensFragment>());
+		return true;
 	}
 
 	public static bool TryConvertSoulCrystal(Player player, int npcIndex, int crystalIndex)
@@ -101,6 +115,8 @@ public static class SoulTransactions
 		int weaponSlot, int essenceSlot)
 	{
 		if (!EssenceImbuementRegistry.TryGet(imbuementIndex, out EssenceImbuementDefinition imbuement)
+			|| !SoulEssenceRegistry.TryFindByItemType(imbuement.EssenceItemType, out SoulEssenceDefinition essenceDefinition)
+			|| !essenceDefinition.IsUnlocked()
 			|| !IsValidShrineInteraction(player, shrinePosition) || weaponSlot == essenceSlot
 			|| weaponSlot < 0 || weaponSlot >= player.inventory.Length
 			|| essenceSlot < 0 || essenceSlot >= player.inventory.Length)
@@ -110,7 +126,7 @@ public static class SoulTransactions
 
 		Item weapon = player.inventory[weaponSlot];
 		Item essence = player.inventory[essenceSlot];
-		if (weapon.type != imbuement.InputItemType || weapon.stack <= 0
+		if (!imbuement.AcceptsInput(weapon.type) || weapon.stack <= 0
 			|| essence.type != imbuement.EssenceItemType || essence.stack <= 0)
 		{
 			return false;
@@ -128,7 +144,7 @@ public static class SoulTransactions
 		Vector2 ritualCenter = shrinePosition.ToWorldCoordinates(TerraShrineTile.Width * 8f, -12f);
 		Projectile.NewProjectile(new EntitySource_Misc("SoulsOfTerra:EssenceImbuement"), ritualCenter, Vector2.Zero,
 			ModContent.ProjectileType<EssenceBindingRitualProjectile>(), 0, 0f, player.whoAmI,
-			imbuementIndex, preservedPrefix);
+			imbuementIndex, preservedPrefix, weapon.type);
 		CondensationSoulWispProjectile.Spawn(player, shrinePosition);
 		return true;
 	}

@@ -1,5 +1,5 @@
 using Microsoft.Xna.Framework;
-using SoulsOfTerra.Content.Items.Materials;
+using SoulsOfTerra.Content.Items.Weapons;
 using SoulsOfTerra.Content.Projectiles;
 using Terraria;
 using Terraria.DataStructures;
@@ -8,7 +8,7 @@ using Terraria.ModLoader;
 
 namespace SoulsOfTerra.Content.Items.Weapons.Magic;
 
-public class MoonstoneStaff : ModItem
+public class MoonstoneStaff : ImbuementWeaponItem
 {
 	public override void SetStaticDefaults()
 	{
@@ -48,13 +48,4 @@ public class MoonstoneStaff : ModItem
 		return false;
 	}
 
-	public override void AddRecipes()
-	{
-		// Ordinary crafting preserves compatibility with Magic Storage.
-		CreateRecipe()
-			.AddIngredient<MoonLordEssence>()
-			.AddIngredient(ItemID.LunarBar, 18)
-			.AddTile(TileID.LunarCraftingStation)
-			.Register();
-	}
 }

@@ -24,6 +24,8 @@ public static class SoulEssenceRegistry
 			() => NPC.downedQueenBee, "Queen Bee", 2),
 		Create<SkeletronEssence>("skeletron", "Skeletron Essence", 15_000, "A dungeon curse condensed into matter.",
 			() => NPC.downedBoss3, "Skeletron", 3),
+		Create<CongregationEssence>("congregation", "Congregation Essence", 20_000, "A chorus of imprisoned souls condensed into one echo.",
+			() => BuriedCourtSystem.DownedSealedCongregation, "The Sealed Congregation", 3),
 		Create<WallOfFleshEssence>("wall", "Wall of Flesh Essence", 25_000, "An infernal prison's ravenous echo condensed into matter.",
 			() => Main.hardMode, "Wall of Flesh", 4),
 		Create<QueenSlimeEssence>("queenSlime", "Queen Slime Essence", 25_000, "A crystalline royal echo bound into matter.",
@@ -52,6 +54,21 @@ public static class SoulEssenceRegistry
 	{
 		definition = index >= 0 && index < Definitions.Length ? Definitions[index] : null;
 		return definition is not null;
+	}
+
+	public static bool TryFindByItemType(int itemType, out SoulEssenceDefinition definition)
+	{
+		foreach (SoulEssenceDefinition candidate in Definitions)
+		{
+			if (candidate.ItemType == itemType)
+			{
+				definition = candidate;
+				return true;
+			}
+		}
+
+		definition = null;
+		return false;
 	}
 
 	private static SoulEssenceDefinition Create<T>(string id, string name, long cost, string description,
@@ -95,9 +112,10 @@ public sealed class SoulEssenceDefinition
 
 	public bool IsUnlocked()
 	{
-		return (isAvailable is null || isAvailable()) && bossDefeated()
-			&& SoulWorldSystem.TerraShrineTier >= ShrineTier;
+		return IsDiscovered() && SoulWorldSystem.TerraShrineTier >= ShrineTier;
 	}
+
+	public bool IsDiscovered() => (isAvailable is null || isAvailable()) && bossDefeated();
 
 	public string GetRequirement()
 	{

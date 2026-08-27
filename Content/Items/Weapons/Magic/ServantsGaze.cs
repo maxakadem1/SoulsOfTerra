@@ -1,5 +1,5 @@
 using Microsoft.Xna.Framework;
-using SoulsOfTerra.Content.Items.Materials;
+using SoulsOfTerra.Content.Items.Weapons;
 using SoulsOfTerra.Content.Projectiles;
 using Terraria;
 using Terraria.DataStructures;
@@ -8,7 +8,7 @@ using Terraria.ModLoader;
 
 namespace SoulsOfTerra.Content.Items.Weapons.Magic;
 
-public class ServantsGaze : ModItem
+public class ServantsGaze : ImbuementWeaponItem
 {
 	private const int ServantsPerCast = 3;
 
@@ -50,20 +50,4 @@ public class ServantsGaze : ModItem
 		return false;
 	}
 
-	public override void AddRecipes()
-	{
-		// Separate evil-bar recipes remain discoverable by ordinary crafting integrations.
-		RegisterRecipe(ItemID.DemoniteBar);
-		RegisterRecipe(ItemID.CrimtaneBar);
-	}
-
-	private void RegisterRecipe(int evilBarType)
-	{
-		CreateRecipe()
-			.AddIngredient<EyeEssence>()
-			.AddIngredient(evilBarType, 8)
-			.AddIngredient(ItemID.Lens, 3)
-			.AddTile(TileID.Anvils)
-			.Register();
-	}
 }
