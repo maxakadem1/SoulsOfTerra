@@ -107,6 +107,20 @@
 | Current bindings | Any Copper-through-Platinum broadsword + Slime Essence; Ruby Staff + Eye Essence; Breaker Blade + Wall of Flesh Essence; Imp Staff + Congregation Essence; Diamond Staff + Moon Lord Essence. | Establishes flexible early bases and precise thematic bases where desired. |
 | Future enforcement | Every mod weapon inherits `ImbuementWeaponItem`, must be a registry output, and may not have a conventional recipe. | Turns the design rule into a load-time invariant instead of documentation alone. |
 
+## Soul swings
+
+| Topic | Decision | Reason |
+|---|---|---|
+| Architecture | Opt-in true-melee via `ISoulSwingItem` and one shared held projectile. | Any future sword can reuse the system without a GlobalItem shotgun. |
+| Aim | Cursor-aimed, locked when the swing starts. | Makes L→R / R→L arcs readable; full tracking feels mushy. |
+| Motion | Path presets (alternating lateral, lateral, rising, falling, thrust) with per-blade duration. | Speed is a style knob; the next blade can pick a path without a rewrite. |
+| Default test | Slimebound Blade uses alternating lateral. | First sword proves the system with a left-to-right then right-to-left cut. |
+| Visual | One lingering soul-ribbon (bright rim, soft core) plus a short blade afterimage. | Matches soul-orb language: one trail, not particle spam. |
+| Hit | Blade line hits each NPC once per swing; the ribbon is visual-only. | Keeps the cut readable; fading trails that deal damage feel cheap. |
+| Cadence | One swing at a time; the next click waits until this swing ends. | Fast vs slow blades are authored durations, not overlapping animations. |
+| Graphics | In-house ribbon primitive and shader. | No extra mod dependency; MIT-clean and visually ours. |
+| Slime payload | Gel balls and the royal volley fire at the cut from the blade tip. | Syncs the projectile to the snap of the animation. |
+
 ## Decisions intentionally deferred
 
 - Exact final reward formula and exception policy for unusual modded NPCs.

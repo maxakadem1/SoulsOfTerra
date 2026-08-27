@@ -1,6 +1,6 @@
 # Souls of Terra — Implementation Status
 
-> This document describes the current prototype, not every intended feature. Last reviewed: 2026-08-25.
+> This document describes the current prototype, not every intended feature. Last reviewed: 2026-08-27.
 
 ## Current playable loop
 
@@ -76,7 +76,8 @@
 - Shrine destruction returns the core and the original Iron or Lead Anvil.
 - Unified imbuement-only weapon registry with grouped input support, server validation, actual-input ritual rendering, and load-time enforcement against missing entries or conventional weapon recipes.
 - Slimebound Blade binding accepts every Copper-through-Platinum metal broadsword plus one Slime Essence.
-- Slimebound Blade Royal Viscosity prototype: an exceptionally slow 1.6x sword with a miss-independent 1, 1, 3 firing cycle; its compact gel balls use closely matched damage and bounce areas, pierce enemies, and bounce up to three times.
+- Shared soul-swing system: opt-in held projectile, cursor-locked aim, path presets, in-house rim/core ribbon shader, and one hit per NPC per swing.
+- Slimebound Blade Royal Viscosity prototype: an exceptionally slow 1.6x sword using alternating lateral soul-swings with a miss-independent 1, 1, 3 firing cycle; gel balls launch from the blade tip at the cut, use closely matched damage and bounce areas, pierce enemies, and bounce up to three times.
 - Servant's Gaze binding consumes one Ruby Staff and one Eye Essence.
 - Servant's Gaze releases three custom-art harmless eye servants that awaken after one second, independently home through terrain, and rupture into small damaging gore bursts.
 
@@ -167,6 +168,7 @@ These values have not been reconciled with measured boss rewards and are deliber
 15. Complete phase two, verify Congregation Essence unlocks at shrine tier 3, then save and reload the defeat flag.
 16. Repeat summoning, seal synchronization, retreat, projectile cleanup, and victory with a multiplayer client.
 17. Imbue an Imp Staff into Compeditus; summon one through four seals and verify slot use, targeting priority, terrain traversal, line-of-sight attacks, lance collision, judgment cadence, recall at four seals, dismissal, and multiplayer synchronization.
+18. Imbue Slimebound Blade and confirm cursor-locked alternating lateral swings, a lingering soul-ribbon, one hit per enemy per swing, gel balls firing from the tip at the cut, and the every-third-swing royal volley.
 
 ## Near-term implementation backlog
 
