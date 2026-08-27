@@ -8,14 +8,14 @@ using Terraria.ModLoader;
 namespace SoulsOfTerra.Content.Projectiles;
 
 /// <summary>
-/// Slimebound Blade's viscous rising diagonal slash with gel trail and hitstop impact.
+/// Slimebound Blade's horizontal slash with gel trail and hitstop impact.
 /// </summary>
 public class SlimeboundBladeSwingProjectile : BaseCustomSwingProjectile
 {
 	protected override int SwingDuration => 45;
-	protected override int WindupEnd => 22;
-	protected override int SnapStart => 23;
-	protected override int SnapEnd => 36;
+	protected override int WindupEnd => 10;      // Short crisp coil
+	protected override int SnapStart => 11;
+	protected override int SnapEnd => 20;        // Fast snap through target
 	protected override float SwingReach => 110f;
 	protected override float CollisionWidth => 42f;
 	protected override float SwordScale => 1.6f;
@@ -25,7 +25,7 @@ public class SlimeboundBladeSwingProjectile : BaseCustomSwingProjectile
 
 	protected override void OnSwingTick(Player player, int age, int direction, float swordAngle)
 	{
-		// Viscous windup sound
+		// Coil sound
 		if (age == 0 && Main.netMode != NetmodeID.Server)
 		{
 			SoundEngine.PlaySound(SoundID.Item152 with { Volume = 0.45f, Pitch = -0.25f }, player.Center);
@@ -51,8 +51,8 @@ public class SlimeboundBladeSwingProjectile : BaseCustomSwingProjectile
 
 	protected override float GetWindupWobble(float windupProgress, int direction)
 	{
-		// Viscous wobble during windup - slime weight shifting
-		return MathF.Sin(windupProgress * MathHelper.TwoPi * 1.5f) * 0.08f * (1f - windupProgress);
+		// Subtle gel wobble during short coil
+		return MathF.Sin(windupProgress * MathHelper.Pi * 2f) * 0.04f * (1f - windupProgress);
 	}
 
 	protected override void OnFirstHit(NPC target)

@@ -37,12 +37,11 @@ public abstract class BaseCustomSwingProjectile : ModProjectile
 			: new Vector2(texture.Width * 0.15f, texture.Height * 0.15f);
 	}
 
-	// Arc definition - rising diagonal slash from down-back to forward-up
-	// Terraria: 0=right, +π/2=down, -π/2=up. Must NOT pass through -π/2 (overhead).
-	// Returns angle in radians relative to player's facing direction
-	protected virtual float GetWindupStartAngle() => 1.3f;   // Back, slightly down
-	protected virtual float GetWindupEndAngle() => 1.9f;     // Coiled down-back
-	protected virtual float GetSnapEndAngle() => -0.5f;      // Forward-up (nowhere near -π/2)
+	// Arc definition - horizontal sword swing centered on aim direction
+	// Tight fan (~80-90°) that stays in front of player at chest height
+	// Offsets are relative to cursor/aim direction
+	protected virtual float GetWindupOffset() => -0.65f;     // Coil slightly above aim
+	protected virtual float GetSnapOffset() => 0.75f;        // Follow through slightly below aim
 	protected virtual float GetWindupSlowdown() => 0.75f;
 
 	public override void SetStaticDefaults()
@@ -179,33 +178,27 @@ public abstract class BaseCustomSwingProjectile : ModProjectile
 	protected abstract void OnImpact(NPC target, NPC.HitInfo hit, int damageDone, bool alreadyHit);
 	protected abstract Color GetTrailColor(float strength);
 
-	// Rising diagonal arc: sweeps from behind-below to forward-up
-	// Does NOT pass through overhead/vertical like vanilla swing
+	// Horizontal sword swing centered on cursor/aim direction
+	// Tight fan that sweeps through the target, never overhead or underfoot
 	private float GetSwordAngle(int age, int direction)
 	{
-		float horizontalBase = direction > 0 ? 0f : MathHelper.Pi;
-
-		// Windup with optional wobble
+		// Windup coil
 		if (age < WindupEnd)
 		{
 			float windupProgress = age / (float)WindupEnd;
-			float startAngle = horizontalBase + direction * GetWindupStartAngle();
-			float endAngle = horizontalBase + direction * GetWindupEndAngle();
 			float wobble = GetWindupWobble(windupProgress, direction);
-			return MathHelper.Lerp(startAngle, endAngle, EaseInOut(windupProgress)) + wobble;
+			return AimAngle + GetWindupOffset() + wobble;
 		}
 
-		// Fast snap to forward-up
+		// Fast snap through target
 		if (age < SnapEnd)
 		{
 			float snapProgress = (age - WindupEnd) / (float)(SnapEnd - WindupEnd);
-			float startAngle = horizontalBase + direction * GetWindupEndAngle();
-			float endAngle = horizontalBase + direction * GetSnapEndAngle();
-			return MathHelper.Lerp(startAngle, endAngle, EaseOutCubic(snapProgress));
+			return MathHelper.Lerp(AimAngle + GetWindupOffset(), AimAngle + GetSnapOffset(), EaseOutCubic(snapProgress));
 		}
 
 		// Recovery hold
-		return horizontalBase + direction * GetSnapEndAngle();
+		return AimAngle + GetSnapOffset();
 	}
 
 	protected virtual float GetWindupWobble(float windupProgress, int direction) => 0f;
