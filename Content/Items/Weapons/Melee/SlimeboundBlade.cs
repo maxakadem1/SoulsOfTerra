@@ -22,29 +22,27 @@ public class SlimeboundBlade : ImbuementWeaponItem
 		Item.DamageType = DamageClass.Melee;
 		Item.useTime = 45;
 		Item.useAnimation = 45;
-		Item.useStyle = ItemUseStyleID.Swing;
+		Item.useStyle = ItemUseStyleID.Shoot;
 		Item.knockBack = 6.5f;
 		Item.scale = 1.6f;
-		Item.UseSound = SoundID.Item1;
+		Item.UseSound = null;
 		Item.autoReuse = true;
 		Item.rare = ItemRarityID.Blue;
 		Item.value = Item.buyPrice(silver: 50);
-		Item.shoot = ModContent.ProjectileType<RoyalGelBallProjectile>();
+		Item.noUseGraphic = true;
+		Item.noMelee = true;
+		Item.shoot = ModContent.ProjectileType<SlimeboundBladeSwingProjectile>();
 		Item.shootSpeed = 6.2f;
 	}
 
-	public override void OnHitNPC(Player player, NPC target, NPC.HitInfo hit, int damageDone)
-	{
-		// A restrained splash keeps direct melee hits tactile.
-		for (int i = 0; i < 4; i++)
-		{
-			Dust dust = Dust.NewDustPerfect(target.Center, DustID.BlueCrystalShard, Main.rand.NextVector2Circular(1.4f, 1.4f), 120, new Color(45, 230, 210), 0.7f);
-			dust.noGravity = true;
-		}
-	}
 
 	public override bool Shoot(Player player, Terraria.DataStructures.EntitySource_ItemUse_WithAmmo source, Vector2 position, Vector2 velocity, int type, int damage, float knockback)
 	{
+		// Spawn custom swing projectile
+		Projectile.NewProjectile(source, position, velocity, ModContent.ProjectileType<SlimeboundBladeSwingProjectile>(),
+			damage, knockback, player.whoAmI);
+
+		// 1-1-3 gel volley
 		swingCounter = (swingCounter + 1) % SwingsPerVolley;
 		bool royalVolley = swingCounter == 0;
 		int firstSpread = royalVolley ? -1 : 0;
@@ -52,7 +50,8 @@ public class SlimeboundBlade : ImbuementWeaponItem
 		for (int spread = firstSpread; spread <= lastSpread; spread++)
 		{
 			Vector2 ballVelocity = velocity.RotatedBy(spread * 0.2f);
-			Projectile.NewProjectile(source, position, ballVelocity, type, (int)(damage * 0.45f), knockback * 0.7f, player.whoAmI);
+			Projectile.NewProjectile(source, position, ballVelocity, ModContent.ProjectileType<RoyalGelBallProjectile>(),
+				(int)(damage * 0.45f), knockback * 0.7f, player.whoAmI);
 		}
 
 		if (royalVolley && player.whoAmI == Main.myPlayer)
