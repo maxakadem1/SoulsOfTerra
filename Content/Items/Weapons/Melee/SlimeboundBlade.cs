@@ -4,6 +4,7 @@ using SoulsOfTerra.Content.Items.Weapons;
 using SoulsOfTerra.Content.Projectiles;
 using Terraria;
 using Terraria.Audio;
+using Terraria.DataStructures;
 using Terraria.ID;
 using Terraria.ModLoader;
 
@@ -22,37 +23,37 @@ public class SlimeboundBlade : ImbuementWeaponItem
 		Item.DamageType = DamageClass.Melee;
 		Item.useTime = 45;
 		Item.useAnimation = 45;
-		Item.useStyle = ItemUseStyleID.Swing;
+		Item.useStyle = ItemUseStyleID.Shoot;
 		Item.knockBack = 6.5f;
 		Item.scale = 1.6f;
-		Item.UseSound = SoundID.Item1;
+		Item.UseSound = null;
 		Item.autoReuse = true;
 		Item.rare = ItemRarityID.Blue;
 		Item.value = Item.buyPrice(silver: 50);
-		Item.shoot = ModContent.ProjectileType<RoyalGelBallProjectile>();
-		Item.shootSpeed = 6.2f;
+		Item.noMelee = true;
+		Item.noUseGraphic = true;
+		Item.shoot = ModContent.ProjectileType<SlimeboundBladeSwingProjectile>();
+		Item.shootSpeed = 1f;
 	}
 
-	public override void OnHitNPC(Player player, NPC target, NPC.HitInfo hit, int damageDone)
+	public override bool Shoot(Player player, EntitySource_ItemUse_WithAmmo source, Vector2 position, Vector2 velocity, int type, int damage, float knockback)
 	{
-		// A restrained splash keeps direct melee hits tactile.
-		for (int i = 0; i < 4; i++)
-		{
-			Dust dust = Dust.NewDustPerfect(target.Center, DustID.BlueCrystalShard, Main.rand.NextVector2Circular(1.4f, 1.4f), 120, new Color(45, 230, 210), 0.7f);
-			dust.noGravity = true;
-		}
-	}
+		// Spawn the custom swing projectile
+		Vector2 aimDirection = (Main.MouseWorld - player.MountedCenter).SafeNormalize(new Vector2(player.direction, 0f));
+		Projectile.NewProjectile(source, player.MountedCenter, aimDirection, type, damage, knockback, player.whoAmI);
 
-	public override bool Shoot(Player player, Terraria.DataStructures.EntitySource_ItemUse_WithAmmo source, Vector2 position, Vector2 velocity, int type, int damage, float knockback)
-	{
+		// Fire gel balls with 1-1-3 volley cycle
 		swingCounter = (swingCounter + 1) % SwingsPerVolley;
 		bool royalVolley = swingCounter == 0;
 		int firstSpread = royalVolley ? -1 : 0;
 		int lastSpread = royalVolley ? 1 : 0;
+		int gelBallType = ModContent.ProjectileType<RoyalGelBallProjectile>();
+
 		for (int spread = firstSpread; spread <= lastSpread; spread++)
 		{
-			Vector2 ballVelocity = velocity.RotatedBy(spread * 0.2f);
-			Projectile.NewProjectile(source, position, ballVelocity, type, (int)(damage * 0.45f), knockback * 0.7f, player.whoAmI);
+			Vector2 ballVelocity = aimDirection * 6.2f;
+			ballVelocity = ballVelocity.RotatedBy(spread * 0.2f);
+			Projectile.NewProjectile(source, position, ballVelocity, gelBallType, (int)(damage * 0.45f), knockback * 0.7f, player.whoAmI);
 		}
 
 		if (royalVolley && player.whoAmI == Main.myPlayer)
@@ -72,5 +73,4 @@ public class SlimeboundBlade : ImbuementWeaponItem
 		};
 		tooltips.Add(chargeLine);
 	}
-
 }
