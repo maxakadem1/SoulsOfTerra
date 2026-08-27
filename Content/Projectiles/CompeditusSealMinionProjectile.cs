@@ -12,7 +12,8 @@ namespace SoulsOfTerra.Content.Projectiles;
 
 public class CompeditusSealMinionProjectile : ModProjectile
 {
-	public override string Texture => "SoulsOfTerra/Content/Bosses/SealedCongregation/SealedCongregation_seal";
+	// The compact summon seal is authored separately from the much larger boss seal.
+	public override string Texture => "SoulsOfTerra/Content/Items/Weapons/Summon/Compeditus_summon";
 
 	public override void SetStaticDefaults()
 	{
@@ -24,8 +25,8 @@ public class CompeditusSealMinionProjectile : ModProjectile
 
 	public override void SetDefaults()
 	{
-		Projectile.width = 30;
-		Projectile.height = 30;
+		Projectile.width = 23;
+		Projectile.height = 35;
 		Projectile.friendly = true;
 		Projectile.DamageType = DamageClass.Summon;
 		Projectile.minion = true;
@@ -113,7 +114,7 @@ public class CompeditusSealMinionProjectile : ModProjectile
 		Main.EntitySpriteDraw(glow, position, null, new Color(52, 230, 210, 0) * 0.32f,
 			0f, glowOrigin, 0.32f * pulse, SpriteEffects.None);
 		Main.EntitySpriteDraw(texture, position, null, Color.Lerp(lightColor, Color.White, 0.25f),
-			Projectile.rotation, textureOrigin, 0.42f, SpriteEffects.None);
+			Projectile.rotation, textureOrigin, 1f, SpriteEffects.None);
 		return false;
 	}
 

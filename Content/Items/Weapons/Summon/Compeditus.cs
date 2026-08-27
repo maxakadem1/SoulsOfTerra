@@ -14,8 +14,8 @@ public class Compeditus : ImbuementWeaponItem
 {
 	private const int MaximumSeals = 4;
 
-	// Imp Staff art is temporary until Compeditus receives its authored relic sprite.
-	public override string Texture => $"Terraria/Images/Item_{ItemID.ImpStaff}";
+	// The held relic uses its dedicated bell artwork rather than the class-name texture convention.
+	public override string Texture => "SoulsOfTerra/Content/Items/Weapons/Summon/Compeditus_item";
 
 	public override void SetStaticDefaults()
 	{
@@ -25,7 +25,7 @@ public class Compeditus : ImbuementWeaponItem
 
 	public override void SetDefaults()
 	{
-		Item.width = 32;
+		Item.width = 22;
 		Item.height = 32;
 		Item.damage = 22;
 		Item.DamageType = DamageClass.Summon;

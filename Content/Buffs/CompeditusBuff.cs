@@ -1,13 +1,13 @@
 using SoulsOfTerra.Content.Projectiles;
 using Terraria;
-using Terraria.ID;
 using Terraria.ModLoader;
 
 namespace SoulsOfTerra.Content.Buffs;
 
 public class CompeditusBuff : ModBuff
 {
-	public override string Texture => $"Terraria/Images/Buff_{BuffID.ImpMinion}";
+	// Keep the authored buff icon beside the other Compeditus artwork.
+	public override string Texture => "SoulsOfTerra/Content/Items/Weapons/Summon/Compeditus_buff";
 
 	public override void SetStaticDefaults()
 	{
