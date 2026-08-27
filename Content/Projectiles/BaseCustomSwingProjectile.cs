@@ -37,11 +37,12 @@ public abstract class BaseCustomSwingProjectile : ModProjectile
 			: new Vector2(texture.Width * 0.15f, texture.Height * 0.15f);
 	}
 
-	// Arc definition - rising diagonal slash from behind-below to forward-up
+	// Arc definition - rising diagonal slash from down-back to forward-up
+	// Terraria: 0=right, +π/2=down, -π/2=up. Must NOT pass through -π/2 (overhead).
 	// Returns angle in radians relative to player's facing direction
-	protected virtual float GetWindupStartAngle() => -1.4f;  // Behind and below
-	protected virtual float GetWindupEndAngle() => -1.9f;    // Further back
-	protected virtual float GetSnapEndAngle() => 0.9f;       // Forward and up (rising diagonal)
+	protected virtual float GetWindupStartAngle() => 1.3f;   // Back, slightly down
+	protected virtual float GetWindupEndAngle() => 1.9f;     // Coiled down-back
+	protected virtual float GetSnapEndAngle() => -0.5f;      // Forward-up (nowhere near -π/2)
 	protected virtual float GetWindupSlowdown() => 0.75f;
 
 	public override void SetStaticDefaults()
