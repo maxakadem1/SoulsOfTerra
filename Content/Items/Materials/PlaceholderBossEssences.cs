@@ -24,7 +24,6 @@ public class EaterOfWorldsEssence : PlaceholderBossEssence { }
 public class BrainOfCthulhuEssence : PlaceholderBossEssence { }
 public class QueenBeeEssence : PlaceholderBossEssence { }
 public class SkeletronEssence : PlaceholderBossEssence { }
-public class CongregationEssence : PlaceholderBossEssence { }
 public class QueenSlimeEssence : PlaceholderBossEssence { }
 public class DestroyerEssence : PlaceholderBossEssence { }
 public class TwinsEssence : PlaceholderBossEssence { }
@@ -34,3 +33,4 @@ public class GolemEssence : PlaceholderBossEssence { }
 public class DukeFishronEssence : PlaceholderBossEssence { }
 public class EmpressOfLightEssence : PlaceholderBossEssence { }
 public class LunaticCultistEssence : PlaceholderBossEssence { }
+
