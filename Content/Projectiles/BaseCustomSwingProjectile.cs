@@ -14,6 +14,7 @@ namespace SoulsOfTerra.Content.Projectiles;
 public abstract class BaseCustomSwingProjectile : ModProjectile
 {
 	protected int Age => SwingDuration - Projectile.timeLeft;
+	protected float AimAngle => Projectile.velocity.ToRotation();
 	protected bool HasHitTarget => Projectile.ai[1] > 0f;
 	protected int HitstopTimer => (int)Projectile.ai[1];
 
