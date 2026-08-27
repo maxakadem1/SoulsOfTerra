@@ -3,6 +3,19 @@
 Shader source files live under `Effects/` as `.fx` files. tModLoader loads the
 matching compiled `.fxc` assets; Build & Reload does not compile HLSL source.
 
+## Luminance dependency
+
+Souls of Terra depends on the [Luminance](https://github.com/LucilleKarma/Luminance)
+library (MIT) for particles, primitives, shaders, and screenshake. The library
+is referenced via `modReferences = Luminance` in `build.txt`.
+
+To build the mod, download `Luminance.dll`, `Luminance.pdb`, and `Luminance.xml`
+from the [latest GitHub release](https://github.com/LucilleKarma/Luminance/releases/tag/v1.0.12)
+and place them in the mod source folder (e.g., `C:\Users\Max\Documents\My Games\Terraria\tModLoader\ModSources\SoulsOfTerra`).
+These files are not committed to the repository.
+
+Players must enable Luminance alongside Souls of Terra in tModLoader.
+
 ## Prerequisite
 
 Install the Windows SDK with the DirectX shader compiler (`fxc.exe`). The build

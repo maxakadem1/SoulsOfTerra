@@ -3,6 +3,11 @@ bin/
 obj/
 *.tmod
 
+# External library references (not packaged)
+Luminance.dll
+Luminance.pdb
+Luminance.xml
+
 # IDE and editor state
 .vs/
 .idea/

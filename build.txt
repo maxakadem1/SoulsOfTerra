@@ -1,4 +1,5 @@
 displayName = Souls of Terra
 author = max.a.d.v
 version = 0.2
-buildIgnore = Effects\*.fx
+modReferences = Luminance
+buildIgnore = Effects\*.fx, Luminance.dll, Luminance.pdb, Luminance.xml

@@ -1,3 +1,5 @@
 Souls of Terra brings global mechanics inspired by Souls games into Terraria.
 
 Defeat hostile creatures to gather souls, then recover your lost balance from a bloodstain after death.
+
+Requires the Luminance library mod to be enabled.
