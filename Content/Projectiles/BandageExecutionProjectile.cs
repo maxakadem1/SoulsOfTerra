@@ -21,7 +21,7 @@ public class BandageExecutionProjectile : ModProjectile
 	private int Age => ExecutionDuration - Projectile.timeLeft;
 	private float AimAngle => Projectile.velocity.ToRotation();
 
-	public override string Texture => $"Terraria/Images/Item_{ItemID.BreakerBlade}";
+	public override string Texture => "SoulsOfTerra/Content/Items/Weapons/Melee/EssenceboundBreakerBlade";
 
 	public override void SetStaticDefaults()
 	{
@@ -116,7 +116,7 @@ public class BandageExecutionProjectile : ModProjectile
 	public override bool PreDraw(ref Color lightColor)
 	{
 		Player player = Main.player[Projectile.owner];
-		Texture2D blade = TextureAssets.Item[ItemID.BreakerBlade].Value;
+		Texture2D blade = TextureAssets.Projectile[Type].Value;
 		int direction = Projectile.velocity.X >= 0f ? 1 : -1;
 		float currentAngle = GetSwordAngle(Age, direction);
 		Vector2 handPosition = GetHandPosition(player, currentAngle);

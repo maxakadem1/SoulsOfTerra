@@ -50,6 +50,10 @@
 - Free-for-all recovery.
 - World persistence across save and reload.
 - Last-safe-position fallback for hazardous death locations.
+- Shader-driven void-violet ground pool with a procedural fallback.
+- Four capped value tiers controlling cyan-edged wisp count, brightness, and pulse.
+- Hover and Smart Interact response that brightens the rim and leans wisps toward the player.
+- Immediate authoritative recovery followed by a short cosmetic collapse and ground burst.
 
 ### Soulless and progression
 
@@ -78,6 +82,7 @@
 - Slimebound Blade binding accepts every Copper-through-Platinum metal broadsword plus one Slime Essence.
 - Shared soul-swing system: opt-in held projectile, cursor-locked aim, path presets, in-house rim/core ribbon shader, and one hit per NPC per swing.
 - Slimebound Blade Royal Viscosity prototype: an exceptionally slow 1.6x sword using alternating lateral soul-swings with a miss-independent 1, 1, 3 firing cycle; gel balls launch from the blade tip at the cut, use closely matched damage and bounce areas, pierce enemies, and bounce up to three times.
+- Essencebound Breaker Blade left-click: cursor-locked falling soul-swing (~52 ticks, linen ribbon, ~124px reach) that attaches bandage tethers on hit; right-click execution remains exclusive and unchanged.
 - Servant's Gaze binding consumes one Ruby Staff and one Eye Essence.
 - Servant's Gaze releases three custom-art harmless eye servants that awaken after one second, independently home through terrain, and rupture into small damaging gore bursts.
 
@@ -100,6 +105,8 @@
 - Arena retreat behavior with a three-second grace period and encounter-projectile cleanup.
 - Congregation Essence unlock at Terra Shrine tier 3 for 20,000 souls.
 - Compeditus summon prototype: Imp Staff imbuement, placeholder item/buff art, one code-drawn controller core, up to four reduced Congregation seals, standard minion targeting, tile-aware restrained-homing lances, and a delayed localized implosion judgment.
+- Unison melee prototype: Muramasa imbuement, committed two-fist clap, and a closed Hollow Benediction ring (~360px, no gaps) locked at the smash; one hit per enemy per ring, next clap waits until the hymn finishes.
+- Crux ranged prototype: Handgun imbuement, cursor-locked crossed sentence (~240px X, dedicated write-and-knot shader), both arms hit once per enemy per volley, one volley at a time, consumes bullets.
 - Recipe-first Imbuement flow with boss-based discovery, shrine-tier requirements, missing-inventory feedback, scalable scrolling, framed ingredient/result slots, ready-only selection, and a focused grid-free ritual screen.
 
 ## Current shrine upgrade table
@@ -141,7 +148,7 @@ These values have not been reconciled with measured boss rewards and are deliber
 - The complete `.tmod` package cannot be replaced externally while tModLoader has it loaded; compile-only validation still succeeds.
 - Existing worlds do not receive a Buried Court; the first implementation requires a newly generated world.
 - The arena layout, multi-tile altar framing, seal hitboxes, attack timings, and procedural collision visuals require in-game validation.
-- The Sealed Congregation currently has only one unique equipment reward through Congregation Essence imbuement; it still lacks a broader equipment pool, trophy, relic, and dedicated music, while its treasure bag contains only the provisional healing-potion reward.
+- The Sealed Congregation currently has three unique equipment rewards through Congregation Essence imbuement (Compeditus, Unison, and Crux); it still lacks a broader equipment pool, trophy, relic, and dedicated music, while its treasure bag contains only the provisional healing-potion reward.
 
 ## Verification status
 
@@ -169,6 +176,10 @@ These values have not been reconciled with measured boss rewards and are deliber
 16. Repeat summoning, seal synchronization, retreat, projectile cleanup, and victory with a multiplayer client.
 17. Imbue an Imp Staff into Compeditus; summon one through four seals and verify slot use, targeting priority, terrain traversal, line-of-sight attacks, lance collision, judgment cadence, recall at four seals, dismissal, and multiplayer synchronization.
 18. Imbue Slimebound Blade and confirm cursor-locked alternating lateral swings, a lingering soul-ribbon, one hit per enemy per swing, gel balls firing from the tip at the cut, and the every-third-swing royal volley.
+19. Imbue Muramasa into Unison; confirm the clap animation, a closed expanding ring with no safe gaps, one hit per enemy, knockback away from the smash, and that a second clap cannot start until the ring ends.
+20. Imbue Essencebound Breaker Blade; confirm a hung falling smash through the cursor, a linen ribbon, bandage tethers on hit, and that left-click and right-click execution never overlap.
+21. Imbue a Handgun into Crux; confirm a cursor-locked X that writes inward and knots, both arms hit once, bullets are consumed, and a second volley cannot start until the first ends.
+22. Die with low, medium, and high soul balances; verify capped bloodstain tiers, grounded rendering, hover and Smart Interact response, immediate recovery, collapse and burst feedback, second-death replacement, save/reload persistence, and multiplayer recovery synchronization.
 
 ## Near-term implementation backlog
 

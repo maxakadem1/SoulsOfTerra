@@ -61,6 +61,10 @@ Projectiles: {
 	CompeditusLanceProjectile.DisplayName: Unbound Verse
 	CompeditusJudgmentProjectile.DisplayName: Compeditus Judgment
 	SoulSwingProjectile.DisplayName: Soul Swing Projectile
+	UnisonClapProjectile.DisplayName: Unison
+	UnisonWaveProjectile.DisplayName: Unison
+	CruxVolleyProjectile.DisplayName: Crux
+	SoulBloodstainRecoveryProjectile.DisplayName: Soul Bloodstain Recovery Projectile
 }
 
 Buffs: {
@@ -102,6 +106,25 @@ Items: {
 			'''
 			Summons a shared core surrounded by up to four Congregation seals
 			The choir no longer answers its wardens
+			'''
+	}
+
+	Unison: {
+		DisplayName: Unison
+		Tooltip:
+			'''
+			Clap spectral fists to release a closed Hollow Benediction
+			The hymn expands from the smash and strikes each enemy once
+			'''
+	}
+
+	Crux: {
+		DisplayName: Crux
+		Tooltip:
+			'''
+			Marks the cursor with a crossed sentence
+			Both arms strike each enemy once
+			Uses bullets
 			'''
 	}
 
@@ -247,7 +270,7 @@ Items: {
 		DisplayName: Essencebound Breaker Blade
 		Tooltip:
 			'''
-			Striking enemies binds them to the blade
+			Hung chops smash through the cursor and bind struck enemies
 			Right-click pulls every bound enemy into a devastating cleave
 			Distant bindings pull harder and deal more damage
 			Bindings snap at extreme range or when obstructed

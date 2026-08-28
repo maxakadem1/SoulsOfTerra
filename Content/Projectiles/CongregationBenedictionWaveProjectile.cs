@@ -1,11 +1,11 @@
 using System;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using SoulsOfTerra.Common;
 using SoulsOfTerra.Content.Bosses.SealedCongregation;
 using SoulsOfTerra.Systems;
 using Terraria;
 using Terraria.Audio;
-using Terraria.GameContent;
 using Terraria.ID;
 using Terraria.ModLoader;
 
@@ -87,32 +87,14 @@ public class CongregationBenedictionWaveProjectile : ModProjectile
 	public override bool? Colliding(Rectangle projHitbox, Rectangle targetHitbox)
 	{
 		float radius = CurrentWaveRadius();
-		const float halfThickness = 18f;
-		Vector2 closest = new(
-			MathHelper.Clamp(Projectile.Center.X, targetHitbox.Left, targetHitbox.Right),
-			MathHelper.Clamp(Projectile.Center.Y, targetHitbox.Top, targetHitbox.Bottom));
-		float minimumDistance = Vector2.Distance(Projectile.Center, closest);
-		float maximumDistance = 0f;
-		Vector2[] corners =
-		[
-			targetHitbox.TopLeft(),
-			targetHitbox.TopRight(),
-			targetHitbox.BottomLeft(),
-			targetHitbox.BottomRight()
-		];
-		foreach (Vector2 corner in corners)
-		{
-			maximumDistance = Math.Max(maximumDistance, Vector2.Distance(Projectile.Center, corner));
-		}
-
-		if (radius + halfThickness < minimumDistance || radius - halfThickness > maximumDistance)
+		if (!CongregationHymnWave.HitsAnnulus(Projectile.Center, radius, targetHitbox))
 		{
 			return false;
 		}
 
 		// The same angular gaps omitted by the renderer are always safe in collision.
 		float targetAngle = (targetHitbox.Center.ToVector2() - Projectile.Center).ToRotation();
-		return !AngleFallsInGap(targetAngle);
+		return !CongregationHymnWave.AngleFallsInGap(targetAngle, Projectile.ai[1], GapHalfAngle);
 	}
 
 	public override bool PreDraw(ref Color lightColor)
@@ -235,151 +217,14 @@ public class CongregationBenedictionWaveProjectile : ModProjectile
 
 	private void DrawExpandingWave()
 	{
-		Texture2D pixel = TextureAssets.MagicPixel.Value;
-		Texture2D glow = SoulOrbProjectile.GetGlowTexture();
-		Vector2 glowOrigin = glow.Size() * 0.5f;
-		float progress = WaveProgress();
-		float radius = CurrentWaveRadius();
-		float opacity = MathF.Sin(progress * MathHelper.Pi);
-		float phase = Main.GlobalTimeWrappedHourly * 5.2f;
-
-		// Soft echoes make the ring read as a moving wall of energy instead of one flat line.
-		DrawWaveRing(pixel, radius - 48f, 8f, new Color(16, 105, 101, 0) * (opacity * 0.22f), 8f, phase + 1.6f);
-		DrawWaveRing(pixel, radius - 24f, 12f, new Color(28, 176, 163, 0) * (opacity * 0.3f), 5f, phase + 0.8f);
-		DrawWaveRing(pixel, radius + 14f, 2f, new Color(132, 255, 234, 0) * (opacity * 0.4f), 4f, phase);
-
-		const int segments = 112;
-
-		for (int segment = 0; segment < segments; segment++)
-		{
-			float startAngle = MathHelper.TwoPi * segment / segments;
-			float endAngle = MathHelper.TwoPi * (segment + 1) / segments;
-			float middleAngle = (startAngle + endAngle) * 0.5f;
-			if (AngleFallsInGap(middleAngle))
-			{
-				continue;
-			}
-
-			Vector2 start = Projectile.Center + startAngle.ToRotationVector2() * radius - Main.screenPosition;
-			Vector2 end = Projectile.Center + endAngle.ToRotationVector2() * radius - Main.screenPosition;
-			DrawLine(pixel, start, end, new Color(2, 8, 11, 220) * opacity, 24f);
-			DrawLine(pixel, start, end, new Color(35, 213, 193, 0) * (opacity * 0.52f), 15f);
-			DrawLine(pixel, start, end, new Color(222, 255, 248, 0) * (opacity * 0.98f), 4.5f);
-
-			if (segment % 7 == 0)
-			{
-				float flicker = 0.75f + 0.25f * MathF.Sin(segment * 2.7f + phase);
-				Main.EntitySpriteDraw(glow, (start + end) * 0.5f, null,
-					new Color(79, 239, 215, 0) * (opacity * 0.65f * flicker), middleAngle + MathHelper.PiOver2, glowOrigin,
-					new Vector2(0.2f, 0.055f), SpriteEffects.None);
-			}
-		}
-
-		DrawWaveFragments(glow, glowOrigin, radius, opacity, phase);
-	}
-
-	private void DrawWaveRing(Texture2D pixel, float radius, float width, Color color, float wobble, float phase)
-	{
-		if (radius <= wobble + 2f)
-		{
-			return;
-		}
-
-		const int segments = 112;
-		for (int segment = 0; segment < segments; segment++)
-		{
-			float startAngle = MathHelper.TwoPi * segment / segments;
-			float endAngle = MathHelper.TwoPi * (segment + 1) / segments;
-			if (AngleFallsInGap((startAngle + endAngle) * 0.5f, 0.035f))
-			{
-				continue;
-			}
-
-			float startRadius = radius + MathF.Sin(startAngle * 9f + phase) * wobble;
-			float endRadius = radius + MathF.Sin(endAngle * 9f + phase) * wobble;
-			Vector2 start = Projectile.Center + startAngle.ToRotationVector2() * startRadius - Main.screenPosition;
-			Vector2 end = Projectile.Center + endAngle.ToRotationVector2() * endRadius - Main.screenPosition;
-			DrawLine(pixel, start, end, color, width);
-		}
-	}
-
-	private void DrawWaveFragments(Texture2D glow, Vector2 origin, float radius, float opacity, float phase)
-	{
-		for (int fragment = 0; fragment < 28; fragment++)
-		{
-			float angle = MathHelper.TwoPi * fragment / 28f + 0.035f * MathF.Sin(fragment * 4.1f + phase);
-			if (AngleFallsInGap(angle, 0.045f))
-			{
-				continue;
-			}
-
-			float offset = MathF.Sin(fragment * 2.3f + phase * 1.4f) * 20f;
-			Vector2 position = Projectile.Center + angle.ToRotationVector2() * (radius + offset) - Main.screenPosition;
-			float scale = 0.045f + 0.025f * (0.5f + 0.5f * MathF.Sin(fragment * 1.7f + phase));
-			Main.EntitySpriteDraw(glow, position, null, new Color(157, 255, 237, 0) * (opacity * 0.7f),
-				angle + MathHelper.PiOver2, origin, new Vector2(scale * 3.8f, scale), SpriteEffects.None);
-		}
+		CongregationHymnWave.DrawExpandingWave(Projectile.Center, CurrentWaveRadius(), WaveProgress(),
+			Projectile.ai[1], GapHalfAngle);
 	}
 
 	private void DrawReleaseFlash()
 	{
-		float age = Projectile.localAI[0] - WaveStart;
-		if (age is < 0f or > ReleaseFlashDuration)
-		{
-			return;
-		}
-
-		Texture2D glow = SoulOrbProjectile.GetGlowTexture();
-		Texture2D pixel = TextureAssets.MagicPixel.Value;
-		Vector2 center = Projectile.Center - Main.screenPosition;
-		Vector2 origin = glow.Size() * 0.5f;
-		float progress = age / ReleaseFlashDuration;
-		float opacity = MathF.Pow(1f - progress, 1.35f);
-		float bloomScale = MathHelper.Lerp(0.75f, 5.8f, MathF.Sqrt(progress));
-		Main.EntitySpriteDraw(glow, center, null, new Color(18, 211, 190, 0) * (opacity * 0.58f),
-			0f, origin, bloomScale, SpriteEffects.None);
-		Main.EntitySpriteDraw(glow, center, null, new Color(235, 255, 250, 0) * opacity,
-			0f, origin, MathHelper.Lerp(0.85f, 2f, progress), SpriteEffects.None);
-
-		for (int ring = 0; ring < 3; ring++)
-		{
-			float ringProgress = MathHelper.Clamp(progress * 1.45f - ring * 0.14f, 0f, 1f);
-			if (ringProgress <= 0f)
-			{
-				continue;
-			}
-
-			float ringOpacity = MathF.Sin(ringProgress * MathHelper.Pi) * (1f - ring * 0.18f);
-			float ringRadius = MathHelper.Lerp(18f, 290f, 1f - MathF.Pow(1f - ringProgress, 2f));
-			DrawReleaseRing(pixel, ringRadius, MathHelper.Lerp(8f, 1.5f, ringProgress),
-				new Color(177, 255, 239, 0) * ringOpacity);
-		}
-
-		// Irregular shards sell the detonation without recreating the four charge spokes.
-		for (int shard = 0; shard < 24; shard++)
-		{
-			float variance = MathF.Sin(shard * 12.9898f) * 0.08f;
-			float angle = MathHelper.TwoPi * shard / 24f + variance;
-			Vector2 direction = angle.ToRotationVector2();
-			float startDistance = MathHelper.Lerp(18f, 105f, progress);
-			float length = MathHelper.Lerp(80f + shard % 5 * 8f, 20f, progress);
-			DrawLine(pixel, center + direction * startDistance, center + direction * (startDistance + length),
-				new Color(204, 255, 244, 0) * (opacity * 0.72f), MathHelper.Lerp(4.5f, 0.8f, progress));
-		}
-	}
-
-	private void DrawReleaseRing(Texture2D pixel, float radius, float width, Color color)
-	{
-		const int segments = 72;
-		Vector2 center = Projectile.Center - Main.screenPosition;
-		for (int segment = 0; segment < segments; segment++)
-		{
-			float startAngle = MathHelper.TwoPi * segment / segments;
-			float endAngle = MathHelper.TwoPi * (segment + 1) / segments;
-			Vector2 start = center + startAngle.ToRotationVector2() * radius;
-			Vector2 end = center + endAngle.ToRotationVector2() * radius;
-			DrawLine(pixel, start, end, color, width);
-		}
+		CongregationHymnWave.DrawReleaseFlash(Projectile.Center, Projectile.localAI[0] - WaveStart,
+			ReleaseFlashDuration);
 	}
 
 	private void SpawnReleaseDust()
@@ -464,9 +309,7 @@ public class CongregationBenedictionWaveProjectile : ModProjectile
 
 	private float CurrentWaveRadius()
 	{
-		float progress = WaveProgress();
-		float eased = 1f - MathF.Pow(1f - progress, 3f);
-		return MathHelper.Lerp(18f, MaximumRadius, eased);
+		return CongregationHymnWave.EasedRadius(WaveProgress(), 18f, MaximumRadius);
 	}
 
 	private float WaveProgress()
@@ -474,24 +317,9 @@ public class CongregationBenedictionWaveProjectile : ModProjectile
 		return MathHelper.Clamp((Projectile.localAI[0] - WaveStart) / (WaveEnd - WaveStart), 0f, 1f);
 	}
 
-	private bool AngleFallsInGap(float angle, float padding = 0f)
-	{
-		float relative = MathHelper.WrapAngle(angle - Projectile.ai[1]);
-		float nearestGap = MathF.Round(relative / MathHelper.PiOver2) * MathHelper.PiOver2;
-		return MathF.Abs(MathHelper.WrapAngle(relative - nearestGap)) <= GapHalfAngle + padding;
-	}
-
 	private static float SmoothStep(float from, float to, float value)
 	{
 		float amount = MathHelper.Clamp((value - from) / (to - from), 0f, 1f);
 		return amount * amount * (3f - 2f * amount);
-	}
-
-	private static void DrawLine(Texture2D texture, Vector2 start, Vector2 end, Color color, float width)
-	{
-		Vector2 difference = end - start;
-		Vector2 origin = new(0f, texture.Height * 0.5f);
-		Main.EntitySpriteDraw(texture, start, null, color, difference.ToRotation(), origin,
-			new Vector2(difference.Length() / texture.Width, width / texture.Height), SpriteEffects.None);
 	}
 }
