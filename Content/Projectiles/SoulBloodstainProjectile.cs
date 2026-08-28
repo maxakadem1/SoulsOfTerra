@@ -1,10 +1,9 @@
 using System.IO;
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
+using SoulsOfTerra.Common;
 using SoulsOfTerra.Players;
 using Terraria;
 using Terraria.DataStructures;
-using Terraria.GameContent;
 using Terraria.GameInput;
 using Terraria.ID;
 using Terraria.Localization;
@@ -42,28 +41,29 @@ public class SoulBloodstainProjectile : ModProjectile
 	{
 		Projectile.timeLeft = 2;
 		Main.CurrentFrameFlags.HadAnActiveInteractibleProjectile = true;
-		Lighting.AddLight(Projectile.Center, 0.24f, 0.08f, 0.34f);
+		int tier = SoulBloodstainDraw.GetVisualTier(StoredSouls);
+		float tierStrength = 0.82f + tier * 0.1f;
+		Lighting.AddLight(Projectile.Center + Vector2.UnitY * 4f, 0.18f * tierStrength, 0.08f * tierStrength,
+			0.32f * tierStrength);
 
-		if (!Main.dedServ && Main.rand.NextBool(6))
+		if (!Main.dedServ && Main.rand.NextBool(12 - tier))
 		{
-			Vector2 dustPosition = Projectile.Center + Main.rand.NextVector2Circular(18f, 8f);
-			Dust dust = Dust.NewDustPerfect(dustPosition, DustID.Shadowflame, -Vector2.UnitY * 0.35f, 120, new Color(170, 80, 230), 0.8f);
+			Vector2 dustPosition = Projectile.Center + new Vector2(Main.rand.NextFloat(-18f, 18f), Main.rand.NextFloat(5f, 13f));
+			Color color = Color.Lerp(new Color(156, 68, 214), new Color(62, 204, 224), Main.rand.NextFloat(0.15f, 0.5f));
+			Dust dust = Dust.NewDustPerfect(dustPosition, DustID.DungeonSpirit,
+				new Vector2(Main.rand.NextFloat(-0.12f, 0.12f), Main.rand.NextFloat(-0.5f, -0.25f)), 130, color, 0.62f);
 			dust.noGravity = true;
 		}
 	}
 
 	public override bool PreDraw(ref Color lightColor)
 	{
-		Texture2D pixel = TextureAssets.MagicPixel.Value;
-		Vector2 drawPosition = Projectile.Center - Main.screenPosition;
-		float pulse = 0.75f + 0.15f * (float)System.Math.Sin(Main.GlobalTimeWrappedHourly * 4f + Projectile.whoAmI);
-		Color glow = new Color(115, 35, 165, 0) * pulse;
+		bool reactive = TryInteracting();
+		if (Projectile.active)
+		{
+			SoulBloodstainDraw.DrawMarker(Projectile, StoredSouls, reactive);
+		}
 
-		Main.EntitySpriteDraw(pixel, drawPosition, null, glow, 0f, new Vector2(0.5f), new Vector2(42f, 12f), SpriteEffects.None);
-		Texture2D soulTexture = TextureAssets.Item[ItemID.SoulofNight].Value;
-		Main.EntitySpriteDraw(soulTexture, drawPosition - Vector2.UnitY * 8f, null, new Color(210, 150, 255, 220), 0f, soulTexture.Size() * 0.5f, 0.8f + pulse * 0.2f, SpriteEffects.None);
-
-		TryInteracting();
 		return false;
 	}
 
@@ -86,6 +86,8 @@ public class SoulBloodstainProjectile : ModProjectile
 			return;
 		}
 
+		SoulBloodstainRecoveryProjectile.Spawn(Projectile.GetSource_FromThis(), Projectile.Center, player.whoAmI,
+			SoulBloodstainDraw.GetVisualTier(StoredSouls));
 		player.GetModPlayer<SoulPlayer>().AddSouls(StoredSouls);
 		Projectile.Kill();
 	}
@@ -123,25 +125,25 @@ public class SoulBloodstainProjectile : ModProjectile
 		}
 	}
 
-	private void TryInteracting()
+	private bool TryInteracting()
 	{
 		if (Main.gamePaused || Main.gameMenu || StoredSouls <= 0)
 		{
-			return;
+			return false;
 		}
 
 		Player player = Main.LocalPlayer;
 		Vector2 compareSpot = player.Center;
 		if (!player.IsProjectileInteractibleAndInInteractionRange(Projectile, ref compareSpot))
 		{
-			return;
+			return false;
 		}
 
 		bool directlyHovered = Projectile.Hitbox.Contains(Main.MouseWorld.ToPoint());
 		bool selected = directlyHovered || Main.SmartInteractProj == Projectile.whoAmI;
 		if (!selected || player.lastMouseInterface)
 		{
-			return;
+			return false;
 		}
 
 		Main.HasInteractibleObjectThatIsNotATile = true;
@@ -155,7 +157,7 @@ public class SoulBloodstainProjectile : ModProjectile
 
 		if (!Main.mouseRight || !Main.mouseRightRelease || Player.BlockInteractionWithProjectiles != 0)
 		{
-			return;
+			return true;
 		}
 
 		Main.mouseRightRelease = false;
@@ -175,5 +177,6 @@ public class SoulBloodstainProjectile : ModProjectile
 			Recover(player);
 		}
 
+		return true;
 	}
 }

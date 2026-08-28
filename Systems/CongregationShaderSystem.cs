@@ -14,10 +14,12 @@ public class CongregationShaderSystem : ModSystem
 	private const string ShockwaveKey = "SoulsOfTerra:CongregationShockwave";
 	private const string ShrineRefractionKey = "SoulsOfTerra:ShrineRefraction";
 	private const string BeamKey = "SoulsOfTerra:CongregationBeam";
+	private const string CruxKey = "SoulsOfTerra:CruxSentence";
 	private static bool registered;
 	private static CongregationShockwaveShaderData shaderData;
 	private static ShrineRefractionShaderData shrineShaderData;
 	private static Asset<Effect> beamEffect;
+	private static Asset<Effect> cruxEffect;
 	private static MiscShaderData beamShaderData;
 	private static Texture2D beamNoiseTexture;
 
@@ -36,6 +38,8 @@ public class CongregationShaderSystem : ModSystem
 		beamEffect = Mod.Assets.Request<Effect>("Effects/CongregationBeam", AssetRequestMode.ImmediateLoad);
 		beamShaderData = new MiscShaderData(beamEffect, "BeamPass");
 		GameShaders.Misc[BeamKey] = beamShaderData;
+		cruxEffect = Mod.Assets.Request<Effect>("Effects/CruxSentence", AssetRequestMode.ImmediateLoad);
+		GameShaders.Misc[CruxKey] = new MiscShaderData(cruxEffect, "SentencePass");
 		registered = true;
 	}
 
@@ -54,6 +58,7 @@ public class CongregationShaderSystem : ModSystem
 		shrineShaderData = null;
 		beamShaderData = null;
 		beamEffect = null;
+		cruxEffect = null;
 		if (noiseToDispose is not null)
 		{
 			// Reloads may unload content off-thread, so graphics resources return to Terraria's main thread.
@@ -91,6 +96,27 @@ public class CongregationShaderSystem : ModSystem
 	public static Effect GetBeamEffect()
 	{
 		return registered && !Main.dedServ && beamEffect is not null ? beamEffect.Value : null;
+	}
+
+	public static Effect GetCruxEffect()
+	{
+		return registered && !Main.dedServ && cruxEffect is not null ? cruxEffect.Value : null;
+	}
+
+	public static bool ApplyCruxSentence(float writeProgress, float time, float intensity, float mode)
+	{
+		if (!registered || Main.dedServ || cruxEffect is null)
+		{
+			return false;
+		}
+
+		Effect effect = cruxEffect.Value;
+		effect.Parameters["writeProgress"].SetValue(writeProgress);
+		effect.Parameters["sentenceTime"].SetValue(time);
+		effect.Parameters["sentenceIntensity"].SetValue(intensity);
+		effect.Parameters["sentenceMode"].SetValue(mode);
+		effect.CurrentTechnique.Passes["SentencePass"].Apply();
+		return true;
 	}
 
 	private static Texture2D CreateBeamNoiseTexture()

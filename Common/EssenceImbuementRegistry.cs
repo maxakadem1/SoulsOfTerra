@@ -2,6 +2,7 @@ using System;
 using SoulsOfTerra.Content.Items.Materials;
 using SoulsOfTerra.Content.Items.Weapons.Magic;
 using SoulsOfTerra.Content.Items.Weapons.Melee;
+using SoulsOfTerra.Content.Items.Weapons.Ranged;
 using SoulsOfTerra.Content.Items.Weapons.Summon;
 using Terraria.ID;
 using Terraria.ModLoader;
@@ -52,6 +53,20 @@ public static class EssenceImbuementRegistry
 			ModContent.ItemType<CongregationEssence>(),
 			ModContent.ItemType<Compeditus>(),
 			"Compeditus"),
+		new(
+			"unison",
+			new int[] { ItemID.Muramasa },
+			"Muramasa",
+			ModContent.ItemType<CongregationEssence>(),
+			ModContent.ItemType<Unison>(),
+			"Unison"),
+		new(
+			"crux",
+			new int[] { ItemID.Handgun },
+			"Handgun",
+			ModContent.ItemType<CongregationEssence>(),
+			ModContent.ItemType<Crux>(),
+			"Crux"),
 		new(
 			"moonstoneStaff",
 			new int[] { ItemID.DiamondStaff },

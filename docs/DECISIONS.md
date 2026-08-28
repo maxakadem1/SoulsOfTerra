@@ -35,6 +35,9 @@
 | Boss color | Orange/yellow is exclusive to bosses. | Boss rewards need an immediate categorical distinction. |
 | Trails | One attraction trail per orb. | Multiple trails were visually noisy and were removed after testing. |
 | Interior | Mostly transparent core with large rotating wisps and a bright border. | Keeps the internal motion visible instead of becoming a solid glowing disk. |
+| Death marker | A grounded void-violet pool with cyan-edged returning wisps. | Separates persistent lost souls from collectible enemy orbs while preserving a shared spectral language. |
+| Death marker value | Four capped intensity tiers alter wisp count, brightness, and pulse without changing the footprint. | Larger losses feel more important without producing world clutter or misleading interaction range. |
+| Death marker interaction | Hovering brightens the pool and draws its wisps toward the player; recovery collapses them into the player and leaves a short ground burst. | Makes deliberate right-click recovery legible and satisfying without delaying the authoritative balance change. |
 | Gain text | Nearby rewards accumulate into one notification. | A small pickup should not overwrite a boss-sized reward before it can be read. |
 | Shrine catalogue | Five-column scrollable grid with self-contained essence cards, hover details, and one contextual Condense button. | Fifteen essences fit at once, the catalogue scales without placeholder cards, and descriptions consume no permanent space. |
 | Undiscovered essences | Show generic locked silhouettes without boss names. | Communicates future depth without spoiling encounters or rewards. |
@@ -92,6 +95,10 @@
 | Health bar | One combined core-and-seal bar. | Accurately reports progress while the core is invulnerable. |
 | Essence reward | Congregation Essence, tier 3, 20,000 souls. | Integrates the original boss with established shrine progression. |
 | Summon reward | Imp Staff + Congregation Essence produces Compeditus, a shared core with up to four one-slot seals. | Converts the boss's defining formation into a distinctive summon while respecting imbuement-only weapon acquisition. |
+| Melee reward | Muramasa + Congregation Essence produces Unison, a committed two-fist clap that releases a closed Hollow Benediction ring. | Gives Congregation a melee identity without copying the boss's four safe gaps. |
+| Unison combat | Hands part and smash; a 360px expanding ring locks at the clap, deals one hit per enemy, and must finish before the next clap. | Reads as the same hymn at player scale, without dragging an arena-clear or overlapping rings. |
+| Ranged reward | Handgun + Congregation Essence produces Crux, a cursor-locked crossed sentence. | Dungeon sibling to Unison; uses leftover Crossed Sentence language without full-screen lances. |
+| Crux combat | Click locks the cursor; two arms write inward, knot, and hit once per enemy; one volley at a time; consumes bullets. | Fast aimed mark, not another wait-for-hymn special. |
 | Compeditus combat | Non-contact seals perform a staggered lance verse followed by a localized implosion judgment; the formation crosses terrain but attacks require line of sight. | Provides reliable summon damage and a coordinated payoff without enabling passive through-wall farming. |
 
 ## Essence imbuement discovery
@@ -104,7 +111,7 @@
 | Ingredient linking | Selecting a ready recipe links the first matching weapon and essence from the player's inventory without consuming them. | Removes inventory-search friction while preserving the ritual as the deliberate confirmation step. |
 | Ritual completion | Successful binding returns to the recipe catalogue; the focused screen also provides Back to Recipes. | Keeps repeated bindings and cancellation predictable without exposing an empty ritual screen. |
 | Imbuement cost | One valid base weapon and one matching essence, with no additional materials. | The expensive essence already carries the soul and progression cost. |
-| Current bindings | Any Copper-through-Platinum broadsword + Slime Essence; Ruby Staff + Eye Essence; Breaker Blade + Wall of Flesh Essence; Imp Staff + Congregation Essence; Diamond Staff + Moon Lord Essence. | Establishes flexible early bases and precise thematic bases where desired. |
+| Current bindings | Any Copper-through-Platinum broadsword + Slime Essence; Ruby Staff + Eye Essence; Breaker Blade + Wall of Flesh Essence; Imp Staff + Congregation Essence; Muramasa + Congregation Essence; Handgun + Congregation Essence; Diamond Staff + Moon Lord Essence. | Establishes flexible early bases and precise thematic bases where desired. |
 | Future enforcement | Every mod weapon inherits `ImbuementWeaponItem`, must be a registry output, and may not have a conventional recipe. | Turns the design rule into a load-time invariant instead of documentation alone. |
 
 ## Soul swings
@@ -120,6 +127,8 @@
 | Cadence | One swing at a time; the next click waits until this swing ends. | Fast vs slow blades are authored durations, not overlapping animations. |
 | Graphics | In-house ribbon primitive and shader. | No extra mod dependency; MIT-clean and visually ours. |
 | Slime payload | Gel balls and the royal volley fire at the cut from the blade tip. | Syncs the projectile to the snap of the animation. |
+| Breaker left-click | Essencebound Breaker Blade uses falling; hung smash, linen ribbon, bandages on hit. | The cleaver identity is the overhead smash; right-click keeps the execution payoff. |
+| Breaker extras | No vanilla 90% HP bonus and no extra cut projectile. | Bandages plus execution are the extras; stacking an invisible opener hid the binding fantasy. |
 
 ## Decisions intentionally deferred
 

@@ -1,5 +1,5 @@
+using System;
 using System.Collections.Generic;
-using Microsoft.Xna.Framework;
 using SoulsOfTerra.Systems;
 using Terraria;
 using Terraria.ID;
@@ -11,14 +11,16 @@ namespace SoulsOfTerra.NPCs;
 [AutoloadHead]
 public class SoullessNPC : ModNPC
 {
-	public override string Texture => $"Terraria/Images/NPC_{NPCID.TaxCollector}";
-	public override string HeadTexture => $"Terraria/Images/NPC_Head_{NPCHeadID.TaxCollector}";
+	private const int WalkFrameCount = 5;
+	private const int WalkFrameTicks = 8;
+
+	public override string Texture => "SoulsOfTerra/NPCs/Soulless";
 
 	public override void SetStaticDefaults()
 	{
-		Main.npcFrameCount[Type] = Main.npcFrameCount[NPCID.TaxCollector];
-		NPCID.Sets.ExtraFramesCount[Type] = 9;
-		NPCID.Sets.AttackFrameCount[Type] = 4;
+		Main.npcFrameCount[Type] = WalkFrameCount;
+		NPCID.Sets.ExtraFramesCount[Type] = 0;
+		NPCID.Sets.AttackFrameCount[Type] = 0;
 		NPCID.Sets.DangerDetectRange[Type] = 500;
 		NPCID.Sets.AttackType[Type] = 2;
 		NPCID.Sets.AttackTime[Type] = 30;
@@ -38,7 +40,38 @@ public class SoullessNPC : ModNPC
 		NPC.HitSound = SoundID.NPCHit1;
 		NPC.DeathSound = SoundID.NPCDeath1;
 		NPC.knockBackResist = 0.5f;
-		AnimationType = NPCID.TaxCollector;
+		// Frame bottoms already sit on the town hitbox; a negative offset lifts the sprite off the floor.
+		DrawOffsetY = -3;
+	}
+
+	public override void PostAI()
+	{
+		// NPC sheets face left; the engine flips them when spriteDirection is 1 (walking right).
+		NPC.spriteDirection = NPC.direction;
+	}
+
+	public override void FindFrame(int frameHeight)
+	{
+		NPC.spriteDirection = NPC.direction;
+
+		if (NPC.IsABestiaryIconDummy || Math.Abs(NPC.velocity.X) > 0.1f)
+		{
+			NPC.frameCounter += NPC.IsABestiaryIconDummy ? 1.0 : Math.Abs(NPC.velocity.X) * 1.6;
+			if (NPC.frameCounter >= WalkFrameTicks)
+			{
+				NPC.frameCounter = 0.0;
+				NPC.frame.Y += frameHeight;
+				if (NPC.frame.Y >= WalkFrameCount * frameHeight)
+				{
+					NPC.frame.Y = 0;
+				}
+			}
+
+			return;
+		}
+
+		NPC.frameCounter = 0.0;
+		NPC.frame.Y = 0;
 	}
 
 	public override bool CanTownNPCSpawn(int numTownNPCs)
@@ -110,10 +143,5 @@ public class SoullessNPC : ModNPC
 	{
 		multiplier = 9f;
 		randomOffset = 2f;
-	}
-
-	public override Color? GetAlpha(Color drawColor)
-	{
-		return Color.Lerp(drawColor, new Color(120, 105, 145), 0.22f);
 	}
 }
