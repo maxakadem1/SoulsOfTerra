@@ -22,6 +22,7 @@ public class SoulPlayer : ModPlayer
 	public string CharacterId { get; private set; } = string.Empty;
 	public long RecentGain { get; private set; }
 	public int RecentGainTime { get; private set; }
+	public int SoulSwingIndex;
 
 	public override void Initialize()
 	{
@@ -29,6 +30,7 @@ public class SoulPlayer : ModPlayer
 		CharacterId = Guid.NewGuid().ToString("N");
 		RecentGain = 0;
 		RecentGainTime = 0;
+		SoulSwingIndex = 0;
 	}
 
 	public override void SaveData(TagCompound tag)

@@ -60,6 +60,7 @@ Projectiles: {
 	CompeditusSealMinionProjectile.DisplayName: Compeditus Seal
 	CompeditusLanceProjectile.DisplayName: Unbound Verse
 	CompeditusJudgmentProjectile.DisplayName: Compeditus Judgment
+	SoulSwingProjectile.DisplayName: Soul Swing Projectile
 }
 
 Buffs: {
