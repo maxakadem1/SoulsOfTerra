@@ -3,7 +3,6 @@ using Microsoft.Xna.Framework.Graphics;
 using SoulsOfTerra.Common;
 using Terraria;
 using Terraria.Audio;
-using Terraria.DataStructures;
 using Terraria.GameContent;
 using Terraria.ID;
 using Terraria.ModLoader;
@@ -47,10 +46,6 @@ public class EssenceBindingRitualProjectile : ModProjectile
 			SoundEngine.PlaySound(SoundID.Item4 with { Volume = 0.85f, Pitch = 0.2f }, Projectile.Center);
 		}
 
-		if (Projectile.timeLeft == 1 && Main.netMode != NetmodeID.MultiplayerClient)
-		{
-			GrantOutput();
-		}
 	}
 
 	public override bool PreDraw(ref Color lightColor)
@@ -64,6 +59,12 @@ public class EssenceBindingRitualProjectile : ModProjectile
 		float rise = MathHelper.SmoothStep(10f, 0f, Utils.GetLerpValue(0f, 24f, age, true));
 		float bob = System.MathF.Sin(age * 0.12f) * 3f;
 		Vector2 center = Projectile.Center - Main.screenPosition + new Vector2(0f, rise + bob);
+		Player player = Main.player[Projectile.owner];
+		if (age > RevealTime + 7 && player.active)
+		{
+			float returnProgress = Utils.GetLerpValue(RevealTime + 7f, RitualDuration, age, true);
+			center = Vector2.Lerp(center, player.Center - Main.screenPosition, returnProgress * returnProgress);
+		}
 		int consumedInputType = (int)Projectile.ai[2];
 		if (!imbuement.AcceptsInput(consumedInputType))
 		{
@@ -86,39 +87,15 @@ public class EssenceBindingRitualProjectile : ModProjectile
 		return false;
 	}
 
-	private void GrantOutput()
-	{
-		if (!EssenceImbuementRegistry.TryGet((int)Projectile.ai[0], out EssenceImbuementDefinition imbuement))
-		{
-			return;
-		}
-
-		Item output = new(imbuement.OutputItemType);
-		int prefix = (int)Projectile.ai[1];
-		if (prefix > 0)
-		{
-			output.Prefix(prefix);
-		}
-
-		IEntitySource source = new EntitySource_Misc("SoulsOfTerra:EssenceBindingComplete");
-		Player player = Main.player[Projectile.owner];
-		if (player.active)
-		{
-			player.QuickSpawnItem(source, output, 1);
-		}
-		else
-		{
-			Item.NewItem(source, Projectile.Hitbox, imbuement.OutputItemType, prefixGiven: prefix);
-		}
-	}
-
 	private void CreateRevealBurst()
 	{
 		for (int index = 0; index < 32; index++)
 		{
 			Vector2 direction = Main.rand.NextVector2Unit();
-			Dust dust = Dust.NewDustPerfect(Projectile.Center, index % 3 == 0 ? DustID.SilverFlame : DustID.GreenTorch,
-				direction * Main.rand.NextFloat(2f, 6f), 60, new Color(120, 215, 185), Main.rand.NextFloat(0.8f, 1.25f));
+			bool terraSpark = index % 3 == 0;
+			Dust dust = Dust.NewDustPerfect(Projectile.Center, terraSpark ? DustID.GoldFlame : DustID.GreenTorch,
+				direction * Main.rand.NextFloat(2f, 6f), 60,
+				terraSpark ? new Color(245, 205, 85) : new Color(90, 235, 170), Main.rand.NextFloat(0.8f, 1.25f));
 			dust.noGravity = true;
 		}
 	}

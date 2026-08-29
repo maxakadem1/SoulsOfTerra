@@ -72,11 +72,11 @@ public static class SoulEssenceRegistry
 	}
 
 	private static SoulEssenceDefinition Create<T>(string id, string name, long cost, string description,
-		Func<bool> bossDefeated, string bossName, int shrineTier, Func<bool> isAvailable = null,
+		Func<bool> bossDefeated, string bossName, int requiredTemper, Func<bool> isAvailable = null,
 		string unavailableRequirement = null) where T : ModItem
 	{
 		return new SoulEssenceDefinition(id, ModContent.ItemType<T>(), name, cost, description, bossDefeated,
-			bossName, shrineTier, isAvailable, unavailableRequirement);
+			bossName, requiredTemper, isAvailable, unavailableRequirement);
 	}
 }
 
@@ -92,10 +92,10 @@ public sealed class SoulEssenceDefinition
 	public string Name { get; }
 	public long Cost { get; }
 	public string Description { get; }
-	public int ShrineTier { get; }
+	public int RequiredTemper { get; }
 
 	public SoulEssenceDefinition(string id, int itemType, string name, long cost, string description,
-		Func<bool> bossDefeated, string bossName, int shrineTier, Func<bool> isAvailable,
+		Func<bool> bossDefeated, string bossName, int requiredTemper, Func<bool> isAvailable,
 		string unavailableRequirement)
 	{
 		Id = id;
@@ -105,14 +105,14 @@ public sealed class SoulEssenceDefinition
 		Description = description;
 		this.bossDefeated = bossDefeated;
 		this.bossName = bossName;
-		ShrineTier = shrineTier;
+		RequiredTemper = requiredTemper;
 		this.isAvailable = isAvailable;
 		this.unavailableRequirement = unavailableRequirement;
 	}
 
 	public bool IsUnlocked()
 	{
-		return IsDiscovered() && SoulWorldSystem.TerraShrineTier >= ShrineTier;
+		return IsDiscovered() && SoulWorldSystem.TerraforgeTemper >= RequiredTemper;
 	}
 
 	public bool IsDiscovered() => (isAvailable is null || isAvailable()) && bossDefeated();
@@ -129,8 +129,8 @@ public sealed class SoulEssenceDefinition
 			return $"Requires {bossName}";
 		}
 
-		return SoulWorldSystem.TerraShrineTier < ShrineTier
-			? $"Requires Terra Shrine tier {ShrineTier}"
+		return SoulWorldSystem.TerraforgeTemper < RequiredTemper
+			? $"Requires Terraforge Temper {RequiredTemper}"
 			: string.Empty;
 	}
 }

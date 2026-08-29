@@ -96,9 +96,9 @@ public class CondensationSoulWispProjectile : ModProjectile
 		return false;
 	}
 
-	public static void Spawn(Player player, Point16 shrineTopLeft)
+	public static void Spawn(Player player, Point16 forgeTopLeft)
 	{
-		Vector2 target = shrineTopLeft.ToWorldCoordinates(TerraShrineTile.Width * 8f, TerraShrineTile.Height * 8f);
+		Vector2 target = forgeTopLeft.ToWorldCoordinates(TerraforgeTile.Width * 8f, 22f);
 		IEntitySource source = new EntitySource_Misc("SoulsOfTerra:CondensationEffect");
 		for (int index = 0; index < WispCount; index++)
 		{

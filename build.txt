@@ -1,4 +1,4 @@
 displayName = Souls of Terra
 author = max.a.d.v
-version = 0.3
+version = 0.4
 buildIgnore = Effects\*.fx

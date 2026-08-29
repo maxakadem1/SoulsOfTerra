@@ -8,14 +8,14 @@ Souls of Terra brings a global, Souls-inspired progression system to Terraria. E
 [*]Risk your entire carried soul balance when you die.
 [*]Return to your bloodstain and interact with it to reclaim your lost souls.
 [*]Meet Soulless, a mysterious guide who introduces the mod's progression.
-[*]Create and strengthen the Terra Shrine as major bosses are defeated.
+[*]Form the world-unique Terraforge and temper its ancient fragment as major bosses are defeated.
 [*]Condense souls into boss essences used in new weapons and equipment.
 [*]Convert souls into tradable Soul Crystals for storage or sharing with other players.
 [/list]
 
 [h2]Current Content[/h2]
 
-The current release includes King Slime and Eye of Cthulhu essence progression, the Slimebound Blade melee weapon, Servant's Gaze magic staff, nine Terra Shrine upgrade milestones, multiplayer synchronization, and the complete soul-loss and bloodstain recovery loop.
+The current release includes King Slime and Eye of Cthulhu essence progression, the Slimebound Blade melee weapon, Servant's Gaze magic staff, nine Terraforge Temper milestones, multiplayer synchronization, and the complete soul-loss and bloodstain recovery loop.
 
 [h2]Early Development[/h2]
 

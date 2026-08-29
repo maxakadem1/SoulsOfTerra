@@ -2,6 +2,7 @@ using Terraria;
 using Terraria.GameContent.ItemDropRules;
 using Terraria.ID;
 using Terraria.ModLoader;
+using SoulsOfTerra.Content.Items.Accessories;
 
 namespace SoulsOfTerra.Content.Items.BossBags;
 
@@ -28,6 +29,8 @@ public class SealedCongregationBag : ModItem
 
 	public override void ModifyItemLoot(ItemLoot itemLoot)
 	{
+		// The signature accessory is guaranteed in every Expert or Master bag.
+		itemLoot.Add(ItemDropRule.Common(ModContent.ItemType<BorrowedSentence>()));
 		itemLoot.Add(ItemDropRule.Common(ItemID.HealingPotion, 1, 5, 8));
 	}
 }
