@@ -6,15 +6,13 @@ using Terraria.ModLoader;
 
 namespace SoulsOfTerra.Content.Items.Access;
 
-public class BrokenTerraBladeCore : ModItem
+public class TerraBladeFragment : ModItem
 {
-	public override string Texture => $"Terraria/Images/Item_{ItemID.BrokenHeroSword}";
-
 	public override void SetDefaults()
 	{
-		Item.width = 30;
+		Item.width = 22;
 		Item.height = 30;
-		Item.maxStack = 99;
+		Item.maxStack = 1;
 		Item.rare = ItemRarityID.Green;
 		Item.value = 0;
 	}
@@ -36,23 +34,23 @@ public class BrokenTerraBladeCore : ModItem
 
 		Main.mouseRightRelease = false;
 		Point16 topLeft = SoulTransactions.GetAnvilTopLeft(tileX, tileY);
-		if (!SoulTransactions.TryGetAnvilTransformation(topLeft, out _, out _))
+		if (!SoulTransactions.TryGetTerraforgePlacement(topLeft, out _, out _, out TerraforgePlacementFailure failure))
 		{
-			Main.NewText("The shrine requires open ground.", 110, 190, 160);
+			Main.NewText(SoulTransactions.GetPlacementFailureMessage(failure), 110, 190, 160);
 			return;
 		}
 
 		if (Main.netMode == NetmodeID.MultiplayerClient)
 		{
 			ModPacket packet = Mod.GetPacket();
-			packet.Write((byte)SoulMessageType.RequestAnvilTransformation);
+			packet.Write((byte)SoulMessageType.RequestTerraforgeFormation);
 			packet.Write(topLeft.X);
 			packet.Write(topLeft.Y);
 			packet.Send();
 		}
 		else
 		{
-			SoulTransactions.TryTransformAnvil(player, topLeft);
+			SoulTransactions.TryFormTerraforge(player, topLeft);
 		}
 	}
 }

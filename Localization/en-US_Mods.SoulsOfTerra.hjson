@@ -1,13 +1,15 @@
 UI: {
 	RecoverBloodstain: Right-click to recover {0} souls
 	Commune: Commune
+	SentenceAbsolved: ABSOLVED
 }
 
 Dialogue: {
 	Soulless: {
 		Introduction: So another bearer wakes. Keep close the souls you gather; death is eager to loosen your grasp.
 		BloodstainHint: What spills from you does not vanish. Return to the stain, reach into it, and take back what remains.
-		AfterKingSlime: Even a crown of gel leaves an echo. A Terra Shrine can press that echo into useful form.
+		AfterKingSlime: Even a crown of gel leaves an echo. The Terraforge can press that echo into useful form.
+		FragmentSale: This edge remembers a blade older than either of us. Drive it into an anvil, and the metal will learn to shape what flesh leaves behind.
 		BuriedCourtHint: Take this fragment. The reliquary remembers the office, not the hand. Let the prisoners mistake you for their keeper.
 		AfterCongregation: So the court is silent. Strange... I remember every voice you freed, though none of them were mine.
 	}
@@ -37,6 +39,8 @@ Projectiles: {
 	ServantEyeProjectile.DisplayName: Awakened Servant
 	ServantGoreExplosionProjectile.DisplayName: Gore Burst
 	CondensationSoulWispProjectile.DisplayName: Condensing Soul
+	ForgeOutputManifestationProjectile.DisplayName: Forged Manifestation
+	TerraforgeFormationProjectile.DisplayName: Forming the Terraforge
 	SoulCrystalReleaseProjectile.DisplayName: Soul Crystal Release Projectile
 	MoonstoneChargeProjectile.DisplayName: Gathering Moonstone
 	MoonstoneBoltProjectile.DisplayName: Moonstone Bolt
@@ -64,6 +68,8 @@ Projectiles: {
 	UnisonClapProjectile.DisplayName: Unison
 	UnisonWaveProjectile.DisplayName: Unison
 	CruxVolleyProjectile.DisplayName: Crux
+	StarsOfRuinCastProjectile.DisplayName: Stars of Ruin
+	StarsOfRuinStarProjectile.DisplayName: Ruinous Star
 	SoulBloodstainRecoveryProjectile.DisplayName: Soul Bloodstain Recovery Projectile
 }
 
@@ -96,10 +102,21 @@ NPCs: {
 
 Tiles: {
 	SoulShrineTile.MapEntry: Warden's Reliquary
-	TerraShrineTile.MapEntry: Terra Shrine
+	TerraforgeTile.MapEntry: Terraforge
 }
 
 Items: {
+	BorrowedSentence: {
+		DisplayName: Borrowed Sentence
+		Tooltip:
+			'''
+			Wounds dealing at least 10% of maximum life borrow 40% of their damage
+			Deal 12 times the borrowed damage within 6 seconds to earn absolution
+			Failure returns the borrowed damage
+			14 second cooldown after judgment
+			'''
+	}
+
 	Compeditus: {
 		DisplayName: Compeditus
 		Tooltip:
@@ -128,6 +145,15 @@ Items: {
 			'''
 	}
 
+	StarsOfRuin: {
+		DisplayName: Stars of Ruin
+		Tooltip:
+			'''
+			Fires twelve dark shooting stars that pursue a chosen foe
+			Aim near a visible enemy to lock the volley onto it
+			'''
+	}
+
 	SealedCongregationBag: {
 		DisplayName: The Sealed Congregation Treasure Bag
 		Tooltip: Right-click to open
@@ -147,9 +173,13 @@ Items: {
 		Tooltip: Many imprisoned echoes condensed into one essence
 	}
 
-	BrokenTerraBladeCore: {
-		DisplayName: Broken Terra Blade
-		Tooltip: Right-click an Iron or Lead Anvil on open ground to form a Terra Shrine
+	TerraBladeFragment: {
+		DisplayName: Terra Blade Fragment
+		Tooltip:
+			'''
+			A genuine fragment of an ancient Terra Blade
+			Right-click an Iron or Lead Anvil within a clear, supported 4x3 area to form the Terraforge
+			'''
 	}
 
 	SlimeEssence: {
@@ -295,3 +325,5 @@ Items: {
 			'''
 	}
 }
+
+DeathMessage.BorrowedSentence: "{0} was claimed by a borrowed sentence."

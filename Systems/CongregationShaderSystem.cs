@@ -87,7 +87,7 @@ public class CongregationShaderSystem : ModSystem
 		effect.Parameters["beamIntensity"].SetValue(intensity);
 		effect.Parameters["beamSeed"].SetValue(seed);
 		effect.Parameters["beamMode"].SetValue(mode);
-		beamShaderData.Apply();
+		effect.CurrentTechnique.Passes["BeamPass"].Apply();
 		Main.instance.GraphicsDevice.Textures[1] = beamNoiseTexture;
 		Main.instance.GraphicsDevice.SamplerStates[1] = SamplerState.LinearWrap;
 		return true;

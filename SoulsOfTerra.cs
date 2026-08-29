@@ -14,12 +14,14 @@ public enum SoulMessageType : byte
 {
 	SyncPlayer,
 	RequestBloodstainRecovery,
-	RequestCorePurchase,
-	RequestShrineUpgrade,
+	RequestFragmentPurchase,
+	RequestFragmentRecall,
+	RequestTerraforgeTemper,
 	RequestEssenceCondensation,
 	RequestEssenceImbuement,
 	RequestSoulCrystalConversion,
-	RequestAnvilTransformation,
+	RequestTerraforgeFormation,
+	TerraforgeFormationFailed,
 	RequestWardenFragmentPurchase,
 	RequestCongregationSummon
 }
@@ -32,7 +34,8 @@ public class SoulsOfTerra : Mod
 		("UI.Commune", "Commune"),
 		("Dialogue.Soulless.Introduction", "So another bearer wakes. Keep close the souls you gather; death is eager to loosen your grasp."),
 		("Dialogue.Soulless.BloodstainHint", "What spills from you does not vanish. Return to the stain, reach into it, and take back what remains."),
-		("Dialogue.Soulless.AfterKingSlime", "Even a crown of gel leaves an echo. A Terra Shrine can press that echo into useful form."),
+		("Dialogue.Soulless.AfterKingSlime", "Even a crown of gel leaves an echo. The Terraforge can press that echo into useful form."),
+		("Dialogue.Soulless.FragmentSale", "This edge remembers a blade older than either of us. Drive it into an anvil, and the metal will learn to shape what flesh leaves behind."),
 		("Dialogue.Soulless.BuriedCourtHint", "Take this fragment. The reliquary remembers the office, not the hand. Let the prisoners mistake you for their keeper."),
 		("Dialogue.Soulless.AfterCongregation", "So the court is silent. Strange... I remember every voice you freed, though none of them were mine."),
 		("Dialogue.Court.ReliquaryAccepts", "The reliquary accepts an authority it should not remember."),
@@ -60,11 +63,14 @@ public class SoulsOfTerra : Mod
 			case SoulMessageType.RequestBloodstainRecovery:
 				HandleBloodstainRecovery(reader, whoAmI);
 				break;
-			case SoulMessageType.RequestCorePurchase:
-				HandleCorePurchase(reader, whoAmI);
+			case SoulMessageType.RequestFragmentPurchase:
+				HandleFragmentPurchase(reader, whoAmI);
 				break;
-			case SoulMessageType.RequestShrineUpgrade:
-				HandleShrineUpgrade(reader, whoAmI);
+			case SoulMessageType.RequestFragmentRecall:
+				HandleFragmentRecall(reader, whoAmI);
+				break;
+			case SoulMessageType.RequestTerraforgeTemper:
+				HandleTerraforgeTemper(reader, whoAmI);
 				break;
 			case SoulMessageType.RequestEssenceCondensation:
 				HandleEssenceCondensation(reader, whoAmI);
@@ -75,8 +81,11 @@ public class SoulsOfTerra : Mod
 			case SoulMessageType.RequestSoulCrystalConversion:
 				HandleSoulCrystalConversion(reader, whoAmI);
 				break;
-			case SoulMessageType.RequestAnvilTransformation:
-				HandleAnvilTransformation(reader, whoAmI);
+			case SoulMessageType.RequestTerraforgeFormation:
+				HandleTerraforgeFormation(reader, whoAmI);
+				break;
+			case SoulMessageType.TerraforgeFormationFailed:
+				HandleTerraforgeFormationFailed(reader);
 				break;
 			case SoulMessageType.RequestWardenFragmentPurchase:
 				HandleWardenFragmentPurchase(reader, whoAmI);
@@ -147,34 +156,44 @@ public class SoulsOfTerra : Mod
 			: null;
 	}
 
-	private static void HandleCorePurchase(BinaryReader reader, int whoAmI)
+	private static void HandleFragmentPurchase(BinaryReader reader, int whoAmI)
 	{
 		int npcIndex = reader.ReadInt16();
 		Player player = GetRequestingPlayer(whoAmI);
 		if (player is not null)
 		{
-			SoulTransactions.TryPurchaseCore(player, npcIndex);
+			SoulTransactions.TryPurchaseTerraBladeFragment(player, npcIndex);
 		}
 	}
 
-	private static void HandleShrineUpgrade(BinaryReader reader, int whoAmI)
+	private static void HandleFragmentRecall(BinaryReader reader, int whoAmI)
 	{
 		int npcIndex = reader.ReadInt16();
 		Player player = GetRequestingPlayer(whoAmI);
 		if (player is not null)
 		{
-			SoulTransactions.TryUpgradeShrine(player, npcIndex);
+			SoulTransactions.TryRecallTerraBladeFragment(player, npcIndex);
+		}
+	}
+
+	private static void HandleTerraforgeTemper(BinaryReader reader, int whoAmI)
+	{
+		int npcIndex = reader.ReadInt16();
+		Player player = GetRequestingPlayer(whoAmI);
+		if (player is not null)
+		{
+			SoulTransactions.TryTemperTerraforge(player, npcIndex);
 		}
 	}
 
 	private static void HandleEssenceCondensation(BinaryReader reader, int whoAmI)
 	{
 		int essenceIndex = reader.ReadByte();
-		Point16 shrinePosition = new(reader.ReadInt16(), reader.ReadInt16());
+		Point16 terraforgePosition = new(reader.ReadInt16(), reader.ReadInt16());
 		Player player = GetRequestingPlayer(whoAmI);
 		if (player is not null)
 		{
-			SoulTransactions.TryCondenseEssence(player, shrinePosition, essenceIndex);
+			SoulTransactions.TryCondenseEssence(player, terraforgePosition, essenceIndex);
 		}
 	}
 
@@ -183,11 +202,11 @@ public class SoulsOfTerra : Mod
 		int imbuementIndex = reader.ReadByte();
 		int weaponSlot = reader.ReadByte();
 		int essenceSlot = reader.ReadByte();
-		Point16 shrinePosition = new(reader.ReadInt16(), reader.ReadInt16());
+		Point16 terraforgePosition = new(reader.ReadInt16(), reader.ReadInt16());
 		Player player = GetRequestingPlayer(whoAmI);
 		if (player is not null)
 		{
-			SoulTransactions.TryBeginEssenceImbuement(player, shrinePosition, imbuementIndex, weaponSlot, essenceSlot);
+			SoulTransactions.TryBeginEssenceImbuement(player, terraforgePosition, imbuementIndex, weaponSlot, essenceSlot);
 		}
 	}
 
@@ -202,13 +221,26 @@ public class SoulsOfTerra : Mod
 		}
 	}
 
-	private static void HandleAnvilTransformation(BinaryReader reader, int whoAmI)
+	private static void HandleTerraforgeFormation(BinaryReader reader, int whoAmI)
 	{
 		Point16 anvilPosition = new(reader.ReadInt16(), reader.ReadInt16());
 		Player player = GetRequestingPlayer(whoAmI);
-		if (player is not null)
+		if (player is not null && !SoulTransactions.TryFormTerraforge(player, anvilPosition))
 		{
-			SoulTransactions.TryTransformAnvil(player, anvilPosition);
+			SoulTransactions.TryGetTerraforgePlacement(anvilPosition, out _, out _, out TerraforgePlacementFailure failure);
+			ModPacket packet = ModContent.GetInstance<SoulsOfTerra>().GetPacket();
+			packet.Write((byte)SoulMessageType.TerraforgeFormationFailed);
+			packet.Write((byte)failure);
+			packet.Send(whoAmI);
+		}
+	}
+
+	private static void HandleTerraforgeFormationFailed(BinaryReader reader)
+	{
+		TerraforgePlacementFailure failure = (TerraforgePlacementFailure)reader.ReadByte();
+		if (Main.netMode == NetmodeID.MultiplayerClient)
+		{
+			Main.NewText(SoulTransactions.GetPlacementFailureMessage(failure), 110, 190, 160);
 		}
 	}
 

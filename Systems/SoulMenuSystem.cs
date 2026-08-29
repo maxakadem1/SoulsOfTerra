@@ -16,6 +16,7 @@ using Terraria.DataStructures;
 using Terraria.GameContent;
 using Terraria.GameContent.UI.Elements;
 using Terraria.ID;
+using Terraria.Localization;
 using Terraria.ModLoader;
 using Terraria.UI;
 
@@ -55,14 +56,14 @@ public class SoulMenuSystem : ModSystem
 		soulInterface.SetState(menuState);
 	}
 
-	public static void OpenShrine(Point16 shrinePosition)
+	public static void OpenTerraforge(Point16 terraforgePosition)
 	{
 		if (Main.dedServ || menuState is null)
 		{
 			return;
 		}
 
-		menuState.ConfigureShrine(shrinePosition);
+		menuState.ConfigureTerraforge(terraforgePosition);
 		soulInterface.SetState(menuState);
 	}
 
@@ -71,11 +72,17 @@ public class SoulMenuSystem : ModSystem
 		soulInterface?.SetState(null);
 	}
 
-	public static bool TryGetShrinePreview(Point16 shrineTopLeft, out int itemType)
+	public static bool TryGetTerraforgePreview(Point16 terraforgeTopLeft, out int itemType)
 	{
 		itemType = ItemID.None;
 		return soulInterface?.CurrentState == menuState && menuState is not null
-			&& menuState.TryGetShrinePreview(shrineTopLeft, out itemType);
+			&& menuState.TryGetTerraforgePreview(terraforgeTopLeft, out itemType);
+	}
+
+	public static bool IsTerraforgeOpen(Point16 terraforgeTopLeft)
+	{
+		return soulInterface?.CurrentState == menuState && menuState is not null
+			&& menuState.IsTerraforgeOpen(terraforgeTopLeft);
 	}
 
 	public override void UpdateUI(GameTime gameTime)
@@ -171,7 +178,7 @@ internal sealed class SoulMenuState : UIState
 	private enum MenuKind
 	{
 		Soulless,
-		Shrine
+		Terraforge
 	}
 
 	private enum SoullessTab
@@ -180,10 +187,10 @@ internal sealed class SoulMenuState : UIState
 		Crystals
 	}
 
-	private enum ShrineTab
+	private enum TerraforgeTab
 	{
-		Condensation,
-		Imbuement
+		Condense,
+		Imbue
 	}
 
 	private const int FeedbackDuration = 180;
@@ -228,9 +235,9 @@ internal sealed class SoulMenuState : UIState
 	private UITextPanel<string> closeButton;
 	private MenuKind kind;
 	private SoullessTab soullessTab;
-	private ShrineTab shrineTab;
+	private TerraforgeTab terraforgeTab;
 	private int npcIndex;
-	private Point16 shrinePosition;
+	private Point16 terraforgePosition;
 	private int feedbackTime;
 	private int selectedEssenceIndex;
 	private int selectedCrystalIndex;
@@ -276,7 +283,7 @@ internal sealed class SoulMenuState : UIState
 		tertiaryRow = CreateRow(258f);
 		tertiaryRow.SetAction(UseTertiaryAction);
 		CreateSoullessTabs();
-		CreateShrineTabs();
+		CreateTerraforgeTabs();
 		CreateEssenceCatalogue();
 		CreateImbuementPage();
 		CreateImbuementRecipePage();
@@ -312,18 +319,18 @@ internal sealed class SoulMenuState : UIState
 		RefreshContent();
 	}
 
-	public void ConfigureShrine(Point16 requestedShrinePosition)
+	public void ConfigureTerraforge(Point16 requestedTerraforgePosition)
 	{
-		kind = MenuKind.Shrine;
-		shrinePosition = requestedShrinePosition;
-		shrineTab = ShrineTab.Condensation;
+		kind = MenuKind.Terraforge;
+		terraforgePosition = requestedTerraforgePosition;
+		terraforgeTab = TerraforgeTab.Condense;
 		linkedWeaponSlot = -1;
 		linkedEssenceSlot = -1;
 		showingImbuementRecipes = false;
 		selectedImbuementIndex = -1;
 		selectedEssenceIndex = 0;
 		essenceScrollBar.ViewPosition = 0f;
-		BuildShrineLayout();
+		BuildTerraforgeLayout();
 		ClearFeedback();
 		RefreshContent();
 	}
@@ -396,7 +403,7 @@ internal sealed class SoulMenuState : UIState
 		ApplySoullessTabStyles();
 	}
 
-	private void BuildShrineLayout()
+	private void BuildTerraforgeLayout()
 	{
 		panel.RemoveAllChildren();
 		panel.Height.Set(410f, 0f);
@@ -405,7 +412,7 @@ internal sealed class SoulMenuState : UIState
 		panel.Append(balance);
 		panel.Append(condensationTabButton);
 		panel.Append(imbuementTabButton);
-		if (shrineTab == ShrineTab.Condensation)
+		if (terraforgeTab == TerraforgeTab.Condense)
 		{
 			panel.Append(essenceGrid);
 			condenseButton.Top.Set(306f, 0f);
@@ -429,7 +436,7 @@ internal sealed class SoulMenuState : UIState
 		panel.Append(feedback);
 		closeButton.Top.Set(368f, 0f);
 		panel.Append(closeButton);
-		ApplyShrineTabStyles();
+		ApplyTerraforgeTabStyles();
 	}
 
 	private void CreateEssenceCatalogue()
@@ -561,7 +568,7 @@ internal sealed class SoulMenuState : UIState
 	{
 		selectedEssenceIndex = index;
 		ClearFeedback();
-		RefreshShrineContent();
+		RefreshTerraforgeContent();
 	}
 
 	private void RefreshContent()
@@ -580,7 +587,7 @@ internal sealed class SoulMenuState : UIState
 		}
 		else
 		{
-			RefreshShrineContent();
+			RefreshTerraforgeContent();
 		}
 	}
 
@@ -588,28 +595,47 @@ internal sealed class SoulMenuState : UIState
 	{
 		title.SetText("Soulless");
 		subtitle.SetText("Trade in that which clings to you.");
-		bool canBuyCore = Main.LocalPlayer.GetModPlayer<SoulPlayer>().SoulBalance >= SoulTransactions.CoreCost;
-		primaryRow.SetContent(
-			ItemID.BrokenHeroSword,
-			"Broken Terra Blade",
-			$"Forms a Terra Shrine  •  {SoulTransactions.CoreCost:N0} souls",
-			"Purchase",
-			true,
-			canBuyCore);
-
-		long upgradeCost = SoulWorldSystem.GetNextUpgradeCost();
-		if (upgradeCost <= 0)
+		int fragmentType = ModContent.ItemType<TerraBladeFragment>();
+		if (!SoulWorldSystem.TerraBladeFragmentPurchased)
 		{
-			secondaryRow.SetContent(ItemID.IronAnvil, "Terra Shrine", "All known strength has awakened", "Complete", false);
+			bool canAfford = Main.LocalPlayer.GetModPlayer<SoulPlayer>().SoulBalance >= SoulTransactions.FragmentCost;
+			primaryRow.SetContent(fragmentType, "Terra Blade Fragment",
+				$"Forms the Terraforge  •  {SoulTransactions.FragmentCost:N0} souls", "Acquire", true, canAfford);
+		}
+		else if (SoulWorldSystem.HasActiveTerraforge)
+		{
+			primaryRow.SetContent(fragmentType, "Terraforge",
+				$"Temper {SoulWorldSystem.TerraforgeTemper}  •  Active", "Active", false);
+		}
+		else if (Main.LocalPlayer.HasItem(fragmentType))
+		{
+			primaryRow.SetContent(fragmentType, "Terra Blade Fragment",
+				"The fragment is in your possession", "Carried", false);
 		}
 		else
 		{
-			bool milestoneUnlocked = SoulWorldSystem.IsNextUpgradeUnlocked();
-			bool canAfford = Main.LocalPlayer.GetModPlayer<SoulPlayer>().SoulBalance >= upgradeCost;
+			primaryRow.SetContent(fragmentType, "Recall the Fragment",
+				"Draw the ancient fragment back  •  No cost", "Recall", true);
+		}
+
+		long temperCost = SoulWorldSystem.GetNextTemperCost();
+		if (!SoulWorldSystem.TerraBladeFragmentPurchased)
+		{
+			secondaryRow.SetContent(fragmentType, "Temper the Fragment", "Acquire the fragment first", "Locked", false);
+		}
+		else if (temperCost <= 0)
+		{
+			secondaryRow.SetContent(fragmentType, "Terraforge", "The fragment is fully tempered", "Complete", false);
+		}
+		else
+		{
+			bool milestoneUnlocked = SoulWorldSystem.IsNextTemperUnlocked();
+			bool canAfford = Main.LocalPlayer.GetModPlayer<SoulPlayer>().SoulBalance >= temperCost;
 			string detail = milestoneUnlocked
-				? $"World-wide tier {SoulWorldSystem.TerraShrineTier + 1}  •  {upgradeCost:N0} souls"
+				? $"Temper {SoulWorldSystem.TerraforgeTemper + 1}  •  {temperCost:N0} souls"
 				: $"Requires {GetNextMilestoneName()}";
-			secondaryRow.SetContent(ItemID.IronAnvil, "Strengthen Terra Shrine", detail, milestoneUnlocked ? "Strengthen" : "Locked", milestoneUnlocked, canAfford);
+			secondaryRow.SetContent(fragmentType, "Temper the Fragment", detail,
+				milestoneUnlocked ? "Temper" : "Locked", milestoneUnlocked, canAfford);
 		}
 
 		bool keyUnlocked = NPC.downedBoss3;
@@ -653,16 +679,16 @@ internal sealed class SoulMenuState : UIState
 		ApplyCurrentActionButtonStyle();
 	}
 
-	private void RefreshShrineContent()
+	private void RefreshTerraforgeContent()
 	{
-		if (shrineTab == ShrineTab.Imbuement)
+		if (terraforgeTab == TerraforgeTab.Imbue)
 		{
 			RefreshImbuementContent();
 			return;
 		}
 
-		title.SetText("Terra Shrine");
-		subtitle.SetText($"World-wide strength: tier {SoulWorldSystem.TerraShrineTier}");
+		title.SetText("Terraforge");
+		subtitle.SetText($"Temper: {SoulWorldSystem.TerraforgeTemper}");
 		long balanceValue = Main.LocalPlayer.GetModPlayer<SoulPlayer>().SoulBalance;
 		for (int index = 0; index < essenceCards.Length; index++)
 		{
@@ -684,7 +710,7 @@ internal sealed class SoulMenuState : UIState
 
 	private void RefreshImbuementContent()
 	{
-		title.SetText("Terra Shrine");
+		title.SetText("Terraforge");
 		if (showingImbuementRecipes)
 		{
 			subtitle.SetText("Known bindings revealed by defeated foes.");
@@ -768,13 +794,28 @@ internal sealed class SoulMenuState : UIState
 				return;
 			}
 
-			if (!HasSouls(SoulTransactions.CoreCost))
+			if (!SoulWorldSystem.TerraBladeFragmentPurchased)
+			{
+				if (!HasSouls(SoulTransactions.FragmentCost))
+				{
+					return;
+				}
+
+				bool purchased = SendNpcTransaction(SoulMessageType.RequestFragmentPurchase,
+					() => SoulTransactions.TryPurchaseTerraBladeFragment(Main.LocalPlayer, npcIndex));
+				Main.npcChatText = Language.GetTextValue("Mods.SoulsOfTerra.Dialogue.Soulless.FragmentSale");
+				ShowFeedback(purchased ? "Terra Blade Fragment acquired." : "Purchase request sent.", true);
+				return;
+			}
+
+			if (SoulWorldSystem.HasActiveTerraforge || Main.LocalPlayer.HasItem(ModContent.ItemType<TerraBladeFragment>()))
 			{
 				return;
 			}
 
-			bool completed = SendNpcTransaction(SoulMessageType.RequestCorePurchase, () => SoulTransactions.TryPurchaseCore(Main.LocalPlayer, npcIndex));
-			ShowFeedback(completed ? "Broken Terra Blade acquired." : "Purchase request sent.", true);
+			bool recalled = SendNpcTransaction(SoulMessageType.RequestFragmentRecall,
+				() => SoulTransactions.TryRecallTerraBladeFragment(Main.LocalPlayer, npcIndex));
+			ShowFeedback(recalled ? "The fragment returns." : "Recall request sent.", true);
 		}
 		else
 		{
@@ -796,9 +837,9 @@ internal sealed class SoulMenuState : UIState
 				return;
 			}
 
-			bool completed = SendShrineTransaction();
+			bool completed = SendTerraforgeTransaction();
 			string essenceName = essenceDefinitions[selectedEssenceIndex].Name;
-			ShowFeedback(completed ? $"{essenceName} condensed." : "Condensation request sent.", true);
+			ShowFeedback(completed ? $"{essenceName} condensed." : "Condense request sent.", true);
 		}
 	}
 
@@ -834,7 +875,7 @@ internal sealed class SoulMenuState : UIState
 		selectedImbuementIndex = -1;
 		showingImbuementRecipes = true;
 		RebuildImbuementRecipes();
-		BuildShrineLayout();
+		BuildTerraforgeLayout();
 		ShowFeedback(completed ? "The binding ritual has begun." : "Binding request sent.", true);
 		RefreshContent();
 	}
@@ -862,21 +903,21 @@ internal sealed class SoulMenuState : UIState
 		crystalsTabButton = CreateTabButton("Soul Crystals", 144f, SoullessTab.Crystals);
 	}
 
-	private void CreateShrineTabs()
+	private void CreateTerraforgeTabs()
 	{
-		condensationTabButton = CreateShrineTabButton("Condensation", 16f, ShrineTab.Condensation);
-		imbuementTabButton = CreateShrineTabButton("Imbuement", 154f, ShrineTab.Imbuement);
+		condensationTabButton = CreateTerraforgeTabButton("Condense", 16f, TerraforgeTab.Condense);
+		imbuementTabButton = CreateTerraforgeTabButton("Imbue", 154f, TerraforgeTab.Imbue);
 	}
 
-	private UITextPanel<string> CreateShrineTabButton(string text, float left, ShrineTab tab)
+	private UITextPanel<string> CreateTerraforgeTabButton(string text, float left, TerraforgeTab tab)
 	{
 		UITextPanel<string> button = new(text, 0.68f, false);
 		button.Width.Set(130f, 0f);
 		button.Height.Set(30f, 0f);
 		button.Left.Set(left, 0f);
 		button.Top.Set(68f, 0f);
-		button.OnLeftClick += (_, _) => SetShrineTab(tab);
-		button.OnMouseOut += (_, _) => ApplyShrineTabStyles();
+		button.OnLeftClick += (_, _) => SetTerraforgeTab(tab);
+		button.OnMouseOut += (_, _) => ApplyTerraforgeTabStyles();
 		return button;
 	}
 
@@ -988,28 +1029,28 @@ internal sealed class SoulMenuState : UIState
 		RefreshContent();
 	}
 
-	private void SetShrineTab(ShrineTab tab)
+	private void SetTerraforgeTab(TerraforgeTab tab)
 	{
-		if (kind != MenuKind.Shrine || shrineTab == tab)
+		if (kind != MenuKind.Terraforge || terraforgeTab == tab)
 		{
 			return;
 		}
 
-		shrineTab = tab;
-		showingImbuementRecipes = tab == ShrineTab.Imbuement;
+		terraforgeTab = tab;
+		showingImbuementRecipes = tab == TerraforgeTab.Imbue;
 		if (showingImbuementRecipes)
 		{
 			RebuildImbuementRecipes();
 		}
 		ClearFeedback();
-		BuildShrineLayout();
+		BuildTerraforgeLayout();
 		RefreshContent();
 	}
 
-	private void ApplyShrineTabStyles()
+	private void ApplyTerraforgeTabStyles()
 	{
-		ApplyTabStyle(condensationTabButton, shrineTab == ShrineTab.Condensation);
-		ApplyTabStyle(imbuementTabButton, shrineTab == ShrineTab.Imbuement);
+		ApplyTabStyle(condensationTabButton, terraforgeTab == TerraforgeTab.Condense);
+		ApplyTabStyle(imbuementTabButton, terraforgeTab == TerraforgeTab.Imbue);
 	}
 
 	private void OpenImbuementRecipes()
@@ -1020,7 +1061,7 @@ internal sealed class SoulMenuState : UIState
 		selectedImbuementIndex = -1;
 		RebuildImbuementRecipes();
 		ClearFeedback();
-		BuildShrineLayout();
+		BuildTerraforgeLayout();
 		RefreshContent();
 	}
 
@@ -1054,7 +1095,7 @@ internal sealed class SoulMenuState : UIState
 			? "Select a complete recipe to begin its binding ritual."
 			: "No imbuements have been revealed yet.");
 
-		// Two complete rows fit without scrolling in the compact shrine frame.
+		// Two complete rows fit without scrolling in the compact forge frame.
 		bool needsScrollBar = imbuementRecipeRows.Count > 2;
 		imbuementRecipeList.Width.Set(needsScrollBar ? -18f : 0f, 1f);
 		if (needsScrollBar && imbuementRecipeScrollBar.Parent is null)
@@ -1104,7 +1145,7 @@ internal sealed class SoulMenuState : UIState
 		linkedEssenceSlot = essenceSlot;
 		selectedImbuementIndex = recipeIndex;
 		showingImbuementRecipes = false;
-		BuildShrineLayout();
+		BuildTerraforgeLayout();
 		ShowFeedback("The ingredients resonate.", true);
 		RefreshContent();
 	}
@@ -1220,25 +1261,27 @@ internal sealed class SoulMenuState : UIState
 
 	private void UseSecondaryAction()
 	{
-		if (kind != MenuKind.Soulless || soullessTab != SoullessTab.Services || SoulWorldSystem.GetNextUpgradeCost() <= 0)
+		if (kind != MenuKind.Soulless || soullessTab != SoullessTab.Services
+			|| !SoulWorldSystem.TerraBladeFragmentPurchased || SoulWorldSystem.GetNextTemperCost() <= 0)
 		{
 			return;
 		}
 
-		if (!SoulWorldSystem.IsNextUpgradeUnlocked())
+		if (!SoulWorldSystem.IsNextTemperUnlocked())
 		{
 			ShowFeedback($"Defeat {GetNextMilestoneName()} first.", false);
 			return;
 		}
 
-		long cost = SoulWorldSystem.GetNextUpgradeCost();
+		long cost = SoulWorldSystem.GetNextTemperCost();
 		if (!HasSouls(cost))
 		{
 			return;
 		}
 
-		bool completed = SendNpcTransaction(SoulMessageType.RequestShrineUpgrade, () => SoulTransactions.TryUpgradeShrine(Main.LocalPlayer, npcIndex));
-		ShowFeedback(completed ? "Every Terra Shrine grows stronger." : "Strengthening request sent.", true);
+		bool completed = SendNpcTransaction(SoulMessageType.RequestTerraforgeTemper,
+			() => SoulTransactions.TryTemperTerraforge(Main.LocalPlayer, npcIndex));
+		ShowFeedback(completed ? "The fragment accepts a deeper temper." : "Tempering request sent.", true);
 	}
 
 	private bool HasSouls(long required)
@@ -1304,20 +1347,20 @@ internal sealed class SoulMenuState : UIState
 		return SoulTransactions.TryConvertSoulCrystal(Main.LocalPlayer, npcIndex, selectedCrystalIndex);
 	}
 
-	private bool SendShrineTransaction()
+	private bool SendTerraforgeTransaction()
 	{
 		if (Main.netMode == NetmodeID.MultiplayerClient)
 		{
 			ModPacket packet = ModContent.GetInstance<SoulsOfTerra>().GetPacket();
 			packet.Write((byte)SoulMessageType.RequestEssenceCondensation);
 			packet.Write((byte)selectedEssenceIndex);
-			packet.Write(shrinePosition.X);
-			packet.Write(shrinePosition.Y);
+			packet.Write(terraforgePosition.X);
+			packet.Write(terraforgePosition.Y);
 			packet.Send();
 			return false;
 		}
 
-		return SoulTransactions.TryCondenseEssence(Main.LocalPlayer, shrinePosition, selectedEssenceIndex);
+		return SoulTransactions.TryCondenseEssence(Main.LocalPlayer, terraforgePosition, selectedEssenceIndex);
 	}
 
 	private bool SendImbuementTransaction()
@@ -1329,13 +1372,13 @@ internal sealed class SoulMenuState : UIState
 			packet.Write((byte)selectedImbuementIndex);
 			packet.Write((byte)linkedWeaponSlot);
 			packet.Write((byte)linkedEssenceSlot);
-			packet.Write(shrinePosition.X);
-			packet.Write(shrinePosition.Y);
+			packet.Write(terraforgePosition.X);
+			packet.Write(terraforgePosition.Y);
 			packet.Send();
 			return false;
 		}
 
-		return SoulTransactions.TryBeginEssenceImbuement(Main.LocalPlayer, shrinePosition,
+		return SoulTransactions.TryBeginEssenceImbuement(Main.LocalPlayer, terraforgePosition,
 			selectedImbuementIndex, linkedWeaponSlot, linkedEssenceSlot);
 	}
 
@@ -1357,8 +1400,8 @@ internal sealed class SoulMenuState : UIState
 	{
 		return selectedCrystalIndex switch
 		{
-			1 => "Requires Terra Shrine tier 1",
-			2 => "Requires Terra Shrine tier 4",
+			1 => "Requires Terraforge Temper 1",
+			2 => "Requires Terraforge Temper 4",
 			_ => string.Empty
 		};
 	}
@@ -1378,7 +1421,7 @@ internal sealed class SoulMenuState : UIState
 
 	private string GetNextMilestoneName()
 	{
-		return SoulWorldSystem.TerraShrineTier switch
+		return SoulWorldSystem.TerraforgeTemper switch
 		{
 			0 => "the Eye of Cthulhu",
 			1 => "the world's evil boss",
@@ -1393,10 +1436,10 @@ internal sealed class SoulMenuState : UIState
 		};
 	}
 
-	public bool TryGetShrinePreview(Point16 requestedShrine, out int itemType)
+	public bool TryGetTerraforgePreview(Point16 requestedTerraforge, out int itemType)
 	{
 		itemType = ItemID.None;
-		if (kind != MenuKind.Shrine || shrineTab != ShrineTab.Imbuement || requestedShrine != shrinePosition
+		if (kind != MenuKind.Terraforge || terraforgeTab != TerraforgeTab.Imbue || requestedTerraforge != terraforgePosition
 			|| !InventorySlotAvailable(linkedWeaponSlot))
 		{
 			return false;
@@ -1404,6 +1447,11 @@ internal sealed class SoulMenuState : UIState
 
 		itemType = Main.LocalPlayer.inventory[linkedWeaponSlot].type;
 		return true;
+	}
+
+	public bool IsTerraforgeOpen(Point16 requestedTerraforge)
+	{
+		return kind == MenuKind.Terraforge && requestedTerraforge == terraforgePosition;
 	}
 
 	private bool InteractionStillValid(Player player)
@@ -1416,9 +1464,9 @@ internal sealed class SoulMenuState : UIState
 				&& Vector2.DistanceSquared(player.Center, Main.npc[npcIndex].Center) <= rangeSquared;
 		}
 
-		Tile tile = Framing.GetTileSafely(shrinePosition.X, shrinePosition.Y);
-		return tile.HasTile && tile.TileType == ModContent.TileType<TerraShrineTile>()
-			&& Vector2.DistanceSquared(player.Center, shrinePosition.ToWorldCoordinates(24f, 16f)) <= rangeSquared;
+		Tile tile = Framing.GetTileSafely(terraforgePosition.X, terraforgePosition.Y);
+		return tile.HasTile && tile.TileType == ModContent.TileType<TerraforgeTile>()
+			&& Vector2.DistanceSquared(player.Center, terraforgePosition.ToWorldCoordinates(32f, 24f)) <= rangeSquared;
 	}
 }
 

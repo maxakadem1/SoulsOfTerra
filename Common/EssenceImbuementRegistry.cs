@@ -68,6 +68,13 @@ public static class EssenceImbuementRegistry
 			ModContent.ItemType<Crux>(),
 			"Crux"),
 		new(
+			"starsOfRuin",
+			new int[] { ItemID.MagicMissile },
+			"Magic Missile",
+			ModContent.ItemType<CongregationEssence>(),
+			ModContent.ItemType<StarsOfRuin>(),
+			"Stars of Ruin"),
+		new(
 			"moonstoneStaff",
 			new int[] { ItemID.DiamondStaff },
 			"Diamond Staff",

@@ -39,25 +39,32 @@
 | Death marker value | Four capped intensity tiers alter wisp count, brightness, and pulse without changing the footprint. | Larger losses feel more important without producing world clutter or misleading interaction range. |
 | Death marker interaction | Hovering brightens the pool and draws its wisps toward the player; recovery collapses them into the player and leaves a short ground burst. | Makes deliberate right-click recovery legible and satisfying without delaying the authoritative balance change. |
 | Gain text | Nearby rewards accumulate into one notification. | A small pickup should not overwrite a boss-sized reward before it can be read. |
-| Shrine catalogue | Five-column scrollable grid with self-contained essence cards, hover details, and one contextual Condense button. | Fifteen essences fit at once, the catalogue scales without placeholder cards, and descriptions consume no permanent space. |
+| Terraforge catalogue | Five-column scrollable grid with self-contained essence cards, hover details, and one contextual Condense button. | Fifteen essences fit at once, the catalogue scales without placeholder cards, and descriptions consume no permanent space. |
 | Undiscovered essences | Show generic locked silhouettes without boss names. | Communicates future depth without spoiling encounters or rewards. |
 
-## Soulless and shrines
+## Soulless and the Terraforge
 
 | Topic | Decision | Reason |
 |---|---|---|
 | Guide character | A town NPC named Soulless appears at the beginning. | Gives the global system an in-world teacher and future narrative anchor. |
 | Long-term role | Soulless secretly benefits from the player's payments and becomes a villain. | Turns routine economic progression into narrative setup. |
-| Initial access cost | Broken Terra Blade costs 100 souls. | Makes the system available early while teaching the first spending decision. |
-| Access item identity | Broken Terra Blade, not a coiled sword. | Preserves the Souls inspiration while grounding the object in Terraria. |
-| Shrine creation | Right-click an Iron or Lead Anvil while holding the blade. | Makes shrine creation a deliberate forging ritual grounded in Terraria. |
-| Shrine footprint | Replace the anvil with a supported 4-by-2 shrine if the area is clear. | Maps the 64-by-32 station art directly to Terraria's 16-pixel tile grid. |
-| Shrine art density | Author the base at 32 by 16 pixels and render it at 2x nearest-neighbor scale. | Produces deliberate 2-by-2 pixel clusters while retaining a substantial 4-by-2 world footprint. |
-| Shrine source variants | Iron and Lead Anvils share one appearance but return their original material when broken. | Supports both world ores without doubling sprite work. |
-| Shrine presentation | Render only the static Soul Anvil texture; the blade remains an invisible ritual catalyst. | Preserves the access-item loop without disrupting the station's cohesive sprite silhouette. |
-| Shrine name | Terra Shrine. | Connects the mechanic to Terraria's world and avoids direct imitation. |
-| Shrine scope | Upgrade level is world-wide. | Avoids forcing every player or every placed shrine through duplicate progression. |
-| Upgrade payment | Souls only. | Keeps the core economy central. |
+| Initial access cost | Soulless sells one Terra Blade Fragment per world for 100 souls. | Makes the system available early while teaching the first spending decision. |
+| Access item identity | A genuine hiltless shard of an ancient Terra Blade. | Grounds the relic in Terraria while making Soulless's possession of it suspicious. |
+| Fragment recovery | Soulless recalls it for free whenever no Terraforge is active. | Prevents ordinary item loss from permanently blocking world progression. |
+| Forge creation | Right-click an Iron or Lead Anvil while holding the fragment. | Makes formation a deliberate forging ritual grounded in Terraria. |
+| Forge footprint | Replace the anvil with a supported 4-by-3 Terraforge if the area is clear. | Reserves space for the embedded fragment and prevents block overlap. |
+| Forge uniqueness | Only one Terraforge may be active per world. | Gives the ancient relic narrative weight and matches world-wide progression. |
+| Source variants | Iron and Lead Anvils share one appearance but return their original material when dismantled. | Supports both world ores without doubling sprite work. |
+| Forge presentation | The fragment remains visibly embedded in the transformed station. | Makes the fragment the legible source of its soul-forging power. |
+| Energy language | Teal souls flow into green-gold Terra energy. | Separates soul fuel from the fragment's transformed output at a glance. |
+| Formation | A short localized ritual ends in a metallic impact, camera punch, sparks, and soul shockwave. | Makes the unique world station consequential without interrupting player control. |
+| Idle presentation | Ambient effects remain subtle and surge only while forming, condensing, or imbuing. | Keeps player bases readable while preserving ritual spectacle. |
+| Forge operations | Tabs use the verbs Condense and Imbue. | Keeps the two-step essence loop concise and explicit. |
+| Forge name | Terraforge. | Describes its actual condensing and weapon-imbuing function. |
+| Forge utility | It does not count as a normal anvil. | The transformation creates a ritual apparatus rather than an upgraded mundane station. |
+| Dismantling | Any pickaxe works; explosions do not. | Relocation remains accessible while accidental destruction is prevented. |
+| Progression term | Soulless Tempers the Fragment; recipes require Terraforge Temper. | Unifies the forging language across upgrades and requirements. |
+| Temper payment | Souls only. | Keeps the core economy central. |
 | Intended price target | Approximately 50% of the milestone boss reward. | Encourages some additional combat without demanding excessive farming. |
 
 ## Progression and crafting
@@ -65,12 +72,12 @@
 | Topic | Decision | Reason |
 |---|---|---|
 | Mandatory milestones | Nine major vanilla progression gates from Eye of Cthulhu through Moon Lord. | Provides a readable backbone without adding a tier for every encounter. |
-| Optional bosses | Unlock distinct essences rather than mandatory shrine tiers. | Optional fights remain rewarding without blocking the main path. |
+| Optional bosses | Unlock distinct essences rather than mandatory Temper levels. | Optional fights remain rewarding without blocking the main path. |
 | Essence identity | Each supported boss gets a distinct themed essence. | Bosses can support recognizable equipment families. |
 | Essence supply | Unlimited condensation after the boss is defeated. | Avoids requiring one boss kill for every individual equipment piece. |
 | Conversion direction | Souls condense irreversibly into physical essences. | Creates a meaningful spending commitment and tradable crafting material. |
 | Essence quantity | Roughly one expensive essence per weapon or armor piece. | Each piece has a meaningful soul cost without recipes demanding large essence stacks. |
-| Final equipment acquisition | All mod weapons are created exclusively through Terra Shrine imbuement; armor, accessories, and non-weapon equipment continue using normal tier-appropriate stations. | Gives weapons one distinctive acquisition language without duplicating essence crafting and imbuement. |
+| Final equipment acquisition | All mod weapons are created exclusively through Terraforge imbuement; armor, accessories, and non-weapon equipment continue using normal tier-appropriate stations. | Gives weapons one distinctive acquisition language without duplicating essence crafting and imbuement. |
 | Initial prototype | King Slime → Slime Essence → Slimebound Blade. | Exercises the entire architecture with an early, easy-to-test boss. |
 | Initial essence cost | 2,500 souls. | Starting balance point; explicitly subject to playtesting. |
 
@@ -93,12 +100,15 @@
 | Phase-two identity | A released, highly mobile procedural congregation. | Contrasts ritual order with unstable freedom without requiring more sprite animation. |
 | Phase-two beam | Choir of Judgment uses a 1.5-second charge, a locked warning direction, and a 2.5-second 24-degree sweep that can hit each player once. | Replaces overwhelming contact charges with a readable signature attack that still controls arena space. |
 | Health bar | One combined core-and-seal bar. | Accurately reports progress while the core is invulnerable. |
-| Essence reward | Congregation Essence, tier 3, 20,000 souls. | Integrates the original boss with established shrine progression. |
+| Essence reward | Congregation Essence, Temper 3, 20,000 souls. | Integrates the original boss with established Terraforge progression. |
+| Expert accessory | Borrowed Sentence defers 40% of a post-defense hit worth at least 10% maximum life. Dealing 12 times the deferred amount within six seconds erases it; otherwise the exact lethal-capable debt returns, followed by a fixed 14-second cooldown. | Turns the Congregation's judgment into a class-neutral combat trial instead of another passive defensive stat. |
 | Summon reward | Imp Staff + Congregation Essence produces Compeditus, a shared core with up to four one-slot seals. | Converts the boss's defining formation into a distinctive summon while respecting imbuement-only weapon acquisition. |
 | Melee reward | Muramasa + Congregation Essence produces Unison, a committed two-fist clap that releases a closed Hollow Benediction ring. | Gives Congregation a melee identity without copying the boss's four safe gaps. |
 | Unison combat | Hands part and smash; a 360px expanding ring locks at the clap, deals one hit per enemy, and must finish before the next clap. | Reads as the same hymn at player scale, without dragging an arena-clear or overlapping rings. |
 | Ranged reward | Handgun + Congregation Essence produces Crux, a cursor-locked crossed sentence. | Dungeon sibling to Unison; uses leftover Crossed Sentence language without full-screen lances. |
 | Crux combat | Click locks the cursor; two arms write inward, knot, and hit once per enemy; one volley at a time; consumes bullets. | Fast aimed mark, not another wait-for-hymn special. |
+| Magic reward | Magic Missile + Congregation Essence produces Stars of Ruin, a mana-hungry barrage of primeval stars. | Completes the Congregation mage slot with many voices instead of a choir-beam that read as a glowing stick. |
+| Stars of Ruin combat | Click locks one visible NPC near the cursor; twelve sapphire-white stars gather at one wand-tip origin, follow six mirrored pairs of nested cubic lanes to form a complete teardrop bouquet, then begin homing. | Reproduces the source spell's two-sided parallel arcs without collapsing the stars into one line or leaving half of the bouquet empty. |
 | Compeditus combat | Non-contact seals perform a staggered lance verse followed by a localized implosion judgment; the formation crosses terrain but attacks require line of sight. | Provides reliable summon damage and a coordinated payoff without enabling passive through-wall farming. |
 
 ## Essence imbuement discovery
@@ -106,12 +116,12 @@
 | Topic | Decision | Reason |
 |---|---|---|
 | Recipe discovery | An imbuement becomes visible when the boss associated with its essence is defeated. | Makes discoveries world-progression rewards rather than inventory accidents. |
-| Tier gating | Discovered recipes remain visible before their required shrine tier, with the missing tier stated. | Teases future options without bypassing essence progression. |
+| Temper gating | Discovered recipes remain visible before their required Terraforge Temper, with the missing Temper stated. | Teases future options without bypassing essence progression. |
 | Recipe-first flow | Opening Imbuement shows the recipe catalogue; only a recipe with both ingredients present can open the focused ritual screen. | Makes the available binding the player's first decision and removes the redundant inventory picker grid. |
 | Ingredient linking | Selecting a ready recipe links the first matching weapon and essence from the player's inventory without consuming them. | Removes inventory-search friction while preserving the ritual as the deliberate confirmation step. |
 | Ritual completion | Successful binding returns to the recipe catalogue; the focused screen also provides Back to Recipes. | Keeps repeated bindings and cancellation predictable without exposing an empty ritual screen. |
 | Imbuement cost | One valid base weapon and one matching essence, with no additional materials. | The expensive essence already carries the soul and progression cost. |
-| Current bindings | Any Copper-through-Platinum broadsword + Slime Essence; Ruby Staff + Eye Essence; Breaker Blade + Wall of Flesh Essence; Imp Staff + Congregation Essence; Muramasa + Congregation Essence; Handgun + Congregation Essence; Diamond Staff + Moon Lord Essence. | Establishes flexible early bases and precise thematic bases where desired. |
+| Current bindings | Any Copper-through-Platinum broadsword + Slime Essence; Ruby Staff + Eye Essence; Breaker Blade + Wall of Flesh Essence; Imp Staff + Congregation Essence; Muramasa + Congregation Essence; Handgun + Congregation Essence; Magic Missile + Congregation Essence (Stars of Ruin); Diamond Staff + Moon Lord Essence. | Establishes flexible early bases and precise thematic bases where desired. |
 | Future enforcement | Every mod weapon inherits `ImbuementWeaponItem`, must be a registry output, and may not have a conventional recipe. | Turns the design rule into a load-time invariant instead of documentation alone. |
 
 ## Soul swings
@@ -133,7 +143,7 @@
 ## Decisions intentionally deferred
 
 - Exact final reward formula and exception policy for unusual modded NPCs.
-- Final shrine upgrade costs after measuring real boss payouts.
+- Final Terraforge Temper costs after measuring real boss payouts.
 - Whether bloodstains eventually become owner-only or configurable.
 - The complete King Slime equipment set and its mechanical identity.
 - The order and content of later boss essence families.

@@ -27,7 +27,7 @@ public abstract class BossEssenceItem : ModItem
 		Color glowColor = InventoryGlowColor ?? GetSpriteGlowColor(texture, frame);
 		Color aura = glowColor * MathHelper.Lerp(0.2f, 0.38f, breath);
 
-		// Offset silhouettes preserve the crisp sprite while creating the shrine's broad teal pulse.
+		// Offset silhouettes preserve the crisp sprite while creating the forge's broad teal pulse.
 		for (int direction = 0; direction < 8; direction++)
 		{
 			float angle = MathHelper.TwoPi * direction / 8f;
