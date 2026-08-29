@@ -50,9 +50,8 @@ Projectiles: {
 	MoonstoneChildExplosionProjectile.DisplayName: Moonstone Child Explosion Projectile
 	MoonstonePackRocketProjectile.DisplayName: Moonstone Pack Rocket Projectile
 	MoonstoneShardRocketProjectile.DisplayName: Moonstone Shard Rocket Projectile
-	SoulBandageTetherProjectile.DisplayName: Soul Binding
-	SoulBandageImpactProjectile.DisplayName: Binding Impact
-	BandageExecutionProjectile.DisplayName: Bound Cleave
+	ThrownBreakerBladeProjectile.DisplayName: Thrown Breaker Blade
+	BreakerBladeExtractionProjectile.DisplayName: Breaker Blade Extraction
 	EssenceBindingRitualProjectile.DisplayName: Essence Binding Ritual
 	CongregationSoulBoltProjectile.DisplayName: Processional Soul
 	CongregationLanceProjectile.DisplayName: Crossed Sentence
@@ -64,7 +63,6 @@ Projectiles: {
 	CompeditusSealMinionProjectile.DisplayName: Compeditus Seal
 	CompeditusLanceProjectile.DisplayName: Unbound Verse
 	CompeditusJudgmentProjectile.DisplayName: Compeditus Judgment
-	SoulSwingProjectile.DisplayName: Soul Swing Projectile
 	UnisonClapProjectile.DisplayName: Unison
 	UnisonWaveProjectile.DisplayName: Unison
 	CruxVolleyProjectile.DisplayName: Crux
@@ -300,10 +298,10 @@ Items: {
 		DisplayName: Essencebound Breaker Blade
 		Tooltip:
 			'''
-			Hung chops smash through the cursor and bind struck enemies
-			Right-click pulls every bound enemy into a devastating cleave
-			Distant bindings pull harder and deal more damage
-			Bindings snap at extreme range or when obstructed
+			Throws up to five tethered blades that lodge in enemies or terrain
+			Right-click recalls every blade in a damaging spin
+			Extracting a lodged blade deals increased damage
+			Distant and missed blades return automatically
 			'''
 	}
 

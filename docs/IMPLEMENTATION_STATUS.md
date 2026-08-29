@@ -81,9 +81,10 @@
 - Formation uses a synchronized fragment flight, green-gold impact burst, layered sound, local camera punch, and restrained idle effects.
 - Unified imbuement-only weapon registry with grouped input support, server validation, actual-input ritual rendering, and load-time enforcement against missing entries or conventional weapon recipes.
 - Slimebound Blade binding accepts every Copper-through-Platinum metal broadsword plus one Slime Essence.
-- Shared soul-swing system: opt-in held projectile, cursor-locked aim, path presets, in-house rim/core ribbon shader, and one hit per NPC per swing.
-- Slimebound Blade Royal Viscosity prototype: an exceptionally slow 1.6x sword using alternating lateral soul-swings with a miss-independent 1, 1, 3 firing cycle; gel balls launch from the blade tip at the cut, use closely matched damage and bounce areas, pierce enemies, and bounce up to three times.
-- Essencebound Breaker Blade left-click: cursor-locked falling soul-swing (~52 ticks, linen ribbon, ~124px reach) that attaches bandage tethers on hit; right-click execution remains exclusive and unchanged.
+- The discarded universal soul-swing system, clash state, edge renderer, and ribbon shader have been removed completely.
+- Slimebound Blade is restored from commit `f6392b4`: a normal broadsword swing fires bouncing gel balls in a miss-independent 1, 1, 3 cycle.
+- Essencebound Breaker Blade throws up to five straight tethered blades; blades lodge in enemies or terrain, auto-return beyond 400 pixels, and all recall on right-click or weapon switch.
+- Breaker recalls spin through terrain, hit each non-host enemy once at 70% damage, and extract from a living lodged host for a separate 125% hit.
 - Servant's Gaze binding consumes one Ruby Staff and one Eye Essence.
 - Servant's Gaze releases three custom-art harmless eye servants that awaken after one second, independently home through terrain, and rupture into small damaging gore bursts.
 
@@ -177,9 +178,9 @@ These values have not been reconciled with measured boss rewards and are deliber
 15. Complete phase two, verify Congregation Essence unlocks at Terraforge Temper 3, then save and reload the defeat flag.
 16. Repeat summoning, seal synchronization, retreat, projectile cleanup, and victory with a multiplayer client.
 17. Imbue an Imp Staff into Compeditus; summon one through four seals and verify slot use, targeting priority, terrain traversal, line-of-sight attacks, lance collision, judgment cadence, recall at four seals, dismissal, and multiplayer synchronization.
-18. Imbue Slimebound Blade and confirm cursor-locked alternating lateral swings, a lingering soul-ribbon, one hit per enemy per swing, gel balls firing from the tip at the cut, and the every-third-swing royal volley.
+18. Imbue Slimebound Blade and confirm ordinary broadsword swings fire bouncing gel balls in a miss-independent 1, 1, 3 volley cycle.
 19. Imbue Muramasa into Unison; confirm the clap animation, a closed expanding ring with no safe gaps, one hit per enemy, knockback away from the smash, and that a second clap cannot start until the ring ends.
-20. Imbue Essencebound Breaker Blade; confirm a hung falling smash through the cursor, a linen ribbon, bandage tethers on hit, and that left-click and right-click execution never overlap.
+20. Imbue Essencebound Breaker Blade; throw five straight blades, lodge several in one enemy and terrain, recall all at once, and verify extraction, one return hit per enemy per blade, terrain piercing, distance recall, death recall, and weapon-switch recall.
 21. Imbue a Handgun into Crux; confirm a cursor-locked X that writes inward and knots, both arms hit once, bullets are consumed, and a second volley cannot start until the first ends.
 22. Imbue a Magic Missile into Stars of Ruin; confirm the staff waves, twelve stars gather at its tip, lock one visible NPC near the cursor, launch rapidly from that shared origin into six mirrored curve pairs filling both sides of the aim line, begin homing only after the bouquet forms, collide with terrain, and continue without retargeting if their target dies; mana is consumed once per verse, and a second verse cannot start until the conductor ends.
 23. Die with low, medium, and high soul balances; verify capped bloodstain tiers, grounded rendering, hover and Smart Interact response, immediate recovery, collapse and burst feedback, second-death replacement, save/reload persistence, and multiplayer recovery synchronization.

@@ -1,100 +1,53 @@
 using Microsoft.Xna.Framework;
-using SoulsOfTerra.Common.Swings;
 using SoulsOfTerra.Content.Items.Weapons;
 using SoulsOfTerra.Content.Projectiles;
 using Terraria;
+using Terraria.Audio;
 using Terraria.ID;
 using Terraria.ModLoader;
 
 namespace SoulsOfTerra.Content.Items.Weapons.Melee;
 
-public class EssenceboundBreakerBlade : EssenceboundItem, ISoulSwingItem
+public class EssenceboundBreakerBlade : EssenceboundItem
 {
-	private const int SmashDuration = 52;
+	private const int MaximumDeployedBlades = 5;
+	private const int ThrowUseTime = 24;
+	private const float ThrowSpeed = 16f;
 
 	protected override void SetEssenceboundDefaults()
 	{
 		Item.CloneDefaults(ItemID.BreakerBlade);
 		Item.damage = (int)System.MathF.Round(Item.damage * 1.1f);
-		Item.UseSound = null;
-		ConfigureSwingUse();
+		ConfigureThrow();
 	}
 
-	public SoulSwingStyle GetSwingStyle(Player player) => new()
-	{
-		Duration = SmashDuration,
-		WindUpPortion = 0.32f,
-		CutPortion = 0.28f,
-		Path = SoulSwingPath.Falling,
-		ArcSpan = 3.7f,
-		Reach = 124f,
-		HitWidth = 56f,
-		Scale = Item.scale,
-		RibbonColor = Color.Lerp(new Color(195, 181, 157), new Color(224, 239, 219), 0.65f),
-		RibbonLifetime = 16,
-		RibbonWidth = 28f,
-		AfterimageCount = 5
-	};
-
-	public override bool AltFunctionUse(Player player) => SoulBandageTetherProjectile.HasConnections(player.whoAmI);
+	public override bool AltFunctionUse(Player player) => ThrownBreakerBladeProjectile.HasDeployedBlades(player.whoAmI);
 
 	public override bool CanUseItem(Player player)
 	{
-		int executionType = ModContent.ProjectileType<BandageExecutionProjectile>();
-		bool executionActive = player.ownedProjectileCounts[executionType] > 0;
 		if (player.altFunctionUse == 2)
 		{
-			if (!SoulBandageTetherProjectile.HasConnections(player.whoAmI)
-				|| executionActive
-				|| !SoulSwing.CanStart(player))
+			if (!ThrownBreakerBladeProjectile.HasDeployedBlades(player.whoAmI))
 			{
-				ConfigureSwingUse();
+				ConfigureThrow();
 				return false;
 			}
 
-			Item.useStyle = ItemUseStyleID.Shoot;
-			Item.useTime = BandageExecutionProjectile.ExecutionDuration;
-			Item.useAnimation = BandageExecutionProjectile.ExecutionDuration;
-			Item.noMelee = true;
-			Item.noUseGraphic = true;
-			Item.autoReuse = false;
-			Item.shoot = executionType;
-			Item.shootSpeed = 1f;
+			ConfigureRecall();
 			return true;
 		}
 
-		if (!SoulSwing.CanStart(player) || executionActive)
-		{
-			ConfigureSwingUse();
-			return false;
-		}
-
-		ConfigureSwingUse();
-		return true;
+		ConfigureThrow();
+		return ThrownBreakerBladeProjectile.CountDeployedBlades(player.whoAmI) < MaximumDeployedBlades
+			|| ThrownBreakerBladeProjectile.AreAllBladesLodged(player.whoAmI, MaximumDeployedBlades);
 	}
 
 	public override void HoldItem(Player player)
 	{
-		// Restore the smash setup once neither authored projectile is still holding the blade.
-		int executionType = ModContent.ProjectileType<BandageExecutionProjectile>();
-		if (player.ownedProjectileCounts[executionType] == 0
-			&& player.ownedProjectileCounts[SoulSwing.ProjectileType] == 0
-			&& player.itemAnimation == 0)
+		if (player.itemAnimation == 0)
 		{
-			ConfigureSwingUse();
+			ConfigureThrow();
 		}
-	}
-
-	private void ConfigureSwingUse()
-	{
-		Item.useStyle = ItemUseStyleID.Shoot;
-		Item.useTime = SmashDuration;
-		Item.useAnimation = SmashDuration;
-		Item.noMelee = true;
-		Item.noUseGraphic = true;
-		Item.autoReuse = true;
-		Item.shoot = SoulSwing.ProjectileType;
-		Item.shootSpeed = 1f;
 	}
 
 	public override bool Shoot(Player player, Terraria.DataStructures.EntitySource_ItemUse_WithAmmo source,
@@ -102,42 +55,56 @@ public class EssenceboundBreakerBlade : EssenceboundItem, ISoulSwingItem
 	{
 		if (player.altFunctionUse == 2)
 		{
-			int executionType = ModContent.ProjectileType<BandageExecutionProjectile>();
-			if (!SoulBandageTetherProjectile.HasConnections(player.whoAmI)
-				|| player.ownedProjectileCounts[executionType] > 0
-				|| !SoulSwing.CanStart(player))
-			{
-				return false;
-			}
-
-			Vector2 aimDirection = (Main.MouseWorld - player.MountedCenter).SafeNormalize(new Vector2(player.direction, 0f));
-			int projectileIndex = Projectile.NewProjectile(source, player.MountedCenter, aimDirection, executionType,
-				System.Math.Max(1, (int)(damage * 1.6f)), knockback, player.whoAmI);
-			if (projectileIndex < 0 || projectileIndex >= Main.maxProjectiles)
-			{
-				ConfigureSwingUse();
-			}
-
+			ThrownBreakerBladeProjectile.RecallAll(player.whoAmI);
+			PlayRecallSound(player);
 			return false;
 		}
 
-		if (!SoulSwing.CanStart(player)
-			|| player.ownedProjectileCounts[ModContent.ProjectileType<BandageExecutionProjectile>()] > 0)
+		if (ThrownBreakerBladeProjectile.AreAllBladesLodged(player.whoAmI, MaximumDeployedBlades))
 		{
+			// A sixth attack cashes out a fully embedded five-blade setup.
+			ThrownBreakerBladeProjectile.RecallAll(player.whoAmI);
+			PlayRecallSound(player);
 			return false;
 		}
 
-		SoulSwing.Shoot(player, source, damage, knockback);
+		Vector2 aim = (Main.MouseWorld - player.MountedCenter).SafeNormalize(new Vector2(player.direction, 0f));
+		Projectile.NewProjectile(source, player.MountedCenter, aim * ThrowSpeed, type, damage, knockback,
+			player.whoAmI, 0f, -1f);
+		if (Main.netMode != NetmodeID.Server)
+		{
+			SoundEngine.PlaySound(SoundID.Item1 with { Volume = 0.72f, Pitch = -0.28f }, player.Center);
+		}
+
 		return false;
 	}
 
-	public override void OnHitNPC(Player player, NPC target, NPC.HitInfo hit, int damageDone)
+	private static void PlayRecallSound(Player player)
 	{
-		if (player.whoAmI != Main.myPlayer)
+		if (Main.netMode != NetmodeID.Server)
 		{
-			return;
+			SoundEngine.PlaySound(SoundID.Item16 with { Volume = 0.7f, Pitch = -0.2f }, player.Center);
 		}
+	}
 
-		SoulBandageTetherProjectile.Attach(player, target);
+	private void ConfigureThrow()
+	{
+		Item.useStyle = ItemUseStyleID.Shoot;
+		Item.useTime = ThrowUseTime;
+		Item.useAnimation = ThrowUseTime;
+		Item.noMelee = true;
+		Item.noUseGraphic = true;
+		Item.autoReuse = true;
+		Item.UseSound = null;
+		Item.shoot = ModContent.ProjectileType<ThrownBreakerBladeProjectile>();
+		Item.shootSpeed = ThrowSpeed;
+	}
+
+	private void ConfigureRecall()
+	{
+		ConfigureThrow();
+		Item.useTime = 12;
+		Item.useAnimation = 12;
+		Item.autoReuse = false;
 	}
 }
