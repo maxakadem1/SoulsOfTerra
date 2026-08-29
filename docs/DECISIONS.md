@@ -124,21 +124,17 @@
 | Current bindings | Any Copper-through-Platinum broadsword + Slime Essence; Ruby Staff + Eye Essence; Breaker Blade + Wall of Flesh Essence; Imp Staff + Congregation Essence; Muramasa + Congregation Essence; Handgun + Congregation Essence; Magic Missile + Congregation Essence (Stars of Ruin); Diamond Staff + Moon Lord Essence. | Establishes flexible early bases and precise thematic bases where desired. |
 | Future enforcement | Every mod weapon inherits `ImbuementWeaponItem`, must be a registry output, and may not have a conventional recipe. | Turns the design rule into a load-time invariant instead of documentation alone. |
 
-## Soul swings
+## Ranged melee
 
 | Topic | Decision | Reason |
 |---|---|---|
-| Architecture | Opt-in true-melee via `ISoulSwingItem` and one shared held projectile. | Any future sword can reuse the system without a GlobalItem shotgun. |
-| Aim | Cursor-aimed, locked when the swing starts. | Makes L→R / R→L arcs readable; full tracking feels mushy. |
-| Motion | Path presets (alternating lateral, lateral, rising, falling, thrust) with per-blade duration. | Speed is a style knob; the next blade can pick a path without a rewrite. |
-| Default test | Slimebound Blade uses alternating lateral. | First sword proves the system with a left-to-right then right-to-left cut. |
-| Visual | One lingering soul-ribbon (bright rim, soft core) plus a short blade afterimage. | Matches soul-orb language: one trail, not particle spam. |
-| Hit | Blade line hits each NPC once per swing; the ribbon is visual-only. | Keeps the cut readable; fading trails that deal damage feel cheap. |
-| Cadence | One swing at a time; the next click waits until this swing ends. | Fast vs slow blades are authored durations, not overlapping animations. |
-| Graphics | In-house ribbon primitive and shader. | No extra mod dependency; MIT-clean and visually ours. |
-| Slime payload | Gel balls and the royal volley fire at the cut from the blade tip. | Syncs the projectile to the snap of the animation. |
-| Breaker left-click | Essencebound Breaker Blade uses falling; hung smash, linen ribbon, bandages on hit. | The cleaver identity is the overhead smash; right-click keeps the execution payoff. |
-| Breaker extras | No vanilla 90% HP bonus and no extra cut projectile. | Bandages plus execution are the extras; stacking an invisible opener hid the binding fantasy. |
+| Class direction | Melee weapons gain practical ranged engagement through weapon-specific attack shapes. | Melee identity comes from arcs, throws, impacts, momentum, and techniques rather than mandatory contact range. |
+| Shared system | No universal true-melee swing, clash, or soul-edge framework. | Each weapon can choose the ranged behavior that best expresses its physical identity. |
+| Slimebound | Restore the historical broadsword swing with a 1, 1, 3 bouncing gel-ball cycle. | Keeps the weapon functional while its eventual ranged-melee rewrite is designed independently. |
+| Breaker throw | Left-click throws a straight point-first blade; up to five may lodge in enemies or terrain. | Embedding a heavy cleaver creates ranged pressure without making it resemble a gun. |
+| Breaker recall | Right-click recalls every blade; returned blades spin, pass through terrain, and hit each enemy once. | Converging return paths provide crowd control and a deliberate setup/payoff rhythm. |
+| Breaker extraction | Lodged hosts take a 125% extraction hit; return-path hits deal 70%, excluding that host. | Accurate embedding is the strongest payoff without double-hitting the host during recall. |
+| Breaker tether | Bandages are visual only; missed or overly distant blades return automatically. | Tethers communicate ownership and range without unpredictable enemy pulling. |
 
 ## Decisions intentionally deferred
 
