@@ -90,7 +90,8 @@
 
 ### Buried Court and Sealed Congregation
 
-- New-world generation of a protected 168-by-84 vaulted castle hall beneath spawn, with a flat 144-by-60 combat interior, ruined side stair, galleries, wall bays, controlled collapse, and stepped central dais.
+- New-world generation of a protected 168-by-84 vaulted Court beneath spawn through a bundled dependency-free structure asset, with a flat collision-free 144-by-60 combat interior, background reliefs, a flush reliquary, and an exterior stair-and-antechamber entrance.
+- Unbreakable graybox Court brick, masonry wall, relief wall, and brass-accent wall types temporarily reuse vanilla art; Court walls suppress ordinary ambient spawns while eight Boreal floor lamps, six Boreal chandeliers, and glowing mid-wall seals provide three bands of cool-blue light.
 - Six-second top-center location reveal using authored pixel lettering, smooth fades, shadow, restrained teal bloom, and a ten-minute retrigger cooldown; vanilla Dungeon music plays while inside the hall.
 - Saved and multiplayer-synchronized arena bounds, dais coordinates, and boss-defeat state.
 - Protected custom Warden's Reliquary monument with server-validated interaction range, progression, held key, and duplicate-boss checks.
@@ -150,12 +151,12 @@ These values have not been reconciled with measured boss rewards and are deliber
 - Modded NPCs with unusual or misleading `value` data may need fallback logic or exceptions.
 - The complete `.tmod` package cannot be replaced externally while tModLoader has it loaded; compile-only validation still succeeds.
 - Existing worlds do not receive a Buried Court; the first implementation requires a newly generated world.
-- The arena layout, multi-tile altar framing, seal hitboxes, attack timings, and procedural collision visuals require in-game validation.
+- The redesigned arena layout, structure asset packaging, entrance traversal, multi-tile reliquary framing, seal hitboxes, attack timings, and procedural collision visuals require in-game validation.
 - The Sealed Congregation currently has four unique class weapons through Congregation Essence imbuement (Compeditus, Unison, Crux, and Stars of Ruin) plus Borrowed Sentence; it still lacks a broader equipment pool, trophy, relic, and dedicated music.
 
 ## Verification status
 
-- `dotnet build SoulsOfTerra.csproj -t:Compile -v:minimal`: passes with zero warnings and zero errors.
+- `dotnet build SoulsOfTerra.csproj --no-restore -p:BuildMod=false -p:TargetFramework=net8.0`: passes with zero warnings and zero errors.
 - Full `.tmod` packaging passes with zero warnings and zero errors.
 - In-game testing is still required for the complete Soulless-to-Terraforge vertical slice.
 

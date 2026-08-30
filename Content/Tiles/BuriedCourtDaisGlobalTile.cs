@@ -53,4 +53,10 @@ public class BuriedCourtDaisGlobalTile : GlobalTile
 	{
 		return !BuriedCourtSystem.IsDaisStructureTile(i, j);
 	}
+
+	public override bool PreHitWire(int i, int j, int type)
+	{
+		return type != ModContent.TileType<CourtBrickUnsafe>()
+			&& !BuriedCourtSystem.IsDaisStructureTile(i, j);
+	}
 }
