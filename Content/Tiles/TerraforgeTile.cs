@@ -1,5 +1,6 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using SoulsOfTerra.Common.Rendering;
 using SoulsOfTerra.Content.Items.Access;
 using SoulsOfTerra.Content.Projectiles;
 using SoulsOfTerra.Systems;
@@ -189,19 +190,30 @@ public class TerraforgeTile : ModTile
 
 	private static void DrawItemPreview(SpriteBatch spriteBatch, Vector2 drawPosition, int itemType)
 	{
-		Texture2D itemTexture = TextureAssets.Item[itemType].Value;
-		float itemScale = System.MathF.Min(44f / itemTexture.Width, 44f / itemTexture.Height);
 		Vector2 floatPosition = drawPosition + new Vector2(0f,
 			-40f + System.MathF.Sin(Main.GlobalTimeWrappedHourly * 3f) * 3f);
-		spriteBatch.Draw(itemTexture, floatPosition, null, Color.White, 0f,
-			itemTexture.Size() * 0.5f, itemScale, SpriteEffects.None, 0f);
+		if (EssenceEchoRenderer.TryDraw(spriteBatch, itemType, floatPosition, 44f, Color.White))
+		{
+			return;
+		}
+
+		Texture2D itemTexture = TextureAssets.Item[itemType].Value;
+		Rectangle frame = ItemAnimationDrawing.GetFrame(itemType, itemTexture);
+		float itemScale = System.MathF.Min(44f / frame.Width, 44f / frame.Height);
+		spriteBatch.Draw(itemTexture, floatPosition, frame, Color.White, 0f,
+			frame.Size() * 0.5f, itemScale, SpriteEffects.None, 0f);
 	}
 
 	private static void DrawSourceAnvil(SpriteBatch spriteBatch, Vector2 drawPosition, int itemType)
 	{
+		if (EssenceEchoRenderer.TryDraw(spriteBatch, itemType, drawPosition, 34f, Color.White))
+		{
+			return;
+		}
 		Texture2D texture = TextureAssets.Item[itemType].Value;
-		float scale = System.MathF.Min(34f / texture.Width, 26f / texture.Height);
-		spriteBatch.Draw(texture, drawPosition, null, Color.White, 0f,
-			texture.Size() * 0.5f, scale, SpriteEffects.None, 0f);
+		Rectangle frame = ItemAnimationDrawing.GetFrame(itemType, texture);
+		float scale = System.MathF.Min(34f / frame.Width, 26f / frame.Height);
+		spriteBatch.Draw(texture, drawPosition, frame, Color.White, 0f,
+			frame.Size() * 0.5f, scale, SpriteEffects.None, 0f);
 	}
 }

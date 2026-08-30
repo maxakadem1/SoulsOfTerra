@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using SoulsOfTerra.Common;
+using SoulsOfTerra.Common.Rendering;
 using SoulsOfTerra.Content.Items.Access;
 using SoulsOfTerra.Content.Items.Consumables.SoulCrystals;
 using SoulsOfTerra.Content.Items.Materials;
@@ -474,7 +475,7 @@ internal sealed class SoulMenuState : UIState
 		{
 			UIElement row = new();
 			row.Width.Set(0f, 1f);
-			row.Height.Set(72f, 0f);
+			row.Height.Set(82f, 0f);
 			essenceList.Add(row);
 
 			for (int columnIndex = 0; columnIndex < 5; columnIndex++)
@@ -488,7 +489,7 @@ internal sealed class SoulMenuState : UIState
 				int selectedIndex = index;
 				SoulEssenceCatalogueCard card = new();
 				card.Width.Set(86f, 0f);
-				card.Height.Set(72f, 0f);
+				card.Height.Set(82f, 0f);
 				card.Left.Set(columnIndex * 96f, 0f);
 				card.OnLeftClick += (_, _) => SelectEssence(selectedIndex);
 				essenceCards[index] = card;
@@ -1580,20 +1581,20 @@ internal sealed class SoulEssenceCatalogueCard : UIElement
 		Append(background);
 
 		icon = new SoulItemIcon();
-		icon.Width.Set(38f, 0f);
-		icon.Height.Set(38f, 0f);
+		icon.Width.Set(48f, 0f);
+		icon.Height.Set(48f, 0f);
 		icon.HAlign = 0.5f;
 		icon.Top.Set(1f, 0f);
 		background.Append(icon);
 
 		name = new UIText(string.Empty, 0.52f);
 		name.HAlign = 0.5f;
-		name.Top.Set(39f, 0f);
+		name.Top.Set(48f, 0f);
 		background.Append(name);
 
 		cost = new UIText(string.Empty, 0.48f);
 		cost.HAlign = 0.5f;
-		cost.Top.Set(55f, 0f);
+		cost.Top.Set(65f, 0f);
 		background.Append(cost);
 
 		OnMouseOver += (_, _) => ApplyStyle(true);
@@ -1995,12 +1996,19 @@ internal static class ImbuementSlotDrawing
 		{
 			return;
 		}
+		if (EssenceEchoRenderer.TryDraw(spriteBatch, itemType, center, maximumSize,
+			drawColor ?? Color.White))
+		{
+			return;
+		}
 
 		// Vanilla item textures are loaded lazily and may not have appeared elsewhere yet.
 		Main.instance.LoadItem(itemType);
 		Texture2D texture = TextureAssets.Item[itemType].Value;
-		float scale = Math.Min(1f, maximumSize / Math.Max(texture.Width, texture.Height));
-		spriteBatch.Draw(texture, center, null, drawColor ?? Color.White, 0f, texture.Size() * 0.5f, scale, SpriteEffects.None, 0f);
+		Rectangle frame = ItemAnimationDrawing.GetFrame(itemType, texture);
+		float scale = Math.Min(1f, maximumSize / Math.Max(frame.Width, frame.Height));
+		spriteBatch.Draw(texture, center, frame, drawColor ?? Color.White, 0f,
+			frame.Size() * 0.5f, scale, SpriteEffects.None, 0f);
 	}
 
 }
@@ -2018,11 +2026,19 @@ internal sealed class SoulItemIcon : UIElement
 			return;
 		}
 
+		CalculatedStyle dimensions = GetDimensions();
+		Vector2 center = new(dimensions.X + dimensions.Width * 0.5f, dimensions.Y + dimensions.Height * 0.5f);
+		float maximumSize = Math.Min(52f, Math.Min(dimensions.Width, dimensions.Height));
+		if (EssenceEchoRenderer.TryDraw(spriteBatch, ItemType, center, maximumSize, Color.White * Opacity))
+		{
+			return;
+		}
+
 		Main.instance.LoadItem(ItemType);
 		Texture2D texture = TextureAssets.Item[ItemType].Value;
-		CalculatedStyle dimensions = GetDimensions();
-		float scale = Math.Min(1f, 40f / Math.Max(texture.Width, texture.Height));
-		Vector2 center = new(dimensions.X + dimensions.Width * 0.5f, dimensions.Y + dimensions.Height * 0.5f);
-		spriteBatch.Draw(texture, center, null, Color.White * Opacity, 0f, texture.Size() * 0.5f, scale, SpriteEffects.None, 0f);
+		Rectangle frame = ItemAnimationDrawing.GetFrame(ItemType, texture);
+		float scale = Math.Min(1f, maximumSize / Math.Max(frame.Width, frame.Height));
+		spriteBatch.Draw(texture, center, frame, Color.White * Opacity, 0f,
+			frame.Size() * 0.5f, scale, SpriteEffects.None, 0f);
 	}
 }

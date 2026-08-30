@@ -147,20 +147,10 @@ public class SoulOrbProjectile : ModProjectile, IPixelatedDrawable
 		float scaleMultiplier = 1f, Vector2[] trailPositions = null, float trailScaleMultiplier = 1f)
 	{
 		Texture2D glowTexture = GetGlowTexture();
-		Texture2D ringTexture = GetRingTexture();
 		Vector2 origin = glowTexture.Size() * 0.5f;
-		float pulsePhase = Main.GlobalTimeWrappedHourly * 5f + projectile.whoAmI;
-		float pulse = 1f + 0.045f * (float)System.Math.Sin(pulsePhase);
-		float luminancePulse = 0.9f + 0.1f * (float)System.Math.Sin(pulsePhase);
 		float valueLog = (float)System.Math.Log10(System.Math.Max(1, visualSouls));
 		float visualProgress = MathHelper.Clamp((valueLog - 1f) / 4f, 0f, 1f);
 		float valueIntensity = MathHelper.Lerp(0.88f, 1.5f, visualProgress);
-		float bloomStrength = MathHelper.Lerp(0.72f, 1.18f, visualProgress);
-		if (containsBossReward)
-		{
-			bloomStrength *= 1.18f;
-		}
-
 		Color soulColor = GetSoulColor(valueLog, containsBossReward);
 
 		// Sparse motes preserve the orb silhouette while it moves through the pixel grid.
@@ -180,6 +170,34 @@ public class SoulOrbProjectile : ModProjectile, IPixelatedDrawable
 		}
 
 		Vector2 drawPosition = projectile.Center - Main.screenPosition;
+		DrawSoulCore(drawPosition, visualSouls, containsBossReward, opacity, scaleMultiplier, projectile.whoAmI);
+	}
+
+	internal static void DrawSoulVisualAt(Vector2 drawPosition, long visualSouls, float opacity, float scaleMultiplier)
+	{
+		// UI counters share the pickup's appearance without creating a world projectile.
+		DrawSoulCore(drawPosition, visualSouls, false, opacity, scaleMultiplier, 0f);
+	}
+
+	private static void DrawSoulCore(Vector2 drawPosition, long visualSouls, bool containsBossReward, float opacity,
+		float scaleMultiplier, float phaseOffset)
+	{
+		Texture2D glowTexture = GetGlowTexture();
+		Texture2D ringTexture = GetRingTexture();
+		Vector2 origin = glowTexture.Size() * 0.5f;
+		float pulsePhase = Main.GlobalTimeWrappedHourly * 5f + phaseOffset;
+		float pulse = 1f + 0.045f * (float)System.Math.Sin(pulsePhase);
+		float luminancePulse = 0.9f + 0.1f * (float)System.Math.Sin(pulsePhase);
+		float valueLog = (float)System.Math.Log10(System.Math.Max(1, visualSouls));
+		float visualProgress = MathHelper.Clamp((valueLog - 1f) / 4f, 0f, 1f);
+		float valueIntensity = MathHelper.Lerp(0.88f, 1.5f, visualProgress);
+		float bloomStrength = MathHelper.Lerp(0.72f, 1.18f, visualProgress);
+		if (containsBossReward)
+		{
+			bloomStrength *= 1.18f;
+		}
+
+		Color soulColor = GetSoulColor(valueLog, containsBossReward);
 		float orbScale = valueIntensity * scaleMultiplier;
 
 		// Layered additive light gives the stepped circle a saturated halo and bright rim.
@@ -198,7 +216,7 @@ public class SoulOrbProjectile : ModProjectile, IPixelatedDrawable
 
 		// Counter-rotating elongated lights remain visibly contained by the circular rim.
 		float spinSpeed = containsBossReward ? 2.1f : 3.25f;
-		float spinTime = Main.GlobalTimeWrappedHourly * spinSpeed + projectile.whoAmI * 0.37f;
+		float spinTime = Main.GlobalTimeWrappedHourly * spinSpeed + phaseOffset * 0.37f;
 		float orbitRadius = MathHelper.Lerp(4.2f, 7.2f, visualProgress) * (containsBossReward ? 1.12f : 1f) * scaleMultiplier;
 		Color wispColor = Color.Lerp(Color.White, soulColor, 0.38f);
 		for (int wisp = 0; wisp < 2; wisp++)
