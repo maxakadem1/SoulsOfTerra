@@ -81,6 +81,8 @@ Buffs: {
 NPCs: {
 	SealedCongregationBoss.DisplayName: The Sealed Congregation
 	SealedCongregationSeal.DisplayName: Congregation Seal
+	SoulEater.DisplayName: The Soul Eater
+	CourtBrickUnsafe.MapEntry: Buried Court Brick
 
 	SoullessNPC: {
 		DisplayName: Soulless
@@ -101,9 +103,15 @@ NPCs: {
 Tiles: {
 	SoulShrineTile.MapEntry: Warden's Reliquary
 	TerraforgeTile.MapEntry: Terraforge
+	CourtBrickUnsafe.MapEntry: Court Brick Unsafe
 }
 
 Items: {
+	PulsingBait: {
+		DisplayName: Pulsing Bait
+		Tooltip: Summons The Soul Eater at night on the Surface
+	}
+
 	BorrowedSentence: {
 		DisplayName: Borrowed Sentence
 		Tooltip:

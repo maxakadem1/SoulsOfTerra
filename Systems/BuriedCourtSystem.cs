@@ -2,10 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using Microsoft.Xna.Framework;
+using SoulsOfTerra.Common.WorldGeneration;
 using SoulsOfTerra.Content.Bosses.SealedCongregation;
 using SoulsOfTerra.Content.Items.Access;
 using SoulsOfTerra.Content.Projectiles;
 using SoulsOfTerra.Content.Tiles;
+using SoulsOfTerra.Content.Walls;
 using Terraria;
 using Terraria.Chat;
 using Terraria.DataStructures;
@@ -26,7 +28,9 @@ public class BuriedCourtSystem : ModSystem
 	public const int CombatWidth = 144;
 	public const int CombatHeight = 60;
 	private const int EntranceHeight = 40;
+	private const int EntranceDepth = 36;
 	private const int StructurePadding = 12;
+	private const string CourtStructurePath = "Assets/Structures/BuriedCourt.txt";
 
 	public static Rectangle CourtBounds { get; private set; }
 	public static Rectangle CombatBounds { get; private set; }
@@ -235,23 +239,43 @@ public class BuriedCourtSystem : ModSystem
 	private static void GenerateBuriedCourt(GenerationProgress progress, GameConfiguration configuration)
 	{
 		progress.Message = "Burying a forgotten court";
-		int centerX = Math.Clamp(Main.spawnTileX, OuterWidth / 2 + 30, Main.maxTilesX - OuterWidth / 2 - 30);
+		int centerX = Math.Clamp(Main.spawnTileX, OuterWidth / 2 + EntranceDepth + 30,
+			Main.maxTilesX - OuterWidth / 2 - 30);
 		int preferredCenterY = Math.Clamp((int)((Main.worldSurface + Main.rockLayer) * 0.5), OuterHeight / 2 + EntranceHeight + 30,
 			Main.maxTilesY - OuterHeight / 2 - 200);
 		CourtBounds = FindCourtPlacement(centerX, preferredCenterY);
 		CombatBounds = new Rectangle(CourtBounds.X + 12, CourtBounds.Y + 12, CombatWidth, CombatHeight);
 
-		CarveCastleShell();
-		BuildGrandHall();
+		PlaceCourtStructure();
 		BuildEntrance();
 		PlaceDais();
 		PlaceCourtLighting();
 		FrameCourtTiles();
 
-		Rectangle protectedBounds = new(CourtBounds.X, CourtBounds.Y - EntranceHeight, CourtBounds.Width,
-			CourtBounds.Height + EntranceHeight);
+		Rectangle protectedBounds = GetGenerationBounds(CourtBounds);
 		GenVars.structures.AddProtectedStructure(protectedBounds, StructurePadding);
 		Generated = true;
+	}
+
+	private static void PlaceCourtStructure()
+	{
+		ModStructure structure = ModStructure.Load(ModContent.GetInstance<SoulsOfTerra>(), CourtStructurePath);
+		if (structure.Width != OuterWidth || structure.Height != OuterHeight)
+		{
+			throw new InvalidDataException("The Buried Court structure asset does not match its declared world bounds.");
+		}
+
+		Dictionary<char, ushort> tilePalette = new()
+		{
+			['B'] = (ushort)ModContent.TileType<CourtBrickUnsafe>()
+		};
+		Dictionary<char, ushort> wallPalette = new()
+		{
+			['C'] = (ushort)ModContent.WallType<CourtWallUnsafe>(),
+			['R'] = (ushort)ModContent.WallType<CourtReliefWallUnsafe>(),
+			['A'] = (ushort)ModContent.WallType<CourtAccentWallUnsafe>()
+		};
+		structure.Place(CourtBounds.Location, tilePalette, wallPalette);
 	}
 
 	private static Rectangle FindCourtPlacement(int centerX, int preferredCenterY)
@@ -263,8 +287,7 @@ public class BuriedCourtSystem : ModSystem
 			int centerY = Math.Clamp(preferredCenterY + offset, OuterHeight / 2 + EntranceHeight + 30,
 				Main.maxTilesY - OuterHeight / 2 - 200);
 			Rectangle candidate = new(centerX - OuterWidth / 2, centerY - OuterHeight / 2, OuterWidth, OuterHeight);
-			Rectangle occupiedArea = new(candidate.X, candidate.Y - EntranceHeight, candidate.Width,
-				candidate.Height + EntranceHeight);
+			Rectangle occupiedArea = GetGenerationBounds(candidate);
 			if (GenVars.structures.CanPlace(occupiedArea, StructurePadding))
 			{
 				return candidate;
@@ -274,220 +297,84 @@ public class BuriedCourtSystem : ModSystem
 		return new Rectangle(centerX - OuterWidth / 2, preferredCenterY - OuterHeight / 2, OuterWidth, OuterHeight);
 	}
 
-	private static void CarveCastleShell()
+	private static Rectangle GetGenerationBounds(Rectangle courtBounds)
 	{
-		int floorY = CombatBounds.Bottom;
-		for (int x = CourtBounds.Left; x < CourtBounds.Right; x++)
-		{
-			for (int y = CourtBounds.Top; y < CourtBounds.Bottom; y++)
-			{
-				Tile tile = Main.tile[x, y];
-				tile.ClearEverything();
-				tile.LiquidAmount = 0;
-				tile.WallType = WallID.GrayBrick;
-				bool shell = x < CourtBounds.Left + 5 || x >= CourtBounds.Right - 5
-					|| y < CourtBounds.Top + 5 || y >= floorY;
-				if (shell)
-				{
-					SetTile(x, y, y >= floorY ? TileID.StoneSlab : TileID.GrayBrick);
-				}
-			}
-		}
-	}
-
-	private static void BuildGrandHall()
-	{
-		BuildRecessedWallBays();
-		BuildVaultRibs();
-		BuildSideGalleries();
-		BuildThroneRecess();
-		BuildControlledCollapse();
-	}
-
-	private static void BuildRecessedWallBays()
-	{
-		int bayTop = CombatBounds.Top + 7;
-		int shoulderY = CombatBounds.Top + 18;
-		const int bayWidth = 18;
-		for (int left = CombatBounds.Left + 5; left + bayWidth < CombatBounds.Right - 5; left += 22)
-		{
-			int right = left + bayWidth;
-			int center = (left + right) / 2;
-			for (int y = shoulderY; y < CombatBounds.Bottom; y++)
-			{
-				SetWall(left, y, WallID.StoneSlab);
-				SetWall(right, y, WallID.StoneSlab);
-			}
-
-			for (int distance = 0; distance <= bayWidth / 2; distance++)
-			{
-				int y = bayTop + distance * (shoulderY - bayTop) / (bayWidth / 2);
-				SetWall(center - distance, y, WallID.StoneSlab);
-				SetWall(center + distance, y, WallID.StoneSlab);
-				SetWall(center - distance, y + 1, WallID.StoneSlab);
-				SetWall(center + distance, y + 1, WallID.StoneSlab);
-			}
-		}
-	}
-
-	private static void BuildVaultRibs()
-	{
-		int apexY = CombatBounds.Top - 3;
-		int springY = CombatBounds.Top + 15;
-		int centerX = CombatBounds.Center.X;
-		for (int distance = 0; distance <= 43; distance++)
-		{
-			int y = apexY + distance * (springY - apexY) / 43;
-			SetTile(centerX - distance, y, TileID.StoneSlab);
-			SetTile(centerX + distance, y, TileID.StoneSlab);
-		}
-
-		// Short hanging ribs suggest repeated vaults without obstructing the fight below.
-		int[] ribXs = { CombatBounds.Left + 27, CombatBounds.Left + 49, CombatBounds.Right - 50, CombatBounds.Right - 28 };
-		foreach (int ribX in ribXs)
-		{
-			for (int y = CombatBounds.Top - 1; y < CombatBounds.Top + 10; y++)
-			{
-				SetTile(ribX, y, TileID.GrayBrick);
-			}
-		}
-	}
-
-	private static void BuildSideGalleries()
-	{
-		int galleryY = CombatBounds.Top + 30;
-		BuildGallery(CombatBounds.Left + 5, CombatBounds.Left + 36, galleryY, false);
-		BuildGallery(CombatBounds.Right - 36, CombatBounds.Right - 5, galleryY - 3, true);
-
-		BuildColumn(CombatBounds.Left + 7, CombatBounds.Top + 17, CombatBounds.Bottom);
-		BuildColumn(CombatBounds.Left + 31, galleryY, CombatBounds.Bottom);
-		BuildColumn(CombatBounds.Right - 34, galleryY - 3, CombatBounds.Bottom);
-		BuildColumn(CombatBounds.Right - 10, CombatBounds.Top + 17, CombatBounds.Bottom);
-	}
-
-	private static void BuildGallery(int startX, int endX, int y, bool damaged)
-	{
-		for (int x = startX; x <= endX; x++)
-		{
-			bool missing = damaged && x > endX - 11 && ((x - startX) % 3 != 0);
-			if (!missing)
-			{
-				SetTile(x, y, TileID.Platforms);
-			}
-		}
-
-		for (int x = startX; x <= endX; x += 6)
-		{
-			for (int supportY = y + 1; supportY <= y + 3; supportY++)
-			{
-				SetTile(x, supportY, TileID.StoneSlab);
-			}
-		}
-	}
-
-	private static void BuildColumn(int centerX, int topY, int floorY)
-	{
-		for (int x = centerX - 1; x <= centerX + 1; x++)
-		{
-			for (int y = topY; y < floorY; y++)
-			{
-				SetTile(x, y, TileID.StoneSlab);
-			}
-		}
-
-		for (int x = centerX - 3; x <= centerX + 3; x++)
-		{
-			SetTile(x, topY, TileID.GrayBrick);
-			SetTile(x, floorY - 1, TileID.GrayBrick);
-		}
-	}
-
-	private static void BuildThroneRecess()
-	{
-		int centerX = CombatBounds.Center.X;
-		int floorY = CombatBounds.Bottom;
-		int archTop = floorY - 33;
-		int shoulderY = floorY - 20;
-		const int halfWidth = 15;
-
-		for (int y = shoulderY; y < floorY; y++)
-		{
-			SetWall(centerX - halfWidth, y, WallID.StoneSlab);
-			SetWall(centerX + halfWidth, y, WallID.StoneSlab);
-		}
-
-		for (int distance = 0; distance <= halfWidth; distance++)
-		{
-			int y = archTop + distance * (shoulderY - archTop) / halfWidth;
-			SetWall(centerX - distance, y, WallID.StoneSlab);
-			SetWall(centerX + distance, y, WallID.StoneSlab);
-			SetWall(centerX - distance, y + 1, WallID.StoneSlab);
-			SetWall(centerX + distance, y + 1, WallID.StoneSlab);
-		}
-	}
-
-	private static void BuildControlledCollapse()
-	{
-		// Damage is concentrated at the edges so the combat floor remains readable and fair.
-		BuildRubblePile(CombatBounds.Left + 2, CombatBounds.Bottom - 1, 10, 4);
-		BuildRubblePile(CombatBounds.Right - 13, CombatBounds.Bottom - 1, 11, 5);
-
-		for (int x = CombatBounds.Right - 30; x < CombatBounds.Right - 20; x++)
-		{
-			int y = CombatBounds.Top + 5 + (x - (CombatBounds.Right - 30)) / 2;
-			ClearTile(x, y);
-			ClearTile(x, y + 1);
-		}
-	}
-
-	private static void BuildRubblePile(int startX, int floorY, int width, int maxHeight)
-	{
-		for (int x = 0; x < width; x++)
-		{
-			int edgeDistance = Math.Min(x, width - 1 - x);
-			int height = Math.Min(maxHeight, 1 + edgeDistance / 2 + WorldGen.genRand.Next(2));
-			for (int y = 0; y < height; y++)
-			{
-				SetTile(startX + x, floorY - y, WorldGen.genRand.NextBool() ? TileID.GrayBrick : TileID.StoneSlab);
-			}
-		}
+		return new Rectangle(courtBounds.Left - EntranceDepth, courtBounds.Top - EntranceHeight,
+			courtBounds.Width + EntranceDepth, courtBounds.Height + EntranceHeight);
 	}
 
 	private static void BuildEntrance()
 	{
-		int passageLeft = CourtBounds.Left + 10;
+		int passageLeft = CourtBounds.Left - EntranceDepth + 6;
 		const int passageWidth = 10;
 		int passageTop = CourtBounds.Top - EntranceHeight;
+		int floorY = CombatBounds.Bottom;
+		int antechamberTop = floorY - 17;
+		ushort brickType = (ushort)ModContent.TileType<CourtBrickUnsafe>();
+		ushort wallType = (ushort)ModContent.WallType<CourtWallUnsafe>();
+
+		// A masonry shaft opens into an exterior antechamber rather than the combat chamber.
 		for (int x = passageLeft; x < passageLeft + passageWidth; x++)
 		{
-			for (int y = passageTop; y < CourtBounds.Top + 19; y++)
+			for (int y = passageTop; y < antechamberTop; y++)
 			{
 				Tile tile = Main.tile[x, y];
 				tile.ClearEverything();
 				tile.LiquidAmount = 0;
-				tile.WallType = WallID.GrayBrick;
+				tile.WallType = wallType;
 				if (x < passageLeft + 2 || x >= passageLeft + passageWidth - 2)
 				{
-					SetTile(x, y, TileID.StoneSlab);
+					SetTile(x, y, brickType);
 				}
 			}
 		}
 
-		// The shaft opens onto a descending masonry stair and gives the hall a deliberate reveal.
-		int stairStartX = passageLeft + passageWidth - 2;
-		int stairEndX = CombatBounds.Left + 29;
-		int stairStartY = CourtBounds.Top + 17;
-		for (int x = stairStartX; x <= stairEndX; x++)
+		int antechamberLeft = CourtBounds.Left - EntranceDepth;
+		for (int x = antechamberLeft; x < CourtBounds.Left; x++)
 		{
-			int stepY = stairStartY + (x - stairStartX) / 2;
-			for (int y = stepY; y <= CombatBounds.Top + 32; y++)
+			for (int y = antechamberTop; y < floorY; y++)
 			{
-				SetTile(x, y, TileID.GrayBrick);
+				Tile tile = Main.tile[x, y];
+				tile.ClearEverything();
+				tile.LiquidAmount = 0;
+				tile.WallType = wallType;
 			}
 
-			for (int y = stepY - 4; y < stepY; y++)
+			for (int y = floorY; y < floorY + 4; y++)
 			{
-				ClearTile(x, y);
+				SetTile(x, y, brickType);
+			}
+		}
+
+		for (int x = antechamberLeft; x < CourtBounds.Left; x++)
+		{
+			bool shaftOpening = x >= passageLeft + 2 && x < passageLeft + passageWidth - 2;
+			if (!shaftOpening)
+			{
+				for (int y = antechamberTop - 3; y < antechamberTop; y++)
+				{
+					SetTile(x, y, brickType);
+				}
+			}
+		}
+
+		for (int x = antechamberLeft; x < antechamberLeft + 3; x++)
+		{
+			for (int y = antechamberTop; y < floorY; y++)
+			{
+				SetTile(x, y, brickType);
+			}
+		}
+
+		// The stair finishes outside the floor-level arch and never enters combat space.
+		int stairStartX = passageLeft + passageWidth - 2;
+		int stairEndX = CourtBounds.Left - 1;
+		for (int x = stairStartX; x <= stairEndX; x++)
+		{
+			int stepY = Math.Min(floorY - 1, antechamberTop + 5 + (x - stairStartX) / 2);
+			for (int y = stepY; y < floorY; y++)
+			{
+				SetTile(x, y, brickType);
 			}
 		}
 
@@ -508,16 +395,9 @@ public class BuriedCourtSystem : ModSystem
 	{
 		int centerX = CombatBounds.Center.X;
 		int floorY = CombatBounds.Bottom;
-		for (int x = centerX - 12; x <= centerX + 12; x++)
-		{
-			SetTile(x, floorY - 1, TileID.StoneSlab);
-		}
-		for (int x = centerX - 8; x <= centerX + 8; x++)
-		{
-			SetTile(x, floorY - 2, TileID.StoneSlab);
-		}
 
-		DaisTopLeft = new Point16(centerX - 1, floorY - 4);
+		// The art supplies the apparent dais while the reliquary sits on the uninterrupted floor.
+		DaisTopLeft = new Point16(centerX - 1, floorY - 2);
 		PlaceShrineTiles();
 	}
 
@@ -560,18 +440,38 @@ public class BuriedCourtSystem : ModSystem
 
 	private static void PlaceCourtLighting()
 	{
-		int[] torchXs = { CombatBounds.Left + 19, CombatBounds.Left + 43, CombatBounds.Center.X - 24,
-			CombatBounds.Center.X + 24, CombatBounds.Right - 44, CombatBounds.Right - 20 };
-		foreach (int x in torchXs)
+		// Boreal fixtures spread cool light across both the floor and upper vault.
+		int[] lampOffsets = { 20, 40, 60, 76, 91, 107, 127, 147 };
+		foreach (int offsetX in lampOffsets)
 		{
-			WorldGen.PlaceTile(x, CombatBounds.Bottom - 18, TileID.Torches, true, true);
+			PlaceFurniture(ItemID.BorealWoodLamp, CourtBounds.Left + offsetX, CombatBounds.Bottom - 1);
 		}
+
+		int[] chandelierOffsets = { 24, 48, 72, 95, 119, 143 };
+		int anchorY = CombatBounds.Top - 4;
+		ushort brickType = (ushort)ModContent.TileType<CourtBrickUnsafe>();
+		foreach (int offsetX in chandelierOffsets)
+		{
+			int centerX = CourtBounds.Left + offsetX;
+			for (int x = centerX - 1; x <= centerX + 1; x++)
+			{
+				SetTile(x, anchorY, brickType);
+			}
+
+			PlaceFurniture(ItemID.BorealWoodChandelier, centerX, anchorY + 1);
+		}
+	}
+
+	private static void PlaceFurniture(int itemType, int originX, int originY)
+	{
+		Item furniture = new(itemType);
+		WorldGen.PlaceTile(originX, originY, furniture.createTile, true, true, -1, furniture.placeStyle);
 	}
 
 	private static void FrameCourtTiles()
 	{
 		int top = CourtBounds.Top - EntranceHeight;
-		for (int x = CourtBounds.Left; x < CourtBounds.Right; x++)
+		for (int x = CourtBounds.Left - EntranceDepth; x < CourtBounds.Right; x++)
 		{
 			for (int y = top; y < CourtBounds.Bottom; y++)
 			{
@@ -592,18 +492,4 @@ public class BuriedCourtSystem : ModSystem
 		tile.Slope = 0;
 	}
 
-	private static void ClearTile(int x, int y)
-	{
-		Tile tile = Main.tile[x, y];
-		tile.HasTile = false;
-		tile.TileFrameX = 0;
-		tile.TileFrameY = 0;
-		tile.IsHalfBlock = false;
-		tile.Slope = 0;
-	}
-
-	private static void SetWall(int x, int y, ushort wallType)
-	{
-		Main.tile[x, y].WallType = wallType;
-	}
 }
