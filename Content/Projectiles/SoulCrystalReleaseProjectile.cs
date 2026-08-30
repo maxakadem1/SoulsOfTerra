@@ -1,4 +1,6 @@
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
+using SoulsOfTerra.Common.Rendering;
 using SoulsOfTerra.Content.Projectiles;
 using Terraria;
 using Terraria.DataStructures;
@@ -7,7 +9,7 @@ using Terraria.ModLoader;
 
 namespace SoulsOfTerra.Content.Projectiles;
 
-public class SoulCrystalReleaseProjectile : ModProjectile
+public class SoulCrystalReleaseProjectile : ModProjectile, IPixelatedDrawable
 {
 	private const int TrailLength = 12;
 	private const int TravelDuration = 24;
@@ -68,6 +70,11 @@ public class SoulCrystalReleaseProjectile : ModProjectile
 
 	public override bool PreDraw(ref Color lightColor)
 	{
+		return false;
+	}
+
+	public void DrawPixelated(SpriteBatch spriteBatch)
+	{
 		int tier = (int)Projectile.ai[0];
 		long visualValue = tier switch
 		{
@@ -77,7 +84,6 @@ public class SoulCrystalReleaseProjectile : ModProjectile
 		};
 		float scale = 0.55f + tier * 0.15f;
 		SoulOrbProjectile.DrawSoulVisual(Projectile, visualValue, false, Projectile.Opacity, scale, trailPositions, 1.4f);
-		return false;
 	}
 
 	public static void Spawn(Player player, int tier)
