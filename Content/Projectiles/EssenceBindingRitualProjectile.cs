@@ -1,6 +1,7 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using SoulsOfTerra.Common;
+using SoulsOfTerra.Common.Rendering;
 using Terraria;
 using Terraria.Audio;
 using Terraria.GameContent;
@@ -102,8 +103,12 @@ public class EssenceBindingRitualProjectile : ModProjectile
 
 	private static void DrawItem(int itemType, Vector2 center, float scaleMultiplier, Color color)
 	{
+		if (EssenceEchoRenderer.TryDraw(Main.spriteBatch, itemType, center, 52f * scaleMultiplier, color))
+		{
+			return;
+		}
 		Texture2D texture = TextureAssets.Item[itemType].Value;
-		Rectangle frame = texture.Frame();
+		Rectangle frame = ItemAnimationDrawing.GetFrame(itemType, texture);
 		float fitScale = System.MathF.Min(52f / frame.Width, 52f / frame.Height);
 		Main.EntitySpriteDraw(texture, center, frame, color, 0f, frame.Size() * 0.5f,
 			fitScale * scaleMultiplier, SpriteEffects.None);

@@ -2,6 +2,8 @@ using System;
 using System.IO;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using SoulsOfTerra.Common.Rendering;
+using SoulsOfTerra.Systems;
 using Terraria;
 using Terraria.Audio;
 using Terraria.Graphics;
@@ -11,7 +13,7 @@ using Terraria.ModLoader;
 
 namespace SoulsOfTerra.Content.Projectiles;
 
-public class StarsOfRuinStarProjectile : ModProjectile
+public class StarsOfRuinStarProjectile : ModProjectile, IPixelatedDrawable
 {
 	private static readonly VertexStrip TrailStrip = new();
 	private static readonly VertexStrip HeadStrip = new();
@@ -171,8 +173,11 @@ public class StarsOfRuinStarProjectile : ModProjectile
 		SoundEngine.PlaySound(SoundID.Item10 with { Volume = 0.12f, Pitch = 0.35f }, Projectile.Center);
 	}
 
-	public override bool PreDraw(ref Color lightColor)
+	public override bool PreDraw(ref Color lightColor) => false;
+
+	public void DrawPixelated(SpriteBatch spriteBatch)
 	{
+		// Both formation and flight share the same stable pixel grid.
 		if (Launched)
 		{
 			DrawComet();
@@ -181,8 +186,6 @@ public class StarsOfRuinStarProjectile : ModProjectile
 		{
 			DrawSpark();
 		}
-
-		return false;
 	}
 
 	private void DrawComet()
@@ -195,7 +198,8 @@ public class StarsOfRuinStarProjectile : ModProjectile
 			.UseOpacity(4.6f)
 			.Apply();
 		TrailStrip.PrepareStripWithProceduralPadding(Projectile.oldPos, Projectile.oldRot, TrailColor, TrailWidth,
-			-Main.screenPosition + Projectile.Size * 0.5f, includeBacksides: false, tryStoppingOddBug: true);
+			-Main.screenPosition + PixelatedRenderSystem.CameraRemainder + Projectile.Size * 0.5f,
+			includeBacksides: false, tryStoppingOddBug: true);
 		TrailStrip.DrawTrail();
 
 		Vector2 direction = Projectile.velocity.SafeNormalize(Vector2.UnitX);
@@ -212,7 +216,8 @@ public class StarsOfRuinStarProjectile : ModProjectile
 			.UseOpacity(4.2f)
 			.Apply();
 		HeadStrip.PrepareStripWithProceduralPadding(headPositions, headRotations, HeadColor, HeadWidth,
-			-Main.screenPosition, includeBacksides: false, tryStoppingOddBug: true);
+			-Main.screenPosition + PixelatedRenderSystem.CameraRemainder, includeBacksides: false,
+			tryStoppingOddBug: true);
 		HeadStrip.DrawTrail();
 		Main.pixelShader.CurrentTechnique.Passes[0].Apply();
 

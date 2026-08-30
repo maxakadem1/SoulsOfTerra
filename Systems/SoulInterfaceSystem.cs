@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using ReLogic.Content;
+using SoulsOfTerra.Content.Projectiles;
 using SoulsOfTerra.Players;
 using Terraria;
 using Terraria.GameContent;
@@ -12,8 +13,10 @@ namespace SoulsOfTerra.Systems;
 
 public class SoulInterfaceSystem : ModSystem
 {
+	private const int SoulTargetSize = 32;
+	private const float SoulCompositeScale = 2f;
 	private static Asset<Texture2D> counterFrame;
-	private static Asset<Texture2D> counterIcon;
+	private static RenderTarget2D counterSoulTarget;
 
 	public override void Load()
 	{
@@ -23,13 +26,61 @@ public class SoulInterfaceSystem : ModSystem
 		}
 
 		counterFrame = ModContent.Request<Texture2D>("SoulsOfTerra/Content/UI/SoulCounterFrame");
-		counterIcon = ModContent.Request<Texture2D>("SoulsOfTerra/Content/UI/SoulCounterIcon");
+		On_Main.CheckMonoliths += DrawCounterSoulTarget;
+		Main.QueueMainThreadAction(CreateCounterSoulTarget);
 	}
 
 	public override void Unload()
 	{
+		On_Main.CheckMonoliths -= DrawCounterSoulTarget;
 		counterFrame = null;
-		counterIcon = null;
+
+		RenderTarget2D targetToDispose = counterSoulTarget;
+		counterSoulTarget = null;
+		if (targetToDispose is not null)
+		{
+			// Graphics resources must be disposed on Terraria's main thread.
+			Main.QueueMainThreadAction(() => targetToDispose.Dispose());
+		}
+	}
+
+	private static void CreateCounterSoulTarget()
+	{
+		counterSoulTarget?.Dispose();
+		counterSoulTarget = new RenderTarget2D(Main.instance.GraphicsDevice, SoulTargetSize, SoulTargetSize, false,
+			SurfaceFormat.Color, DepthFormat.None, 0, RenderTargetUsage.PreserveContents);
+	}
+
+	private static void DrawCounterSoulTarget(On_Main.orig_CheckMonoliths orig)
+	{
+		orig();
+		if (Main.gameMenu || counterSoulTarget is null || counterSoulTarget.IsDisposed
+			|| Main.LocalPlayer is null || !Main.LocalPlayer.active)
+		{
+			return;
+		}
+
+		SoulPlayer soulPlayer = Main.LocalPlayer.GetModPlayer<SoulPlayer>();
+		float pickupScale = 1f;
+		if (soulPlayer.RecentGainTime > 0)
+		{
+			pickupScale += 0.08f * MathHelper.Clamp(soulPlayer.RecentGainTime / 30f, 0f, 1f);
+		}
+
+		bool hasSouls = soulPlayer.SoulBalance > 0;
+		float soulOpacity = hasSouls ? 1f : 0.28f;
+		float soulScale = (hasSouls ? 0.8f : 0.68f) * pickupScale;
+		GraphicsDevice graphicsDevice = Main.instance.GraphicsDevice;
+		RenderTargetBinding[] previousTargets = graphicsDevice.GetRenderTargets();
+		graphicsDevice.SetRenderTarget(counterSoulTarget);
+		graphicsDevice.Clear(Color.Transparent);
+
+		// Half-resolution rendering gives the UI soul the same two-pixel grid as world souls.
+		Main.spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.AlphaBlend, SamplerState.PointClamp,
+			DepthStencilState.None, Main.Rasterizer, null, Matrix.CreateScale(0.5f));
+		SoulOrbProjectile.DrawSoulVisualAt(new Vector2(SoulTargetSize), soulPlayer.SoulBalance, soulOpacity, soulScale);
+		Main.spriteBatch.End();
+		graphicsDevice.SetRenderTargets(previousTargets);
 	}
 
 	public override void ModifyInterfaceLayers(List<GameInterfaceLayer> layers)
@@ -63,16 +114,12 @@ public class SoulInterfaceSystem : ModSystem
 		SpriteBatch spriteBatch = Main.spriteBatch;
 		DrawNineSlice(spriteBatch, counterFrame.Value, new Rectangle((int)panelPosition.X, (int)panelPosition.Y, (int)panelWidth, 44));
 
-		Texture2D icon = counterIcon.Value;
-		float iconPulse = 1f + 0.035f * (float)System.Math.Sin(Main.GlobalTimeWrappedHourly * 3.5f);
-		if (soulPlayer.RecentGainTime > 0)
-		{
-			iconPulse += 0.08f * MathHelper.Clamp(soulPlayer.RecentGainTime / 30f, 0f, 1f);
-		}
-
-		float iconScale = 27f / System.Math.Max(icon.Width, icon.Height) * iconPulse;
 		Vector2 iconCenter = panelPosition + new Vector2(27f, 22f);
-		spriteBatch.Draw(icon, iconCenter, null, Color.White, 0f, icon.Size() * 0.5f, iconScale, SpriteEffects.None, 0f);
+		if (counterSoulTarget is not null && !counterSoulTarget.IsDisposed)
+		{
+			spriteBatch.Draw(counterSoulTarget, iconCenter, null, Color.White, 0f,
+				counterSoulTarget.Size() * 0.5f, SoulCompositeScale, SpriteEffects.None, 0f);
+		}
 		Utils.DrawBorderString(spriteBatch, balanceText, panelPosition + new Vector2(panelWidth - 14f, 11f), Color.White, 0.9f, 1f);
 
 		if (soulPlayer.RecentGainTime > 0 && soulPlayer.RecentGain > 0)

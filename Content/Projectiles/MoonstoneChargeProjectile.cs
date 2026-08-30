@@ -87,7 +87,8 @@ public class MoonstoneChargeProjectile : ModProjectile
 
 		if (Projectile.owner == Main.myPlayer)
 		{
-			Projectile.NewProjectile(Projectile.GetSource_FromThis(), tip, Projectile.velocity * 18f,
+			// A slower main bolt gives its homing arc and pixel trail more time to read.
+			Projectile.NewProjectile(Projectile.GetSource_FromThis(), tip, Projectile.velocity * 9f,
 				ModContent.ProjectileType<MoonstoneBoltProjectile>(), Projectile.damage, Projectile.knockBack, Projectile.owner);
 		}
 

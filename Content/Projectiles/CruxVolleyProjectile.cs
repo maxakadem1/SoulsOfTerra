@@ -1,6 +1,8 @@
 using System;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using SoulsOfTerra.Common;
+using SoulsOfTerra.Common.Rendering;
 using Terraria;
 using Terraria.Audio;
 using Terraria.ID;
@@ -8,7 +10,7 @@ using Terraria.ModLoader;
 
 namespace SoulsOfTerra.Content.Projectiles;
 
-public class CruxVolleyProjectile : ModProjectile
+public class CruxVolleyProjectile : ModProjectile, IPixelatedDrawable
 {
 	public const int VolleyDuration = 22;
 	public const int WriteDuration = 12;
@@ -94,11 +96,13 @@ public class CruxVolleyProjectile : ModProjectile
 				center - second * half, center + second * half, HitWidth, ref collisionPoint);
 	}
 
-	public override bool PreDraw(ref Color lightColor)
+	public override bool PreDraw(ref Color lightColor) => false;
+
+	public void DrawPixelated(SpriteBatch spriteBatch)
 	{
+		// Shader arms, moving heads, and the knot remain one coherent pixelated glyph.
 		CruxSentenceDraw.Draw(Projectile.Center, WriteProgress(), LingerFade(), Age / 60f,
-			Projectile.identity * 0.173f);
-		return false;
+			Projectile.identity * 0.173f, pixelated: true);
 	}
 
 	private float WriteProgress() => MathHelper.Clamp(Age / (float)WriteDuration, 0f, 1f);

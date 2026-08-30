@@ -1,5 +1,7 @@
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using SoulsOfTerra.Common;
+using SoulsOfTerra.Common.Rendering;
 using SoulsOfTerra.Systems;
 using Terraria;
 using Terraria.ID;
@@ -7,7 +9,7 @@ using Terraria.ModLoader;
 
 namespace SoulsOfTerra.Content.Projectiles;
 
-public class UnisonWaveProjectile : ModProjectile
+public class UnisonWaveProjectile : ModProjectile, IPixelatedDrawable
 {
 	public const int WaveDuration = 50;
 	public const float MaximumRadius = 360f;
@@ -68,14 +70,15 @@ public class UnisonWaveProjectile : ModProjectile
 		return CongregationHymnWave.HitsAnnulus(Projectile.Center, CurrentRadius(), targetHitbox);
 	}
 
-	public override bool PreDraw(ref Color lightColor)
+	public override bool PreDraw(ref Color lightColor) => false;
+
+	public void DrawPixelated(SpriteBatch spriteBatch)
 	{
 		float progress = WaveProgress();
-		// Daylight claps should read as a hymn of light, not a thick black hoop.
+		// The visible wave is pixelated while its screen-space refraction stays smooth.
 		CongregationHymnWave.DrawExpandingWave(Projectile.Center, CurrentRadius(), progress, 0f, 0f,
 			darkBodyStrength: 0f);
 		CongregationHymnWave.DrawReleaseFlash(Projectile.Center, Age, ReleaseFlashDuration, MaximumRadius / 820f);
-		return false;
 	}
 
 	private float CurrentRadius() => CongregationHymnWave.EasedRadius(WaveProgress(), 12f, MaximumRadius);

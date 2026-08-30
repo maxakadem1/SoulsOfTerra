@@ -1,5 +1,6 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using SoulsOfTerra.Common.Rendering;
 using SoulsOfTerra.Content.Tiles;
 using Terraria;
 using Terraria.Audio;
@@ -65,12 +66,21 @@ public class ForgeOutputManifestationProjectile : ModProjectile
 		float eased = returnProgress * returnProgress;
 		Vector2 bobbedCenter = Projectile.Center + new Vector2(0f, System.MathF.Sin(visibleAge * 0.16f) * 3f);
 		Vector2 center = player.active ? Vector2.Lerp(bobbedCenter, player.Center, eased) : bobbedCenter;
-		Texture2D texture = TextureAssets.Item[(int)Projectile.ai[0]].Value;
-		float fitScale = System.MathF.Min(44f / texture.Width, 44f / texture.Height);
-		float scale = fitScale * MathHelper.SmoothStep(0.25f, 1f, Utils.GetLerpValue(0f, 10f, visibleAge, true));
+		int itemType = (int)Projectile.ai[0];
+		float revealScale = MathHelper.SmoothStep(0.25f, 1f, Utils.GetLerpValue(0f, 10f, visibleAge, true));
 		Color color = Color.White * (1f - Utils.GetLerpValue(45f, ManifestDuration, visibleAge, true));
-		Main.EntitySpriteDraw(texture, center - Main.screenPosition, null, color, 0f,
-			texture.Size() * 0.5f, scale, SpriteEffects.None);
+		if (EssenceEchoRenderer.TryDraw(Main.spriteBatch, itemType, center - Main.screenPosition,
+			44f * revealScale, color))
+		{
+			return false;
+		}
+
+		Texture2D texture = TextureAssets.Item[itemType].Value;
+		Rectangle frame = ItemAnimationDrawing.GetFrame(itemType, texture);
+		float fitScale = System.MathF.Min(44f / frame.Width, 44f / frame.Height);
+		float scale = fitScale * revealScale;
+		Main.EntitySpriteDraw(texture, center - Main.screenPosition, frame, color, 0f,
+			frame.Size() * 0.5f, scale, SpriteEffects.None);
 		return false;
 	}
 

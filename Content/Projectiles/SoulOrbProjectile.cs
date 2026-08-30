@@ -2,6 +2,7 @@ using System.IO;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using SoulsOfTerra.Common;
+using SoulsOfTerra.Common.Rendering;
 using SoulsOfTerra.Players;
 using Terraria;
 using Terraria.DataStructures;
@@ -10,7 +11,7 @@ using Terraria.ModLoader;
 
 namespace SoulsOfTerra.Content.Projectiles;
 
-public class SoulOrbProjectile : ModProjectile
+public class SoulOrbProjectile : ModProjectile, IPixelatedDrawable
 {
 	private const float CollectionRange = 12f * 16f;
 	private const float MergeRange = 4f * 16f;
@@ -134,25 +135,27 @@ public class SoulOrbProjectile : ModProjectile
 
 	public override bool PreDraw(ref Color lightColor)
 	{
-		DrawSoulVisual(Projectile, StoredSouls, ContainsBossReward);
 		return false;
+	}
+
+	public void DrawPixelated(SpriteBatch spriteBatch)
+	{
+		DrawSoulVisual(Projectile, StoredSouls, ContainsBossReward);
 	}
 
 	internal static void DrawSoulVisual(Projectile projectile, long visualSouls, bool containsBossReward, float opacity = 1f,
 		float scaleMultiplier = 1f, Vector2[] trailPositions = null, float trailScaleMultiplier = 1f)
 	{
 		Texture2D glowTexture = GetGlowTexture();
-		Texture2D ringTexture = GetRingTexture();
 		Vector2 origin = glowTexture.Size() * 0.5f;
-		float pulse = 1f + 0.06f * (float)System.Math.Sin(Main.GlobalTimeWrappedHourly * 5f + projectile.whoAmI);
 		float valueLog = (float)System.Math.Log10(System.Math.Max(1, visualSouls));
 		float visualProgress = MathHelper.Clamp((valueLog - 1f) / 4f, 0f, 1f);
-		float valueIntensity = MathHelper.Lerp(0.82f, 1.52f, visualProgress);
+		float valueIntensity = MathHelper.Lerp(0.88f, 1.5f, visualProgress);
 		Color soulColor = GetSoulColor(valueLog, containsBossReward);
 
-		// One smooth trail keeps the reward readable during crowded fights.
+		// Sparse motes preserve the orb silhouette while it moves through the pixel grid.
 		Vector2[] positions = trailPositions ?? projectile.oldPos;
-		for (int i = positions.Length - 1; i >= 1; i--)
+		for (int i = positions.Length - 1; i >= 2; i -= 2)
 		{
 			if (positions[i] == Vector2.Zero)
 			{
@@ -161,21 +164,61 @@ public class SoulOrbProjectile : ModProjectile
 
 			float trailStrength = 1f - i / (float)positions.Length;
 			Vector2 trailPosition = positions[i] + projectile.Size * 0.5f - Main.screenPosition;
-			float trailScale = MathHelper.Lerp(0.1f, 0.35f, trailStrength) * valueIntensity * scaleMultiplier * trailScaleMultiplier;
-			Color trailColor = WithAlpha(soulColor, 95) * (trailStrength * 0.76f);
+			float trailScale = MathHelper.Lerp(0.055f, 0.16f, trailStrength) * valueIntensity * scaleMultiplier * trailScaleMultiplier;
+			Color trailColor = AdditiveColor(soulColor, trailStrength * 0.6f);
 			Main.EntitySpriteDraw(glowTexture, trailPosition, null, trailColor * opacity, 0f, origin, trailScale, SpriteEffects.None);
 		}
 
 		Vector2 drawPosition = projectile.Center - Main.screenPosition;
-		// A bright annular border surrounds a nearly transparent interior.
-		Main.EntitySpriteDraw(glowTexture, drawPosition, null, WithAlpha(soulColor, 24) * opacity, 0f, origin, 0.52f * pulse * valueIntensity * scaleMultiplier, SpriteEffects.None);
-		Main.EntitySpriteDraw(ringTexture, drawPosition, null, WithAlpha(soulColor, 225) * opacity, 0f, origin, 0.38f * pulse * valueIntensity * scaleMultiplier, SpriteEffects.None);
+		DrawSoulCore(drawPosition, visualSouls, containsBossReward, opacity, scaleMultiplier, projectile.whoAmI);
+	}
 
-		// Counter-rotating wisps create a small vortex inside the soul.
+	internal static void DrawSoulVisualAt(Vector2 drawPosition, long visualSouls, float opacity, float scaleMultiplier)
+	{
+		// UI counters share the pickup's appearance without creating a world projectile.
+		DrawSoulCore(drawPosition, visualSouls, false, opacity, scaleMultiplier, 0f);
+	}
+
+	private static void DrawSoulCore(Vector2 drawPosition, long visualSouls, bool containsBossReward, float opacity,
+		float scaleMultiplier, float phaseOffset)
+	{
+		Texture2D glowTexture = GetGlowTexture();
+		Texture2D ringTexture = GetRingTexture();
+		Vector2 origin = glowTexture.Size() * 0.5f;
+		float pulsePhase = Main.GlobalTimeWrappedHourly * 5f + phaseOffset;
+		float pulse = 1f + 0.045f * (float)System.Math.Sin(pulsePhase);
+		float luminancePulse = 0.9f + 0.1f * (float)System.Math.Sin(pulsePhase);
+		float valueLog = (float)System.Math.Log10(System.Math.Max(1, visualSouls));
+		float visualProgress = MathHelper.Clamp((valueLog - 1f) / 4f, 0f, 1f);
+		float valueIntensity = MathHelper.Lerp(0.88f, 1.5f, visualProgress);
+		float bloomStrength = MathHelper.Lerp(0.72f, 1.18f, visualProgress);
+		if (containsBossReward)
+		{
+			bloomStrength *= 1.18f;
+		}
+
+		Color soulColor = GetSoulColor(valueLog, containsBossReward);
+		float orbScale = valueIntensity * scaleMultiplier;
+
+		// Layered additive light gives the stepped circle a saturated halo and bright rim.
+		Main.EntitySpriteDraw(glowTexture, drawPosition, null,
+			AdditiveColor(soulColor, 0.24f * bloomStrength * luminancePulse) * opacity, 0f, origin,
+			0.68f * pulse * orbScale, SpriteEffects.None);
+		Main.EntitySpriteDraw(glowTexture, drawPosition, null,
+			WithAlpha(soulColor, 34) * (opacity * luminancePulse), 0f, origin,
+			0.4f * pulse * orbScale, SpriteEffects.None);
+		Main.EntitySpriteDraw(ringTexture, drawPosition, null,
+			AdditiveColor(soulColor, 0.92f * luminancePulse) * opacity, 0f, origin,
+			0.39f * pulse * orbScale, SpriteEffects.None);
+		Main.EntitySpriteDraw(ringTexture, drawPosition, null,
+			AdditiveColor(Color.White, 0.32f * luminancePulse) * opacity, 0f, origin,
+			0.35f * pulse * orbScale, SpriteEffects.None);
+
+		// Counter-rotating elongated lights remain visibly contained by the circular rim.
 		float spinSpeed = containsBossReward ? 2.1f : 3.25f;
-		float spinTime = Main.GlobalTimeWrappedHourly * spinSpeed + projectile.whoAmI * 0.37f;
-		float orbitRadius = MathHelper.Lerp(5.5f, 9.5f, visualProgress) * (containsBossReward ? 1.18f : 1f) * scaleMultiplier;
-		Color wispColor = Color.Lerp(Color.White, soulColor, 0.55f);
+		float spinTime = Main.GlobalTimeWrappedHourly * spinSpeed + phaseOffset * 0.37f;
+		float orbitRadius = MathHelper.Lerp(4.2f, 7.2f, visualProgress) * (containsBossReward ? 1.12f : 1f) * scaleMultiplier;
+		Color wispColor = Color.Lerp(Color.White, soulColor, 0.38f);
 		for (int wisp = 0; wisp < 2; wisp++)
 		{
 			float direction = wisp == 0 ? 1f : -1f;
@@ -184,9 +227,11 @@ public class SoulOrbProjectile : ModProjectile
 			Vector2 orbit = new((float)System.Math.Cos(phase) * orbitRadius, depth * orbitRadius * 0.42f);
 			orbit = orbit.RotatedBy(direction * 0.38f);
 			float depthFactor = MathHelper.Lerp(0.55f, 1f, (depth + 1f) * 0.5f);
-			Color animatedWispColor = WithAlpha(wispColor, (byte)(245f * depthFactor)) * opacity;
-			float wispScale = MathHelper.Lerp(0.13f, 0.205f, visualProgress) * depthFactor * scaleMultiplier;
-			Main.EntitySpriteDraw(glowTexture, drawPosition + orbit, null, animatedWispColor, 0f, origin, wispScale, SpriteEffects.None);
+			Color animatedWispColor = AdditiveColor(wispColor, MathHelper.Lerp(0.58f, 0.95f, depthFactor)) * opacity;
+			float wispLength = MathHelper.Lerp(0.115f, 0.17f, visualProgress) * depthFactor * scaleMultiplier;
+			float wispWidth = wispLength * 0.48f;
+			Main.EntitySpriteDraw(glowTexture, drawPosition + orbit, null, animatedWispColor,
+				phase + MathHelper.PiOver2, origin, new Vector2(wispLength, wispWidth), SpriteEffects.None);
 		}
 	}
 
@@ -361,5 +406,11 @@ public class SoulOrbProjectile : ModProjectile
 	{
 		// SpriteBatch uses premultiplied alpha; scale RGB to preserve transparency.
 		return Color.FromNonPremultiplied(color.R, color.G, color.B, alpha);
+	}
+
+	private static Color AdditiveColor(Color color, float intensity)
+	{
+		// Alpha zero keeps the saturated light additive in Terraria's standard batch.
+		return new Color(color.R, color.G, color.B, 0) * MathHelper.Clamp(intensity, 0f, 1f);
 	}
 }

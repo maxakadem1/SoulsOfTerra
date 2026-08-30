@@ -1,4 +1,6 @@
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
+using SoulsOfTerra.Common.Rendering;
 using SoulsOfTerra.Content.Tiles;
 using Terraria;
 using Terraria.Audio;
@@ -8,7 +10,7 @@ using Terraria.ModLoader;
 
 namespace SoulsOfTerra.Content.Projectiles;
 
-public class CondensationSoulWispProjectile : ModProjectile
+public class CondensationSoulWispProjectile : ModProjectile, IPixelatedDrawable
 {
 	private const int WispCount = 7;
 	private const int TravelDuration = 36;
@@ -90,10 +92,14 @@ public class CondensationSoulWispProjectile : ModProjectile
 
 	public override bool PreDraw(ref Color lightColor)
 	{
+		return false;
+	}
+
+	public void DrawPixelated(SpriteBatch spriteBatch)
+	{
 		// Condensation uses the same rim, transparent core, internal wisps, and trail as dropped souls.
 		SoulOrbProjectile.DrawSoulVisual(Projectile, VisualSoulValue, false, Projectile.Opacity, VisualScale,
 			trailPositions, TrailScaleMultiplier);
-		return false;
 	}
 
 	public static void Spawn(Player player, Point16 forgeTopLeft)

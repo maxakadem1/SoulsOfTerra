@@ -6,9 +6,6 @@ namespace SoulsOfTerra.Content.Items.Materials;
 
 public abstract class PlaceholderBossEssence : BossEssenceItem
 {
-	// One shared vanilla texture keeps every unfinished essence immediately recognizable.
-	public override string Texture => $"Terraria/Images/Item_{ItemID.SoulofFlight}";
-
 	public override void SetDefaults()
 	{
 		Item.width = 16;

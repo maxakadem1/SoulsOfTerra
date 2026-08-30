@@ -1,4 +1,7 @@
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
+using SoulsOfTerra.Common.Rendering;
+using SoulsOfTerra.Systems;
 using Terraria;
 using Terraria.Graphics;
 using Terraria.Graphics.Shaders;
@@ -7,7 +10,7 @@ using Terraria.ModLoader;
 
 namespace SoulsOfTerra.Content.Projectiles;
 
-public class MoonstoneBoltProjectile : ModProjectile
+public class MoonstoneBoltProjectile : ModProjectile, IPixelatedDrawable
 {
 	private static readonly VertexStrip TrailStrip = new();
 	private static readonly VertexStrip HeadStrip = new();
@@ -71,14 +74,18 @@ public class MoonstoneBoltProjectile : ModProjectile
 		return true;
 	}
 
-	public override bool PreDraw(ref Color lightColor)
+	public override bool PreDraw(ref Color lightColor) => false;
+
+	public void DrawPixelated(SpriteBatch spriteBatch)
 	{
+		Vector2 pixelGridOffset = PixelatedRenderSystem.CameraRemainder;
 		GameShaders.Misc["RainbowRod"]
 			.UseSaturation(-2.8f)
 			.UseOpacity(4f)
 			.Apply();
 		TrailStrip.PrepareStripWithProceduralPadding(Projectile.oldPos, Projectile.oldRot, TrailColor, TrailWidth,
-			-Main.screenPosition + Projectile.Size * 0.5f, includeBacksides: false, tryStoppingOddBug: true);
+			-Main.screenPosition + pixelGridOffset + Projectile.Size * 0.5f, includeBacksides: false,
+			tryStoppingOddBug: true);
 		TrailStrip.DrawTrail();
 
 		Vector2 direction = Projectile.velocity.SafeNormalize(Vector2.UnitX);
@@ -96,10 +103,9 @@ public class MoonstoneBoltProjectile : ModProjectile
 			.UseOpacity(4f)
 			.Apply();
 		HeadStrip.PrepareStripWithProceduralPadding(headPositions, headRotations, HeadColor, HeadWidth,
-			-Main.screenPosition, includeBacksides: false, tryStoppingOddBug: true);
+			-Main.screenPosition + pixelGridOffset, includeBacksides: false, tryStoppingOddBug: true);
 		HeadStrip.DrawTrail();
 		Main.pixelShader.CurrentTechnique.Passes[0].Apply();
-		return false;
 	}
 
 	private NPC FindNearestTarget()
