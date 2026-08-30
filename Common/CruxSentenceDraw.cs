@@ -14,7 +14,8 @@ public static class CruxSentenceDraw
 	private const float CoreWidth = 14f;
 	private const float BloomWidth = 34f;
 
-	public static void Draw(Vector2 worldCenter, float writeProgress, float lingerFade, float time, float seed)
+	public static void Draw(Vector2 worldCenter, float writeProgress, float lingerFade, float time, float seed,
+		bool pixelated = false)
 	{
 		Effect effect = CongregationShaderSystem.GetCruxEffect();
 		if (Main.dedServ || lingerFade <= 0.01f || effect is null)
@@ -27,10 +28,11 @@ public static class CruxSentenceDraw
 		Texture2D glow = SoulOrbProjectile.GetGlowTexture();
 		float shaderTime = time + seed;
 		float fade = lingerFade * lingerFade * (3f - 2f * lingerFade);
+		Matrix transform = pixelated ? PixelatedRenderSystem.PixelTransform : Main.GameViewMatrix.TransformationMatrix;
 
 		Main.spriteBatch.End();
 		Main.spriteBatch.Begin(SpriteSortMode.Immediate, BlendState.Additive, SamplerState.LinearClamp,
-			DepthStencilState.None, Main.Rasterizer, effect, Main.GameViewMatrix.TransformationMatrix);
+			DepthStencilState.None, Main.Rasterizer, effect, transform);
 
 		CongregationShaderSystem.ApplyCruxSentence(writeProgress, shaderTime, fade, 2f);
 		DrawHalfArm(pixel, worldCenter, first, BloomWidth);
@@ -46,14 +48,22 @@ public static class CruxSentenceDraw
 
 		Main.spriteBatch.End();
 		Main.spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.Additive, SamplerState.LinearClamp,
-			DepthStencilState.None, Main.Rasterizer, null, Main.GameViewMatrix.TransformationMatrix);
+			DepthStencilState.None, Main.Rasterizer, null, transform);
 
 		DrawScribeHeads(glow, worldCenter, first, second, writeProgress, fade);
 		DrawKnot(glow, worldCenter, writeProgress, fade, shaderTime);
 
 		Main.spriteBatch.End();
-		Main.spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, Main.DefaultSamplerState,
-			DepthStencilState.None, Main.Rasterizer, null, Main.GameViewMatrix.TransformationMatrix);
+		if (pixelated)
+		{
+			// Continue the shared pass without leaking Crux's additive shader state.
+			PixelatedRenderSystem.BeginPixelBatch();
+		}
+		else
+		{
+			Main.spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, Main.DefaultSamplerState,
+				DepthStencilState.None, Main.Rasterizer, null, Main.GameViewMatrix.TransformationMatrix);
+		}
 	}
 
 	private static void DrawHalfArm(Texture2D pixel, Vector2 worldCenter, Vector2 outward, float width)

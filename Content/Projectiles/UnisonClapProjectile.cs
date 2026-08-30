@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using SoulsOfTerra.Common;
+using SoulsOfTerra.Common.Rendering;
 using SoulsOfTerra.Content.Items.Weapons.Melee;
 using Terraria;
 using Terraria.Audio;
@@ -12,7 +13,7 @@ using Terraria.ModLoader;
 
 namespace SoulsOfTerra.Content.Projectiles;
 
-public class UnisonClapProjectile : ModProjectile
+public class UnisonClapProjectile : ModProjectile, IPixelatedDrawable
 {
 	public const int ClapDuration = 32;
 	public const int SmashTime = 22;
@@ -91,14 +92,16 @@ public class UnisonClapProjectile : ModProjectile
 		}
 	}
 
-	public override bool PreDraw(ref Color lightColor)
+	public override bool PreDraw(ref Color lightColor) => false;
+
+	public void DrawPixelated(SpriteBatch spriteBatch)
 	{
+		// Both fists share the world-anchored pixel grid throughout the clap.
 		Player player = Main.player[Projectile.owner];
 		int direction = Projectile.velocity.X >= 0f ? 1 : -1;
 		GetFistPositions(player, direction, out Vector2 leftFist, out Vector2 rightFist);
 		DrawFist(leftFist, -1);
 		DrawFist(rightFist, 1);
-		return false;
 	}
 
 	private void GetFistPositions(Player player, int direction, out Vector2 leftFist, out Vector2 rightFist)
