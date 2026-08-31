@@ -115,14 +115,15 @@
 | Stars of Ruin combat | Click locks one visible NPC near the cursor; twelve sapphire-white stars gather at one wand-tip origin, follow six mirrored pairs of nested cubic lanes to form a complete teardrop bouquet, then begin homing. | Reproduces the source spell's two-sided parallel arcs without collapsing the stars into one line or leaving half of the bouquet empty. |
 | Compeditus combat | Non-contact seals perform a staggered lance verse followed by a localized implosion judgment; the formation crosses terrain but attacks require line of sight. | Provides reliable summon damage and a coordinated payoff without enabling passive through-wall farming. |
 
-## Essence imbuement discovery
+## Essence imbuement catalogue
 
 | Topic | Decision | Reason |
 |---|---|---|
-| Recipe discovery | An imbuement becomes visible when the boss associated with its essence is defeated. | Makes discoveries world-progression rewards rather than inventory accidents. |
-| Temper gating | Discovered recipes remain visible before their required Terraforge Temper, with the missing Temper stated. | Teases future options without bypassing essence progression. |
+| Recipe catalogue | Every registered imbuement is listed from the first Imbue visit, including later-progression bindings. | Lets players inspect the full reward set they can work toward. |
+| Progression gating | Locked rows stay visible and unselectable, stating the missing boss, Temper, or ingredients. | Teases future options without bypassing essence progression. |
 | Recipe-first flow | Opening Imbuement shows the recipe catalogue; only a recipe with both ingredients present can open the focused ritual screen. | Makes the available binding the player's first decision and removes the redundant inventory picker grid. |
 | Ingredient linking | Selecting a ready recipe links the first matching weapon and essence from the player's inventory without consuming them. | Removes inventory-search friction while preserving the ritual as the deliberate confirmation step. |
+| Ritual presentation | The ready recipe opens a centered, mostly frameless canvas over the visible world, with an authored weapon frame, orbiting pickup-soul visuals, pixel-grid soul currents, and compact Back and Bind controls. | Reuses the soul economy's strongest visual identity while keeping the Terraforge and surrounding world visible. |
 | Ritual completion | Successful binding returns to the recipe catalogue; the focused screen also provides Back to Recipes. | Keeps repeated bindings and cancellation predictable without exposing an empty ritual screen. |
 | Imbuement cost | One valid base weapon and one matching essence, with no additional materials. | The expensive essence already carries the soul and progression cost. |
 | Current bindings | Any Copper-through-Platinum broadsword + Slime Essence; Ruby Staff + Eye Essence; Breaker Blade + Wall of Flesh Essence; Imp Staff + Congregation Essence; Muramasa + Congregation Essence; Handgun + Congregation Essence; Magic Missile + Congregation Essence (Stars of Ruin); Diamond Staff + Moon Lord Essence. | Establishes flexible early bases and precise thematic bases where desired. |
