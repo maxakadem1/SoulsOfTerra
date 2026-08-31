@@ -16,8 +16,6 @@ public class StarsOfRuinCastProjectile : ModProjectile
 	public const int RecoveryDuration = 24;
 	public const int VerseDuration = ConjureDuration + SpawnInterval * (StarCount - 1) + RecoveryDuration;
 	public const float StaffTipDistance = 34f;
-	private const float CursorTargetRadius = 220f;
-	private const float MaximumTargetRange = 800f;
 	private const float WaveAmplitude = 0.55f;
 	private static readonly int[] LaunchRanks = { 6, 7, 2, 3, 0, 1, 10, 11, 4, 5, 8, 9 };
 
@@ -100,37 +98,13 @@ public class StarsOfRuinCastProjectile : ModProjectile
 
 	internal static int GetLaunchRank(int index) => LaunchRanks[index];
 
-	internal static int FindTarget(Vector2 cursor, Vector2 playerCenter)
-	{
-		// A cursor-radius lock substitutes for Elden Ring's explicit target lock.
-		NPC bestTarget = null;
-		float bestCursorDistanceSquared = CursorTargetRadius * CursorTargetRadius;
-		foreach (NPC npc in Main.ActiveNPCs)
-		{
-			if (!npc.CanBeChasedBy() || Vector2.DistanceSquared(playerCenter, npc.Center) > MaximumTargetRange * MaximumTargetRange ||
-				!Collision.CanHitLine(playerCenter, 1, 1, npc.Center, 1, 1))
-			{
-				continue;
-			}
-
-			float cursorDistanceSquared = Vector2.DistanceSquared(cursor, npc.Center);
-			if (cursorDistanceSquared < bestCursorDistanceSquared)
-			{
-				bestTarget = npc;
-				bestCursorDistanceSquared = cursorDistanceSquared;
-			}
-		}
-
-		return bestTarget?.whoAmI ?? -1;
-	}
-
 	private void SpawnStar(Player player, int index)
 	{
 		Vector2 aim = Projectile.velocity.SafeNormalize(new Vector2(player.direction, 0f));
 		Vector2 spawn = GetStaffTip(player, aim);
 		int star = Projectile.NewProjectile(Projectile.GetSource_FromThis(), spawn, aim,
 			ModContent.ProjectileType<StarsOfRuinStarProjectile>(), Projectile.damage, Projectile.knockBack,
-			Projectile.owner, Projectile.ai[0], index, aim.ToRotation());
+			Projectile.owner, 0f, index, aim.ToRotation());
 		if (star >= 0 && star < Main.maxProjectiles)
 		{
 			Main.projectile[star].Center = spawn;

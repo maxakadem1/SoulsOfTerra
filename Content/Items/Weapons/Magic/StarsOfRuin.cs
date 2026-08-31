@@ -43,9 +43,7 @@ public class StarsOfRuin : ImbuementWeaponItem
 		Vector2 velocity, int type, int damage, float knockback)
 	{
 		Vector2 aim = velocity.SafeNormalize(new Vector2(player.direction, 0f));
-		int targetIndex = StarsOfRuinCastProjectile.FindTarget(Main.MouseWorld, player.MountedCenter);
-		Projectile.NewProjectile(source, player.MountedCenter, aim, type, damage, knockback, player.whoAmI,
-			targetIndex + 1);
+		Projectile.NewProjectile(source, player.MountedCenter, aim, type, damage, knockback, player.whoAmI);
 		return false;
 	}
 }

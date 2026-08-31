@@ -19,7 +19,9 @@ public class StarsOfRuinStarProjectile : ModProjectile, IPixelatedDrawable
 	private static readonly VertexStrip HeadStrip = new();
 	private static Texture2D cosmicMistTexture;
 	private const float FlightSpeed = 20f;
-	private const float HomingInertia = 5f;
+	// Vanilla-style acquire: 16 tiles, line of sight, closest chaseable NPC.
+	private const float HomingRange = 16f * 16f;
+	private const float HomingTurn = 0.22f;
 	private const float WaveAmplitude = 2.2f;
 	private const float WaveFrequency = 0.34f;
 	private const int OpeningCurveDuration = 26;
@@ -31,6 +33,7 @@ public class StarsOfRuinStarProjectile : ModProjectile, IPixelatedDrawable
 	private readonly float[] headRotations = new float[8];
 	private Vector2 openingOrigin;
 	private bool openingOriginInitialized;
+	private bool leftLane;
 
 	private bool Launched => Projectile.velocity.LengthSquared() > FlightSpeed * FlightSpeed * 0.25f;
 
@@ -61,18 +64,20 @@ public class StarsOfRuinStarProjectile : ModProjectile, IPixelatedDrawable
 
 	public override bool? CanDamage() => Launched;
 
-	public override bool ShouldUpdatePosition() => Launched && Projectile.localAI[1] >= OpeningCurveDuration;
+	public override bool ShouldUpdatePosition() => Launched && leftLane;
 
 	public override void SendExtraAI(BinaryWriter writer)
 	{
 		writer.WriteVector2(openingOrigin);
 		writer.Write(openingOriginInitialized);
+		writer.Write(leftLane);
 	}
 
 	public override void ReceiveExtraAI(BinaryReader reader)
 	{
 		openingOrigin = reader.ReadVector2();
 		openingOriginInitialized = reader.ReadBoolean();
+		leftLane = reader.ReadBoolean();
 	}
 
 	public override void AI()
@@ -114,7 +119,14 @@ public class StarsOfRuinStarProjectile : ModProjectile, IPixelatedDrawable
 			return;
 		}
 
-		if (flight < OpeningCurveDuration)
+		NPC target = FindHomingTarget();
+		// Sticky: a lost target coasts instead of snapping back onto the cubic lane.
+		if (target is not null || flight >= OpeningCurveDuration)
+		{
+			leftLane = true;
+		}
+
+		if (!leftLane)
 		{
 			FollowOpeningCurve(flight);
 		}
@@ -122,18 +134,19 @@ public class StarsOfRuinStarProjectile : ModProjectile, IPixelatedDrawable
 		{
 			Projectile.tileCollide = true;
 			Vector2 fallback = Projectile.velocity.SafeNormalize(Projectile.ai[2].ToRotationVector2());
-			Vector2 desiredDirection = Projectile.ai[2].ToRotationVector2();
-			if (GetLockedTarget() is NPC target)
+			if (target is not null)
 			{
-				desiredDirection = (target.Center - Projectile.Center).SafeNormalize(fallback);
+				Vector2 desiredDirection = (target.Center - Projectile.Center).SafeNormalize(fallback);
+				Vector2 waveNormal = new(-desiredDirection.Y, desiredDirection.X);
+				float wavePhase = flight * WaveFrequency + Projectile.identity * 1.37f;
+				Vector2 desiredVelocity = desiredDirection * FlightSpeed + waveNormal * MathF.Sin(wavePhase) * WaveAmplitude;
+				float rotation = Projectile.velocity.ToRotation().AngleTowards(desiredVelocity.ToRotation(), HomingTurn);
+				Projectile.velocity = rotation.ToRotationVector2() * FlightSpeed;
 			}
-
-			// Independent phases add a slight weave without overpowering the target-seeking direction.
-			Vector2 waveNormal = new(-desiredDirection.Y, desiredDirection.X);
-			float wavePhase = (flight - OpeningCurveDuration) * WaveFrequency + Projectile.identity * 1.37f;
-			Vector2 desiredVelocity = desiredDirection * FlightSpeed + waveNormal * MathF.Sin(wavePhase) * WaveAmplitude;
-			Projectile.velocity = (Projectile.velocity * (HomingInertia - 1f) + desiredVelocity) / HomingInertia;
-			Projectile.velocity = Projectile.velocity.SafeNormalize(fallback) * FlightSpeed;
+			else
+			{
+				Projectile.velocity = fallback * FlightSpeed;
+			}
 		}
 
 		Projectile.rotation = Projectile.velocity.ToRotation();
@@ -298,17 +311,12 @@ public class StarsOfRuinStarProjectile : ModProjectile, IPixelatedDrawable
 	{
 		Projectile.localAI[1] = 0f;
 		int index = (int)Projectile.ai[1];
-		Vector2 curveAim = aim;
-		if (GetLockedTarget() is NPC target)
-		{
-			curveAim = (target.Center - Projectile.Center).SafeNormalize(aim);
-		}
 
 		// The shared origin is synchronized so every client renders the same authored lane.
 		openingOrigin = Projectile.Center;
 		openingOriginInitialized = true;
-		Projectile.ai[2] = curveAim.ToRotation();
-		Projectile.velocity = curveAim * FlightSpeed;
+		Projectile.ai[2] = aim.ToRotation();
+		Projectile.velocity = aim * FlightSpeed;
 		Projectile.tileCollide = true;
 		Projectile.netUpdate = true;
 		if (Main.netMode != NetmodeID.Server)
@@ -369,16 +377,10 @@ public class StarsOfRuinStarProjectile : ModProjectile, IPixelatedDrawable
 			progress * progress * progress * end;
 	}
 
-	private NPC GetLockedTarget()
+	private NPC FindHomingTarget()
 	{
-		int targetIndex = (int)Projectile.ai[0] - 1;
-		if (targetIndex < 0 || targetIndex >= Main.maxNPCs)
-		{
-			return null;
-		}
-
-		NPC target = Main.npc[targetIndex];
-		return target.active && target.CanBeChasedBy(this) ? target : null;
+		int targetIndex = Projectile.FindTargetWithLineOfSight(HomingRange);
+		return targetIndex >= 0 && targetIndex < Main.maxNPCs ? Main.npc[targetIndex] : null;
 	}
 
 	private void SpawnHangSparkle()
