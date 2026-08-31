@@ -18,6 +18,15 @@ public class UnkemptHaroldGyrojetProjectile : ModProjectile, IPixelatedDrawable
 {
 	private static readonly VertexStrip TrailStrip = new();
 	private static readonly VertexStrip HeadStrip = new();
+	// Limiting instances turns a seven-gyrojet impact into one compact, heavy report.
+	private static readonly SoundStyle ExplosionSound = SoundID.Item14 with
+	{
+		Volume = 0.42f,
+		Pitch = -0.12f,
+		PitchVariance = 0.08f,
+		MaxInstances = 2,
+		SoundLimitBehavior = SoundLimitBehavior.IgnoreNew
+	};
 	public const float ForwardSpeed = 12f;
 	public const float FirstSplitDistance = 6f * 16f;
 	public const float SecondSplitDistance = 12f * 16f;
@@ -140,14 +149,14 @@ public class UnkemptHaroldGyrojetProjectile : ModProjectile, IPixelatedDrawable
 		Projectile.velocity = travel;
 		Projectile.rotation = travel.ToRotation();
 		Projectile.spriteDirection = travel.X >= 0f ? 1 : -1;
-		Lighting.AddLight(Projectile.Center, 1.05f, 0.42f, 0.08f);
+		Lighting.AddLight(Projectile.Center, 1.05f, 0.78f, 0.28f);
 
 		TrySplit();
 
 		if (Main.netMode != NetmodeID.Server && Main.rand.NextBool(3))
 		{
-			Dust dust = Dust.NewDustPerfect(Projectile.Center, DustID.Torch, -travel * 0.12f, 80,
-				new Color(255, 140, 40), 0.85f);
+			Dust dust = Dust.NewDustPerfect(Projectile.Center, DustID.GoldFlame, -travel * 0.12f, 80,
+				new Color(255, 230, 140), 0.85f);
 			dust.noGravity = true;
 		}
 	}
@@ -159,9 +168,9 @@ public class UnkemptHaroldGyrojetProjectile : ModProjectile, IPixelatedDrawable
 	public void DrawPixelated(SpriteBatch spriteBatch)
 	{
 		Vector2 pixelGridOffset = PixelatedRenderSystem.CameraRemainder;
-		GameShaders.Misc["RainbowRod"]
+		GameShaders.Misc["MagicMissile"]
 			.UseSaturation(-2.6f)
-			.UseOpacity(3.6f)
+			.UseOpacity(3.8f)
 			.Apply();
 		TrailStrip.PrepareStripWithProceduralPadding(Projectile.oldPos, Projectile.oldRot, TrailColor, TrailWidth,
 			-Main.screenPosition + pixelGridOffset + Projectile.Size * 0.5f, includeBacksides: false,
@@ -246,7 +255,8 @@ public class UnkemptHaroldGyrojetProjectile : ModProjectile, IPixelatedDrawable
 
 		if (Main.netMode != NetmodeID.Server)
 		{
-			SoundEngine.PlaySound(SoundID.Item14 with { Volume = 0.28f, Pitch = 0.35f }, Projectile.Center);
+			SoundEngine.PlaySound(ExplosionSound, Projectile.Center);
+			CongregationCameraSystem.AddShake(Projectile.Center, 1.5f);
 		}
 
 		Projectile.Kill();
@@ -271,9 +281,9 @@ public class UnkemptHaroldGyrojetProjectile : ModProjectile, IPixelatedDrawable
 		Vector2 outward = Perp() * Math.Sign(Lane());
 		for (int index = 0; index < 6; index++)
 		{
-			Dust dust = Dust.NewDustPerfect(spawn, DustID.Torch,
+			Dust dust = Dust.NewDustPerfect(spawn, DustID.GoldFlame,
 				aim * Main.rand.NextFloat(1.2f, 3.5f) + outward * Main.rand.NextFloat(0.6f, 2.4f),
-				60, new Color(255, 170, 60), Main.rand.NextFloat(0.8f, 1.2f));
+				60, new Color(255, 230, 140), Main.rand.NextFloat(0.8f, 1.2f));
 			dust.noGravity = true;
 		}
 	}
