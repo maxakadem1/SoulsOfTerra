@@ -112,7 +112,8 @@
 - Crux ranged prototype: Handgun imbuement, cursor-locked crossed sentence (~240px X, dedicated write-and-knot shader), both arms hit once per enemy per volley, one volley at a time, consumes bullets.
 - Stars of Ruin mage prototype: Magic Missile imbuement, mana-hungry verse of twelve sapphire-white stars with white-hot heads, narrow blue ribbons, procedural cobalt-violet cosmic mist, and stellar motes; they lock one visible cursor-selected NPC, share one wand-tip origin, form a complete two-sided bouquet on six mirrored pairs of cubic lanes, collide with terrain throughout their flight, and begin homing only after the opening curves finish.
 - Borrowed Sentence Expert accessory: qualifying wounds defer 40% of final damage into a six-second seal, hostile damage repays its 12x requirement, failed judgment returns exact lethal-capable damage, and both outcomes begin a fixed fourteen-second cooldown.
-- Recipe-first Imbue flow with boss-based discovery, Temper requirements, missing-inventory feedback, scalable scrolling, framed ingredient/result slots, ready-only selection, and a focused grid-free ritual screen.
+- Recipe-first Imbue flow with a full always-visible catalogue, Temper and boss requirement copy, missing-inventory feedback, scalable scrolling, framed ingredient/result slots, and ready-only selection.
+- Centered, mostly frameless Imbue ritual canvas with eased entry, authored weapon focus, depth-layered pickup souls orbiting the weapon, two-pixel-snapped soul currents, compact controls, and an unobscured world backdrop.
 
 ## Current Terraforge Temper table
 

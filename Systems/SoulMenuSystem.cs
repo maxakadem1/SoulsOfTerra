@@ -8,7 +8,6 @@ using SoulsOfTerra.Common.Rendering;
 using SoulsOfTerra.Content.Items.Access;
 using SoulsOfTerra.Content.Items.Consumables.SoulCrystals;
 using SoulsOfTerra.Content.Items.Materials;
-using SoulsOfTerra.Content.Projectiles;
 using SoulsOfTerra.Content.Tiles;
 using SoulsOfTerra.NPCs;
 using SoulsOfTerra.Players;
@@ -19,6 +18,7 @@ using Terraria.GameContent.UI.Elements;
 using Terraria.ID;
 using Terraria.Localization;
 using Terraria.ModLoader;
+using Terraria.ModLoader.UI;
 using Terraria.UI;
 
 namespace SoulsOfTerra.Systems;
@@ -28,6 +28,8 @@ public class SoulMenuSystem : ModSystem
 	private static UserInterface soulInterface;
 	private static SoulMenuState menuState;
 
+	internal static UserInterface Interface => soulInterface;
+
 	public override void Load()
 	{
 		if (Main.dedServ)
@@ -35,9 +37,9 @@ public class SoulMenuSystem : ModSystem
 			return;
 		}
 
+		soulInterface = new UserInterface();
 		menuState = new SoulMenuState();
 		menuState.Activate();
-		soulInterface = new UserInterface();
 	}
 
 	public override void Unload()
@@ -84,6 +86,12 @@ public class SoulMenuSystem : ModSystem
 	{
 		return soulInterface?.CurrentState == menuState && menuState is not null
 			&& menuState.IsTerraforgeOpen(terraforgeTopLeft);
+	}
+
+	internal static bool IsImbuementResonating()
+	{
+		return soulInterface?.CurrentState == menuState && menuState is not null
+			&& menuState.IsImbuementResonating();
 	}
 
 	public override void UpdateUI(GameTime gameTime)
@@ -219,14 +227,16 @@ internal sealed class SoulMenuState : UIState
 	private UIText detailDescription;
 	private UIText detailCost;
 	private UITextPanel<string> condenseButton;
-	private UIElement imbuementContent;
+	private ImbuementRitualCanvas imbuementContent;
 	private ImbuementWeaponSocket imbuementWeaponSocket;
 	private ImbuementEssenceSocket imbuementEssenceSocket;
 	private UIText imbuementWeaponName;
 	private UIText imbuementEssenceName;
+	private UIText ritualBalance;
 	private UITextPanel<string> bindEssenceButton;
 	private UITextPanel<string> imbuementRecipesButton;
 	private UIElement imbuementRecipeContent;
+	private UIElement imbuementRecipeListContainer;
 	private UIList imbuementRecipeList;
 	private UIScrollbar imbuementRecipeScrollBar;
 	private UIText imbuementRecipeHint;
@@ -246,6 +256,7 @@ internal sealed class SoulMenuState : UIState
 	private int linkedWeaponSlot;
 	private int linkedEssenceSlot;
 	private bool showingImbuementRecipes;
+	private float ritualReveal;
 
 	public override void OnInitialize()
 	{
@@ -346,9 +357,19 @@ internal sealed class SoulMenuState : UIState
 			return;
 		}
 
-		if (panel.ContainsPoint(Main.MouseScreen))
+		if ((panel.Parent is not null && panel.ContainsPoint(Main.MouseScreen))
+			|| (imbuementContent.Parent is not null && imbuementContent.ContainsPoint(Main.MouseScreen)))
 		{
 			player.mouseInterface = true;
+		}
+
+		if (imbuementContent.Parent is not null && ritualReveal < 1f)
+		{
+			ritualReveal = Math.Min(1f, ritualReveal + 0.075f);
+			float easedReveal = 1f - MathF.Pow(1f - ritualReveal, 3f);
+			imbuementContent.Reveal = easedReveal;
+			imbuementContent.Top.Set((1f - easedReveal) * 18f, 0f);
+			Recalculate();
 		}
 
 		if (feedbackTime > 0 && --feedbackTime == 0)
@@ -371,6 +392,7 @@ internal sealed class SoulMenuState : UIState
 
 	private void BuildSoullessLayout()
 	{
+		ShowFramedPanel();
 		panel.RemoveAllChildren();
 		panel.Height.Set(soullessTab == SoullessTab.Services ? 490f : 400f, 0f);
 		panel.Append(title);
@@ -406,8 +428,15 @@ internal sealed class SoulMenuState : UIState
 
 	private void BuildTerraforgeLayout()
 	{
+		if (terraforgeTab == TerraforgeTab.Imbue && !showingImbuementRecipes)
+		{
+			BuildImbuementRitualLayout();
+			return;
+		}
+
+		ShowFramedPanel();
 		panel.RemoveAllChildren();
-		panel.Height.Set(410f, 0f);
+		panel.Height.Set(548f, 0f);
 		panel.Append(title);
 		panel.Append(subtitle);
 		panel.Append(balance);
@@ -416,28 +445,50 @@ internal sealed class SoulMenuState : UIState
 		if (terraforgeTab == TerraforgeTab.Condense)
 		{
 			panel.Append(essenceGrid);
-			condenseButton.Top.Set(306f, 0f);
+			condenseButton.Top.Set(444f, 0f);
 			panel.Append(condenseButton);
 		}
 		else
 		{
-			if (showingImbuementRecipes)
-			{
-				panel.Append(imbuementRecipeContent);
-			}
-			else
-			{
-				panel.Append(imbuementContent);
-				panel.Append(imbuementRecipesButton);
-				bindEssenceButton.Top.Set(306f, 0f);
-				panel.Append(bindEssenceButton);
-			}
+			panel.Append(imbuementRecipeContent);
 		}
-		feedback.Top.Set(348f, 0f);
+		feedback.Top.Set(486f, 0f);
+		closeButton.Top.Set(506f, 0f);
 		panel.Append(feedback);
-		closeButton.Top.Set(368f, 0f);
 		panel.Append(closeButton);
 		ApplyTerraforgeTabStyles();
+	}
+
+	private void ShowFramedPanel()
+	{
+		feedback.Remove();
+		RemoveAllChildren();
+		Append(panel);
+	}
+
+	private void BuildImbuementRitualLayout()
+	{
+		RemoveAllChildren();
+		imbuementContent.RemoveAllChildren();
+		Append(imbuementContent);
+		imbuementContent.Append(imbuementWeaponSocket);
+		imbuementContent.Append(imbuementWeaponName.Parent);
+		imbuementContent.Append(imbuementEssenceSocket);
+		imbuementContent.Append(imbuementEssenceName.Parent);
+		imbuementContent.Append(ritualBalance);
+
+		imbuementRecipesButton.Left.Set(72f, 0f);
+		imbuementRecipesButton.Top.Set(326f, 0f);
+		imbuementContent.Append(imbuementRecipesButton);
+		bindEssenceButton.Left.Set(230f, 0f);
+		bindEssenceButton.Top.Set(326f, 0f);
+		imbuementContent.Append(bindEssenceButton);
+
+		feedback.Top.Set(374f, 0f);
+		imbuementContent.Append(feedback);
+		ritualReveal = 0f;
+		imbuementContent.Reveal = 0f;
+		imbuementContent.Top.Set(18f, 0f);
 	}
 
 	private void CreateEssenceCatalogue()
@@ -447,7 +498,7 @@ internal sealed class SoulMenuState : UIState
 
 		essenceGrid = new UIElement();
 		essenceGrid.Width.Set(-32f, 1f);
-		essenceGrid.Height.Set(190f, 0f);
+		essenceGrid.Height.Set(328f, 0f);
 		essenceGrid.Left.Set(16f, 0f);
 		essenceGrid.Top.Set(106f, 0f);
 
@@ -457,16 +508,13 @@ internal sealed class SoulMenuState : UIState
 		essenceList.ListPadding = 6f;
 		essenceGrid.Append(essenceList);
 
-		essenceScrollBar = new UIScrollbar();
-		essenceScrollBar.Width.Set(14f, 0f);
-		essenceScrollBar.Height.Set(0f, 1f);
-		essenceScrollBar.HAlign = 1f;
+		essenceScrollBar = CreateForgeScrollBar();
 		essenceList.SetScrollbar(essenceScrollBar);
 
 		int rowCount = (essenceDefinitions.Length + 4) / 5;
 		if (rowCount > 3)
 		{
-			essenceList.Width.Set(-20f, 1f);
+			essenceList.Width.Set(-26f, 1f);
 			essenceGrid.Append(essenceScrollBar);
 		}
 
@@ -490,7 +538,7 @@ internal sealed class SoulMenuState : UIState
 				SoulEssenceCatalogueCard card = new();
 				card.Width.Set(86f, 0f);
 				card.Height.Set(82f, 0f);
-				card.Left.Set(columnIndex * 96f, 0f);
+				card.Left.Set(columnIndex * 92f, 0f);
 				card.OnLeftClick += (_, _) => SelectEssence(selectedIndex);
 				essenceCards[index] = card;
 				row.Append(card);
@@ -574,7 +622,9 @@ internal sealed class SoulMenuState : UIState
 
 	private void RefreshContent()
 	{
-		balance.SetText($"{Main.LocalPlayer.GetModPlayer<SoulPlayer>().SoulBalance:N0} souls");
+		string balanceText = $"{Main.LocalPlayer.GetModPlayer<SoulPlayer>().SoulBalance:N0} souls";
+		balance.SetText(balanceText);
+		ritualBalance.SetText(balanceText);
 		if (kind == MenuKind.Soulless)
 		{
 			if (soullessTab == SoullessTab.Services)
@@ -714,7 +764,7 @@ internal sealed class SoulMenuState : UIState
 		title.SetText("Terraforge");
 		if (showingImbuementRecipes)
 		{
-			subtitle.SetText("Known bindings revealed by defeated foes.");
+			subtitle.SetText("Every binding is listed. Locked recipes stay visible.");
 			RefreshImbuementRecipeRows();
 			return;
 		}
@@ -780,9 +830,9 @@ internal sealed class SoulMenuState : UIState
 	{
 		bool enabled = CanBindSelectedImbuement();
 		bindEssenceButton.SetText(enabled ? "Bind Essence" : "No Resonance");
-		bindEssenceButton.BackgroundColor = enabled ? new Color(54, 66, 76) : new Color(43, 47, 51);
-		bindEssenceButton.BorderColor = enabled ? new Color(111, 142, 137) : new Color(68, 72, 76);
-		bindEssenceButton.TextColor = enabled ? new Color(190, 214, 207) : new Color(125, 130, 132);
+		bindEssenceButton.BackgroundColor = enabled ? new Color(29, 66, 61, 242) : new Color(31, 35, 39, 232);
+		bindEssenceButton.BorderColor = enabled ? new Color(87, 181, 153) : new Color(62, 68, 71);
+		bindEssenceButton.TextColor = enabled ? new Color(214, 249, 232) : new Color(125, 130, 132);
 	}
 
 	private void UsePrimaryAction()
@@ -910,6 +960,15 @@ internal sealed class SoulMenuState : UIState
 		imbuementTabButton = CreateTerraforgeTabButton("Imbue", 154f, TerraforgeTab.Imbue);
 	}
 
+	private static UIScrollbar CreateForgeScrollBar()
+	{
+		// Vanilla scrollbar textures are 20px; a narrower width stretches the track and leaves the thumb offset.
+		UIScrollbar scrollbar = new FixedUIScrollbar(SoulMenuSystem.Interface);
+		scrollbar.Height.Set(0f, 1f);
+		scrollbar.HAlign = 1f;
+		return scrollbar;
+	}
+
 	private UITextPanel<string> CreateTerraforgeTabButton(string text, float left, TerraforgeTab tab)
 	{
 		UITextPanel<string> button = new(text, 0.68f, false);
@@ -924,49 +983,68 @@ internal sealed class SoulMenuState : UIState
 
 	private void CreateImbuementPage()
 	{
-		imbuementContent = new UIElement();
-		imbuementContent.Width.Set(-32f, 1f);
-		imbuementContent.Height.Set(190f, 0f);
-		imbuementContent.Left.Set(16f, 0f);
-		imbuementContent.Top.Set(108f, 0f);
+		imbuementContent = new ImbuementRitualCanvas();
+		imbuementContent.Width.Set(480f, 0f);
+		imbuementContent.Height.Set(410f, 0f);
+		imbuementContent.HAlign = 0.5f;
+		imbuementContent.VAlign = 0.5f;
 
 		// The authored frame is the ritual focus; only a valid pair awakens its glow.
 		imbuementWeaponSocket = new ImbuementWeaponSocket();
 		imbuementWeaponSocket.HAlign = 0.5f;
-		imbuementContent.Append(imbuementWeaponSocket);
+		imbuementWeaponSocket.Top.Set(88f, 0f);
 
 		imbuementWeaponName = new UIText("Select Weapon", 0.57f);
-		imbuementWeaponName.Width.Set(180f, 0f);
-		imbuementWeaponName.Top.Set(80f, 0f);
 		imbuementWeaponName.HAlign = 0.5f;
+		imbuementWeaponName.VAlign = 0.5f;
 		imbuementWeaponName.TextColor = new Color(205, 220, 212);
-		imbuementContent.Append(imbuementWeaponName);
+		CreateRitualLabelPlate(imbuementWeaponName, 181f, 250f);
 
 		imbuementEssenceSocket = new ImbuementEssenceSocket();
 		imbuementEssenceSocket.HAlign = 0.5f;
-		imbuementEssenceSocket.Top.Set(108f, 0f);
-		imbuementContent.Append(imbuementEssenceSocket);
+		imbuementEssenceSocket.Top.Set(225f, 0f);
 
 		imbuementEssenceName = new UIText("Select Essence", 0.54f);
-		imbuementEssenceName.Width.Set(180f, 0f);
-		imbuementEssenceName.Top.Set(162f, 0f);
 		imbuementEssenceName.HAlign = 0.5f;
+		imbuementEssenceName.VAlign = 0.5f;
 		imbuementEssenceName.TextColor = new Color(166, 190, 181);
-		imbuementContent.Append(imbuementEssenceName);
+		CreateRitualLabelPlate(imbuementEssenceName, 282f, 220f);
+
+		ritualBalance = new UIText(string.Empty, 0.64f);
+		ritualBalance.HAlign = 1f;
+		ritualBalance.Left.Set(-16f, 0f);
+		ritualBalance.Top.Set(18f, 0f);
+		ritualBalance.TextColor = new Color(167, 218, 198);
 
 		bindEssenceButton = new UITextPanel<string>("Bind Essence", 0.76f, false);
-		bindEssenceButton.Width.Set(220f, 0f);
-		bindEssenceButton.Height.Set(38f, 0f);
-		bindEssenceButton.HAlign = 0.5f;
+		bindEssenceButton.Width.Set(178f, 0f);
+		bindEssenceButton.Height.Set(36f, 0f);
 		bindEssenceButton.OnLeftClick += (_, _) => UseEssenceImbuement();
+		bindEssenceButton.OnMouseOver += (_, _) =>
+		{
+			if (CanBindSelectedImbuement())
+			{
+				bindEssenceButton.BackgroundColor = new Color(39, 91, 81, 248);
+			}
+		};
 		bindEssenceButton.OnMouseOut += (_, _) => ApplyBindButtonStyle();
+	}
+
+	private static void CreateRitualLabelPlate(UIText label, float top, float width)
+	{
+		RitualLabelPlate plate = new();
+		plate.Width.Set(width, 0f);
+		plate.Height.Set(30f, 0f);
+		plate.HAlign = 0.5f;
+		plate.Top.Set(top, 0f);
+		plate.Append(label);
 	}
 
 	private void CreateImbuementRecipePage()
 	{
 		imbuementRecipesButton = new UITextPanel<string>("Back to Recipes", 0.64f, false);
 		imbuementRecipesButton.Width.Set(140f, 0f);
-		imbuementRecipesButton.Height.Set(30f, 0f);
+		imbuementRecipesButton.Height.Set(36f, 0f);
 		imbuementRecipesButton.Left.Set(292f, 0f);
 		imbuementRecipesButton.Top.Set(68f, 0f);
 		imbuementRecipesButton.BackgroundColor = new Color(40, 54, 58);
@@ -977,30 +1055,27 @@ internal sealed class SoulMenuState : UIState
 
 		imbuementRecipeContent = new UIElement();
 		imbuementRecipeContent.Width.Set(-32f, 1f);
-		imbuementRecipeContent.Height.Set(190f, 0f);
+		imbuementRecipeContent.Height.Set(328f, 0f);
 		imbuementRecipeContent.Left.Set(16f, 0f);
 		imbuementRecipeContent.Top.Set(108f, 0f);
 
-		imbuementRecipeHint = new UIText("Defeat bosses to reveal their bindings.", 0.62f);
+		imbuementRecipeHint = new UIText("Select a complete recipe to begin its binding ritual.", 0.62f);
 		imbuementRecipeHint.TextColor = new Color(154, 177, 169);
 		imbuementRecipeContent.Append(imbuementRecipeHint);
 
-		UIElement listContainer = new();
-		listContainer.Width.Set(0f, 1f);
-		listContainer.Height.Set(158f, 0f);
-		listContainer.Top.Set(25f, 0f);
-		imbuementRecipeContent.Append(listContainer);
+		imbuementRecipeListContainer = new UIElement();
+		imbuementRecipeListContainer.Width.Set(0f, 1f);
+		imbuementRecipeListContainer.Height.Set(303f, 0f);
+		imbuementRecipeListContainer.Top.Set(25f, 0f);
+		imbuementRecipeContent.Append(imbuementRecipeListContainer);
 
 		imbuementRecipeList = new UIList();
 		imbuementRecipeList.Width.Set(0f, 1f);
 		imbuementRecipeList.Height.Set(0f, 1f);
 		imbuementRecipeList.ListPadding = 5f;
-		listContainer.Append(imbuementRecipeList);
+		imbuementRecipeListContainer.Append(imbuementRecipeList);
 
-		imbuementRecipeScrollBar = new UIScrollbar();
-		imbuementRecipeScrollBar.Width.Set(14f, 0f);
-		imbuementRecipeScrollBar.Height.Set(0f, 1f);
-		imbuementRecipeScrollBar.HAlign = 1f;
+		imbuementRecipeScrollBar = CreateForgeScrollBar();
 		imbuementRecipeList.SetScrollbar(imbuementRecipeScrollBar);
 
 	}
@@ -1072,11 +1147,11 @@ internal sealed class SoulMenuState : UIState
 		imbuementRecipeRows.Clear();
 		visibleImbuementRecipeIndices.Clear();
 
+		// List every registered binding from the first visit so players can preview later rewards.
 		for (int index = 0; index < EssenceImbuementRegistry.Definitions.Length; index++)
 		{
 			EssenceImbuementDefinition definition = EssenceImbuementRegistry.Definitions[index];
-			if (!SoulEssenceRegistry.TryFindByItemType(definition.EssenceItemType, out SoulEssenceDefinition essence)
-				|| !essence.IsDiscovered())
+			if (!SoulEssenceRegistry.TryFindByItemType(definition.EssenceItemType, out _))
 			{
 				continue;
 			}
@@ -1091,19 +1166,14 @@ internal sealed class SoulMenuState : UIState
 			visibleImbuementRecipeIndices.Add(index);
 		}
 
-		bool hasRecipes = imbuementRecipeRows.Count > 0;
-		imbuementRecipeHint.SetText(hasRecipes
-			? "Select a complete recipe to begin its binding ritual."
-			: "No imbuements have been revealed yet.");
+		imbuementRecipeHint.SetText("Select a complete recipe to begin its binding ritual.");
 
-		// Two complete rows fit without scrolling in the compact forge frame.
-		bool needsScrollBar = imbuementRecipeRows.Count > 2;
-		imbuementRecipeList.Width.Set(needsScrollBar ? -18f : 0f, 1f);
+		// Four complete rows fit without scrolling in the taller forge frame.
+		bool needsScrollBar = imbuementRecipeRows.Count > 4;
+		imbuementRecipeList.Width.Set(needsScrollBar ? -26f : 0f, 1f);
 		if (needsScrollBar && imbuementRecipeScrollBar.Parent is null)
 		{
-			imbuementRecipeContent.Append(imbuementRecipeScrollBar);
-			imbuementRecipeScrollBar.Top.Set(25f, 0f);
-			imbuementRecipeScrollBar.Height.Set(158f, 0f);
+			imbuementRecipeListContainer.Append(imbuementRecipeScrollBar);
 		}
 		else if (!needsScrollBar)
 		{
@@ -1453,6 +1523,12 @@ internal sealed class SoulMenuState : UIState
 	public bool IsTerraforgeOpen(Point16 requestedTerraforge)
 	{
 		return kind == MenuKind.Terraforge && requestedTerraforge == terraforgePosition;
+	}
+
+	internal bool IsImbuementResonating()
+	{
+		return kind == MenuKind.Terraforge && terraforgeTab == TerraforgeTab.Imbue
+			&& !showingImbuementRecipes && selectedImbuementIndex >= 0;
 	}
 
 	private bool InteractionStillValid(Player player)
@@ -1839,6 +1915,39 @@ internal sealed class ImbuementRecipeItemSlot : UIElement
 	}
 }
 
+internal sealed class ImbuementRitualCanvas : UIElement
+{
+	public float Reveal { get; set; }
+
+	protected override void DrawSelf(SpriteBatch spriteBatch)
+	{
+		CalculatedStyle dimensions = GetDimensions();
+		Vector2 center = new(dimensions.Center().X, dimensions.Y + 128f);
+		float opacity = MathHelper.Clamp(Reveal, 0f, 1f);
+
+		string title = "IMBUEMENT RITUAL";
+		Utils.DrawBorderString(spriteBatch, title, new Vector2(center.X, dimensions.Y + 20f),
+			new Color(192, 239, 219) * opacity, 0.82f, 0.5f);
+		Utils.DrawBorderString(spriteBatch, "Bind a defeated echo into its weapon.",
+			new Vector2(center.X, dimensions.Y + 49f), new Color(126, 161, 151) * opacity, 0.58f, 0.5f);
+	}
+
+}
+
+internal sealed class RitualLabelPlate : UIElement
+{
+	protected override void DrawSelf(SpriteBatch spriteBatch)
+	{
+		Rectangle area = GetDimensions().ToRectangle();
+		Texture2D pixel = TextureAssets.MagicPixel.Value;
+		spriteBatch.Draw(pixel, area, new Color(9, 14, 18, 218));
+		spriteBatch.Draw(pixel, new Rectangle(area.X, area.Y, area.Width, 2), new Color(55, 100, 91, 210));
+		spriteBatch.Draw(pixel, new Rectangle(area.X, area.Bottom - 2, area.Width, 2), new Color(35, 67, 63, 210));
+		spriteBatch.Draw(pixel, new Rectangle(area.X, area.Y, 2, area.Height), new Color(45, 81, 75, 210));
+		spriteBatch.Draw(pixel, new Rectangle(area.Right - 2, area.Y, 2, area.Height), new Color(45, 81, 75, 210));
+	}
+}
+
 internal sealed class ImbuementWeaponSocket : UIElement
 {
 	private int itemType;
@@ -1867,6 +1976,7 @@ internal sealed class ImbuementWeaponSocket : UIElement
 		if (resonating)
 		{
 			impactPulse = DrawSoulTransfer(spriteBatch, center);
+			ImbuementOrbitSoulRenderer.Draw(spriteBatch, center, drawFront: false);
 			// A slow, broad breath makes resonance feel deliberate instead of reactive UI feedback.
 			float pulse = 0.5f + 0.2f * MathF.Sin(Main.GlobalTimeWrappedHourly * 2.15f) + impactPulse * 0.32f;
 			Color glow = new Color(48, 232, 205) * pulse;
@@ -1886,7 +1996,7 @@ internal sealed class ImbuementWeaponSocket : UIElement
 			// A faint displaced copy gives the bound weapon a spectral shimmer.
 			Vector2 shimmer = new(MathF.Sin(Main.GlobalTimeWrappedHourly * 6f), MathF.Cos(Main.GlobalTimeWrappedHourly * 4f) * 0.5f);
 			ImbuementSlotDrawing.DrawItem(spriteBatch, itemType, center + shimmer, 44f, new Color(115, 255, 225) * (0.2f + impactPulse * 0.2f));
-			DrawOrbitingSouls(spriteBatch, center);
+			ImbuementOrbitSoulRenderer.Draw(spriteBatch, center, drawFront: true);
 			spriteBatch.Draw(frame, position, new Color(75, 245, 215) * (0.18f + impactPulse * 0.32f));
 		}
 		if (IsMouseHovering)
@@ -1897,29 +2007,29 @@ internal sealed class ImbuementWeaponSocket : UIElement
 
 	private static float DrawSoulTransfer(SpriteBatch spriteBatch, Vector2 weaponCenter)
 	{
-		Texture2D glow = SoulOrbProjectile.GetGlowTexture();
-		Texture2D ring = SoulOrbProjectile.GetRingTexture();
-		Vector2 origin = glow.Size() * 0.5f;
-		Vector2 essenceCenter = weaponCenter + new Vector2(0f, 94f);
+		Texture2D pixel = TextureAssets.MagicPixel.Value;
+		Vector2 essenceCenter = weaponCenter + new Vector2(0f, 123f);
 		float strongestImpact = 0f;
 		for (int index = 0; index < 3; index++)
 		{
 			float cycle = (Main.GlobalTimeWrappedHourly * 0.58f + index / 3f) % 1f;
 			float side = index == 1 ? 1f : -1f;
-			Vector2 control = Vector2.Lerp(essenceCenter, weaponCenter, 0.52f) + new Vector2(side * (18f + index * 4f), 0f);
-			for (int trailIndex = 5; trailIndex >= 0; trailIndex--)
+			Vector2 control = Vector2.Lerp(essenceCenter, weaponCenter, 0.52f)
+				+ new Vector2(side * (22f + index * 5f), 0f);
+			for (int trailIndex = 7; trailIndex >= 0; trailIndex--)
 			{
-				float trailProgress = MathHelper.Clamp(cycle - trailIndex * 0.027f, 0f, 1f);
-				Vector2 trailPosition = QuadraticBezier(essenceCenter, control, weaponCenter, trailProgress);
-				float strength = 1f - trailIndex / 6f;
-				spriteBatch.Draw(glow, trailPosition, null, new Color(70, 235, 207) * (strength * 0.42f), 0f, origin,
-					0.075f + strength * 0.045f, SpriteEffects.None, 0f);
+				float trailProgress = MathHelper.Clamp(cycle - trailIndex * 0.022f, 0f, 1f);
+				Vector2 trailPosition = SnapToPixelGrid(QuadraticBezier(essenceCenter, control, weaponCenter, trailProgress));
+				float strength = 1f - trailIndex / 8f;
+				int size = trailIndex < 2 ? 6 : trailIndex < 5 ? 4 : 2;
+				DrawPixel(spriteBatch, pixel, trailPosition, size,
+					new Color(54, 213, 187, 0) * (strength * 0.62f));
 			}
 
-			Vector2 wispPosition = QuadraticBezier(essenceCenter, control, weaponCenter, cycle);
+			Vector2 wispPosition = SnapToPixelGrid(QuadraticBezier(essenceCenter, control, weaponCenter, cycle));
 			float soulPulse = 0.92f + MathF.Sin((Main.GlobalTimeWrappedHourly + index) * 8f) * 0.08f;
-			spriteBatch.Draw(glow, wispPosition, null, new Color(92, 255, 220) * 0.72f, 0f, origin, 0.19f * soulPulse, SpriteEffects.None, 0f);
-			spriteBatch.Draw(ring, wispPosition, null, new Color(205, 255, 241) * 0.92f, 0f, origin, 0.13f * soulPulse, SpriteEffects.None, 0f);
+			DrawPixel(spriteBatch, pixel, wispPosition, soulPulse > 0.95f ? 8 : 6, new Color(72, 231, 202, 0) * 0.82f);
+			DrawPixel(spriteBatch, pixel, wispPosition, 4, new Color(218, 255, 240, 0) * 0.94f);
 
 			float arrival = MathHelper.Clamp((cycle - 0.84f) / 0.16f, 0f, 1f);
 			strongestImpact = Math.Max(strongestImpact, MathF.Sin(arrival * MathHelper.Pi));
@@ -1928,21 +2038,14 @@ internal sealed class ImbuementWeaponSocket : UIElement
 		return strongestImpact;
 	}
 
-	private static void DrawOrbitingSouls(SpriteBatch spriteBatch, Vector2 center)
+	private static Vector2 SnapToPixelGrid(Vector2 position) => new(
+		MathF.Round(position.X * 0.5f) * 2f,
+		MathF.Round(position.Y * 0.5f) * 2f);
+
+	private static void DrawPixel(SpriteBatch spriteBatch, Texture2D pixel, Vector2 center, int size, Color color)
 	{
-		Texture2D glow = SoulOrbProjectile.GetGlowTexture();
-		Texture2D ring = SoulOrbProjectile.GetRingTexture();
-		Vector2 origin = glow.Size() * 0.5f;
-		for (int index = 0; index < 2; index++)
-		{
-			float direction = index == 0 ? 1f : -1f;
-			float phase = Main.GlobalTimeWrappedHourly * (2.2f + index * 0.35f) * direction + index * MathHelper.Pi;
-			Vector2 orbit = new(MathF.Cos(phase) * 28f, MathF.Sin(phase) * 15f);
-			float depth = MathHelper.Lerp(0.65f, 1f, (MathF.Sin(phase) + 1f) * 0.5f);
-			Vector2 soulPosition = center + orbit;
-			spriteBatch.Draw(glow, soulPosition, null, new Color(74, 242, 213) * (0.65f * depth), 0f, origin, 0.17f * depth, SpriteEffects.None, 0f);
-			spriteBatch.Draw(ring, soulPosition, null, new Color(220, 255, 244) * depth, 0f, origin, 0.105f * depth, SpriteEffects.None, 0f);
-		}
+		int halfSize = size / 2;
+		spriteBatch.Draw(pixel, new Rectangle((int)center.X - halfSize, (int)center.Y - halfSize, size, size), color);
 	}
 
 	private static Vector2 QuadraticBezier(Vector2 start, Vector2 control, Vector2 end, float progress)

@@ -173,10 +173,11 @@ public class SoulOrbProjectile : ModProjectile, IPixelatedDrawable
 		DrawSoulCore(drawPosition, visualSouls, containsBossReward, opacity, scaleMultiplier, projectile.whoAmI);
 	}
 
-	internal static void DrawSoulVisualAt(Vector2 drawPosition, long visualSouls, float opacity, float scaleMultiplier)
+	internal static void DrawSoulVisualAt(Vector2 drawPosition, long visualSouls, float opacity, float scaleMultiplier,
+		float phaseOffset = 0f)
 	{
 		// UI counters share the pickup's appearance without creating a world projectile.
-		DrawSoulCore(drawPosition, visualSouls, false, opacity, scaleMultiplier, 0f);
+		DrawSoulCore(drawPosition, visualSouls, false, opacity, scaleMultiplier, phaseOffset);
 	}
 
 	private static void DrawSoulCore(Vector2 drawPosition, long visualSouls, bool containsBossReward, float opacity,
