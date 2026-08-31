@@ -80,7 +80,14 @@ public static class EssenceImbuementRegistry
 			"Diamond Staff",
 			ModContent.ItemType<MoonLordEssence>(),
 			ModContent.ItemType<MoonstoneStaff>(),
-			"Moonstone Staff")
+			"Moonstone Staff"),
+		new(
+			"unkemptHarold",
+			new int[] { ItemID.VenusMagnum },
+			"Venus Magnum",
+			ModContent.ItemType<MoonLordEssence>(),
+			ModContent.ItemType<UnkemptHarold>(),
+			"Unkempt Harold")
 	};
 
 	public static bool TryGet(int index, out EssenceImbuementDefinition definition)

@@ -69,6 +69,8 @@ Projectiles: {
 	StarsOfRuinCastProjectile.DisplayName: Stars of Ruin
 	StarsOfRuinStarProjectile.DisplayName: Ruinous Star
 	SoulBloodstainRecoveryProjectile.DisplayName: Soul Bloodstain Recovery Projectile
+	UnkemptHaroldGyrojetProjectile.DisplayName: Gyrojet
+	UnkemptHaroldExplosionProjectile.DisplayName: Gyrojet Burst
 }
 
 Buffs: {
@@ -328,6 +330,15 @@ Items: {
 			'''
 			Gathers celestial mana before releasing a devastating moonstone bolt
 			The bolt gently seeks enemies and erupts on impact
+			'''
+	}
+
+	UnkemptHarold: {
+		DisplayName: Unkempt Harold
+		Tooltip:
+			'''
+			Consumes 3 bullets
+			Fires three gyrojets that split twice into a vertical column of seven
 			'''
 	}
 }
