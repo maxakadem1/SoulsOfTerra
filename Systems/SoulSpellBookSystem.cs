@@ -24,6 +24,9 @@ public class SoulSpellBookSystem : ModSystem
 {
 	internal static Asset<Texture2D> BookTexture { get; private set; }
 	internal static Asset<Texture2D> SoulIconTexture { get; private set; }
+	internal static Asset<Texture2D> ArrowBaseTexture { get; private set; }
+	internal static Asset<Texture2D> ArrowHoverTexture { get; private set; }
+	internal static Asset<Texture2D> ArrowPressedTexture { get; private set; }
 
 	private static UserInterface bookInterface;
 	private static SoulSpellBookState bookState;
@@ -37,6 +40,9 @@ public class SoulSpellBookSystem : ModSystem
 
 		BookTexture = ModContent.Request<Texture2D>("SoulsOfTerra/Content/UI/SoulspellUI");
 		SoulIconTexture = ModContent.Request<Texture2D>("SoulsOfTerra/Content/UI/SoulCounterIcon");
+		ArrowBaseTexture = ModContent.Request<Texture2D>("SoulsOfTerra/Content/UI/SoulspellArrowBase");
+		ArrowHoverTexture = ModContent.Request<Texture2D>("SoulsOfTerra/Content/UI/SoulspellArrowOnhover");
+		ArrowPressedTexture = ModContent.Request<Texture2D>("SoulsOfTerra/Content/UI/SoulspellArrowOnpress");
 		bookInterface = new UserInterface();
 		bookState = new SoulSpellBookState();
 		bookState.Activate();
@@ -46,6 +52,9 @@ public class SoulSpellBookSystem : ModSystem
 	{
 		BookTexture = null;
 		SoulIconTexture = null;
+		ArrowBaseTexture = null;
+		ArrowHoverTexture = null;
+		ArrowPressedTexture = null;
 		bookInterface = null;
 		bookState = null;
 	}
@@ -66,6 +75,7 @@ public class SoulSpellBookSystem : ModSystem
 		}
 
 		SoulMenuSystem.Close();
+		SoulApparatusSystem.Close();
 		Main.playerInventory = false;
 		bookState.Open();
 		bookInterface.SetState(bookState);
@@ -126,7 +136,12 @@ internal sealed class SoulSpellBookState : UIState
 	private UIElement root;
 	private SoulSpellBookPanel book;
 	private SoulSpellStatusPlaque statusPlaque;
+	private SoulSpellPageArrow leftArrow;
+	private SoulSpellPageArrow rightArrow;
 	private string lastStatus;
+	private ulong lastLearnedMask;
+	private int currentSpread;
+	private int spreadCount = 1;
 
 	public override void OnInitialize()
 	{
@@ -149,11 +164,23 @@ internal sealed class SoulSpellBookState : UIState
 		statusPlaque.HAlign = 0.5f;
 		statusPlaque.Top.Set(BookHeight + StatusGap, 0f);
 		root.Append(statusPlaque);
+
+		leftArrow = new SoulSpellPageArrow(false, () => ChangeSpread(-1));
+		leftArrow.Left.Set(-38f, 0f);
+		leftArrow.Top.Set(BookHeight * 0.5f - 16f, 0f);
+		root.Append(leftArrow);
+
+		rightArrow = new SoulSpellPageArrow(true, () => ChangeSpread(1));
+		rightArrow.Left.Set(BookWidth + 12f, 0f);
+		rightArrow.Top.Set(BookHeight * 0.5f - 16f, 0f);
+		root.Append(rightArrow);
 	}
 
 	public void Open()
 	{
+		currentSpread = 0;
 		BuildLayout();
+		lastLearnedMask = Main.LocalPlayer.GetModPlayer<SoulSpellPlayer>().LearnedMask;
 		lastStatus = null;
 		RefreshStatus();
 	}
@@ -168,9 +195,17 @@ internal sealed class SoulSpellBookState : UIState
 			return;
 		}
 
-		if (root.ContainsPoint(Main.MouseScreen))
+		if (root.ContainsPoint(Main.MouseScreen) || leftArrow.ContainsPoint(Main.MouseScreen)
+			|| rightArrow.ContainsPoint(Main.MouseScreen))
 		{
 			player.mouseInterface = true;
+		}
+
+		ulong learnedMask = player.GetModPlayer<SoulSpellPlayer>().LearnedMask;
+		if (learnedMask != lastLearnedMask)
+		{
+			lastLearnedMask = learnedMask;
+			BuildLayout();
 		}
 
 		RefreshStatus();
@@ -180,63 +215,100 @@ internal sealed class SoulSpellBookState : UIState
 	{
 		book.RemoveAllChildren();
 
-		// Always spells occupy a short top row on the left page; paid spells fill both pages after the rule.
-		List<SoulSpellDefinition> freeSpells = SoulSpellRegistry.All.Where(spell => spell.IsFree).ToList();
-		List<SoulSpellDefinition> paidSpells = SoulSpellRegistry.All.Where(spell => !spell.IsFree).ToList();
-
-		Rectangle left = ScaleRect(LeftPageSrc);
-		Rectangle right = ScaleRect(RightPageSrc);
-
-		int freeX = left.X + PagePad;
-		int freeY = left.Y + PagePad;
-		foreach (SoulSpellDefinition spell in freeSpells)
+		SoulSpellPlayer spellPlayer = Main.LocalPlayer.GetModPlayer<SoulSpellPlayer>();
+		List<BookPage> pages = BuildPages(spellPlayer);
+		spreadCount = Math.Max(1, (pages.Count + 1) / 2);
+		currentSpread = Math.Clamp(currentSpread, 0, spreadCount - 1);
+		Rectangle[] areas = { ScaleRect(LeftPageSrc), ScaleRect(RightPageSrc) };
+		for (int side = 0; side < 2; side++)
 		{
-			AppendIcon(spell, freeX, freeY);
-			freeX += IconSize + IconGap;
-		}
-
-		int paidStartY = left.Y + PagePad;
-		if (freeSpells.Count > 0)
-		{
-			int separatorWidth = freeSpells.Count * IconSize + Math.Max(0, freeSpells.Count - 1) * IconGap;
-			int separatorY = left.Y + PagePad + IconSize + SeparatorGap;
-			SoulSpellSeparator separator = new();
-			separator.Left.Set(left.X + PagePad, 0f);
-			separator.Top.Set(separatorY, 0f);
-			separator.Width.Set(separatorWidth, 0f);
-			separator.Height.Set(SeparatorHeight, 0f);
-			book.Append(separator);
-			paidStartY = separatorY + SeparatorHeight + SeparatorGap;
-		}
-
-		int paidIndex = PlaceIcons(paidSpells, 0, left, paidStartY);
-		PlaceIcons(paidSpells, paidIndex, right, right.Y + PagePad);
-		Recalculate();
-	}
-
-	private int PlaceIcons(List<SoulSpellDefinition> spells, int startIndex, Rectangle page, int startY)
-	{
-		int innerWidth = page.Width - PagePad * 2;
-		int columns = Math.Max(1, (innerWidth + IconGap) / (IconSize + IconGap));
-		int maxRows = Math.Max(0, (page.Bottom - PagePad - startY + IconGap) / (IconSize + IconGap));
-		int col = 0;
-		int row = 0;
-		int index = startIndex;
-		while (index < spells.Count && row < maxRows)
-		{
-			int x = page.X + PagePad + col * (IconSize + IconGap);
-			int y = startY + row * (IconSize + IconGap);
-			AppendIcon(spells[index], x, y);
-			index++;
-			col++;
-			if (col >= columns)
+			int pageIndex = currentSpread * 2 + side;
+			if (pageIndex < pages.Count)
 			{
-				col = 0;
-				row++;
+				RenderPage(pages[pageIndex], areas[side]);
 			}
 		}
 
-		return index;
+		leftArrow.Enabled = currentSpread > 0;
+		rightArrow.Enabled = currentSpread + 1 < spreadCount;
+		Recalculate();
+	}
+
+	private static List<BookPage> BuildPages(SoulSpellPlayer spellPlayer)
+	{
+		const int columns = 4;
+		const int rows = 7;
+		List<BookPage> pages = new() { new BookPage() };
+		BookPage page = pages[0];
+
+		AddSection("Always", SoulSpellRegistry.All.Where(spell => spell.IsFree).ToList());
+		foreach (IGrouping<SoulSpellCategory, SoulSpellDefinition> group in SoulSpellRegistry.All
+			.Where(spell => !spell.IsFree && spellPlayer.HasLearned(spell.Id))
+			.GroupBy(spell => spell.Category))
+		{
+			AddSection(SoulSpellRegistry.CategoryName(group.Key), group.ToList());
+		}
+
+		return pages;
+
+		void AddSection(string heading, List<SoulSpellDefinition> spells)
+		{
+			if (page.Row > 0 && page.Row + 2 > rows)
+			{
+				page = new BookPage();
+				pages.Add(page);
+			}
+
+			page.Entries.Add(new BookPageEntry(heading, default, page.Row++, -1));
+			int spellIndex = 0;
+			while (spellIndex < spells.Count)
+			{
+				if (page.Row >= rows)
+				{
+					page = new BookPage();
+					pages.Add(page);
+				}
+
+				for (int column = 0; column < columns && spellIndex < spells.Count; column++)
+				{
+					page.Entries.Add(new BookPageEntry(null, spells[spellIndex++], page.Row, column));
+				}
+				page.Row++;
+			}
+		}
+	}
+
+	private void RenderPage(BookPage page, Rectangle area)
+	{
+		foreach (BookPageEntry entry in page.Entries)
+		{
+			int y = area.Y + PagePad + entry.Row * (IconSize + IconGap);
+			if (entry.Column < 0)
+			{
+				UIText header = new(entry.Heading, 0.62f);
+				header.Left.Set(area.X + PagePad, 0f);
+				header.Top.Set(y + 6f, 0f);
+				header.TextColor = new Color(72, 66, 55);
+				book.Append(header);
+			}
+			else
+			{
+				AppendIcon(entry.Spell, area.X + PagePad + entry.Column * (IconSize + IconGap), y);
+			}
+		}
+	}
+
+	private void ChangeSpread(int direction)
+	{
+		int next = Math.Clamp(currentSpread + direction, 0, spreadCount - 1);
+		if (next == currentSpread)
+		{
+			return;
+		}
+
+		currentSpread = next;
+		SoundEngine.PlaySound(SoundID.MenuTick);
+		BuildLayout();
 	}
 
 	private void AppendIcon(SoulSpellDefinition spell, int x, int y)
@@ -253,8 +325,8 @@ internal sealed class SoulSpellBookState : UIState
 	{
 		SoulPlayer soulPlayer = Main.LocalPlayer.GetModPlayer<SoulPlayer>();
 		SoulSpellPlayer spellPlayer = Main.LocalPlayer.GetModPlayer<SoulSpellPlayer>();
-		double checkedDrain = SoulSpellRegistry.GetCheckedPaidSoulsPerTick(spellPlayer.SelectionMask);
-		double liveDrain = SoulSpellRegistry.GetSoulsPerTick(spellPlayer.SelectionMask, spellPlayer.StanceOn);
+		double checkedDrain = SoulSpellRegistry.GetCheckedPaidSoulsPerTick(spellPlayer.SelectionMask, spellPlayer.LearnedMask);
+		double liveDrain = SoulSpellRegistry.GetSoulsPerTick(spellPlayer.SelectionMask, spellPlayer.LearnedMask, spellPlayer.StanceOn);
 		string stance = Language.GetTextValue(spellPlayer.StanceOn
 			? "Mods.SoulsOfTerra.UI.SoulspellOn"
 			: "Mods.SoulsOfTerra.UI.SoulspellOff");
@@ -278,6 +350,53 @@ internal sealed class SoulSpellBookState : UIState
 			source.Y * BookScale,
 			source.Width * BookScale,
 			source.Height * BookScale);
+	}
+
+	private sealed class BookPage
+	{
+		public readonly List<BookPageEntry> Entries = new();
+		public int Row;
+	}
+
+	private readonly record struct BookPageEntry(string Heading, SoulSpellDefinition Spell, int Row, int Column);
+}
+
+internal sealed class SoulSpellPageArrow : UIElement
+{
+	private readonly bool pointsRight;
+	private readonly Action action;
+
+	public bool Enabled { get; set; }
+
+	public SoulSpellPageArrow(bool pointsRight, Action action)
+	{
+		this.pointsRight = pointsRight;
+		this.action = action;
+		Width.Set(26f, 0f);
+		Height.Set(33f, 0f);
+		OnLeftClick += (_, _) =>
+		{
+			if (Enabled)
+			{
+				action();
+			}
+		};
+	}
+
+	protected override void DrawSelf(SpriteBatch spriteBatch)
+	{
+		Asset<Texture2D> asset = IsMouseHovering && Main.mouseLeft
+			? SoulSpellBookSystem.ArrowPressedTexture
+			: IsMouseHovering ? SoulSpellBookSystem.ArrowHoverTexture : SoulSpellBookSystem.ArrowBaseTexture;
+		if (asset is null || !asset.IsLoaded)
+		{
+			return;
+		}
+
+		CalculatedStyle dimensions = GetDimensions();
+		SpriteEffects effects = pointsRight ? SpriteEffects.None : SpriteEffects.FlipHorizontally;
+		spriteBatch.Draw(asset.Value, dimensions.Center(), null, Color.White * (Enabled ? 1f : 0.25f), 0f,
+			asset.Value.Size() * 0.5f, 1f, effects, 0f);
 	}
 }
 
@@ -497,7 +616,17 @@ internal sealed class SoulSpellIcon : UIElement
 
 	private Texture2D GetIconTexture()
 	{
-		int buffType = GetBuffType(spell.Id);
+		int buffType = spell.BuffType;
+		if (buffType <= 0)
+		{
+			buffType = spell.Id switch
+			{
+				SoulSpellId.Dash => ModContent.BuffType<SoulDashBuff>(),
+				SoulSpellId.Flight => ModContent.BuffType<SoulFlightBuff>(),
+				_ => 0
+			};
+		}
+
 		if (buffType > 0)
 		{
 			Asset<Texture2D> asset = TextureAssets.Buff[buffType];
@@ -508,18 +637,6 @@ internal sealed class SoulSpellIcon : UIElement
 		}
 
 		return TextureAssets.MagicPixel.Value;
-	}
-
-	// Book icons reuse the matching buff sprites so tray and page stay in sync.
-	private static int GetBuffType(SoulSpellId id)
-	{
-		return id switch
-		{
-			SoulSpellId.Dash => ModContent.BuffType<SoulDashBuff>(),
-			SoulSpellId.Flight => ModContent.BuffType<SoulFlightBuff>(),
-			SoulSpellId.Light => ModContent.BuffType<SoulLightBuff>(),
-			_ => 0
-		};
 	}
 
 	private static void DrawBorder(SpriteBatch spriteBatch, Rectangle rect, Color color, int thickness)

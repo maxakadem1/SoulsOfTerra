@@ -58,6 +58,7 @@ public class SoulMenuSystem : ModSystem
 		menuState.ConfigureSoulless(npcIndex);
 		soulInterface.SetState(menuState);
 		SoulSpellBookSystem.Close();
+		SoulApparatusSystem.Close();
 	}
 
 	public static void OpenTerraforge(Point16 terraforgePosition)
@@ -70,6 +71,7 @@ public class SoulMenuSystem : ModSystem
 		menuState.ConfigureTerraforge(terraforgePosition);
 		soulInterface.SetState(menuState);
 		SoulSpellBookSystem.Close();
+		SoulApparatusSystem.Close();
 	}
 
 	public static void Close()
@@ -212,6 +214,7 @@ internal sealed class SoulMenuState : UIState
 	private SoulActionRow primaryRow;
 	private SoulActionRow secondaryRow;
 	private SoulActionRow tertiaryRow;
+	private SoulActionRow quaternaryRow;
 	private UITextPanel<string> servicesTabButton;
 	private UITextPanel<string> crystalsTabButton;
 	private UITextPanel<string> condensationTabButton;
@@ -295,7 +298,9 @@ internal sealed class SoulMenuState : UIState
 		secondaryRow = CreateRow(168f);
 		secondaryRow.SetAction(UseSecondaryAction);
 		tertiaryRow = CreateRow(258f);
-		tertiaryRow.SetAction(UseTertiaryAction);
+		tertiaryRow.SetAction(UseQuaternaryAction);
+		quaternaryRow = CreateRow(348f);
+		quaternaryRow.SetAction(UseTertiaryAction);
 		CreateSoullessTabs();
 		CreateTerraforgeTabs();
 		CreateEssenceCatalogue();
@@ -396,7 +401,7 @@ internal sealed class SoulMenuState : UIState
 	{
 		ShowFramedPanel();
 		panel.RemoveAllChildren();
-		panel.Height.Set(soullessTab == SoullessTab.Services ? 490f : 400f, 0f);
+		panel.Height.Set(soullessTab == SoullessTab.Services ? 580f : 400f, 0f);
 		panel.Append(title);
 		panel.Append(subtitle);
 		panel.Append(balance);
@@ -407,9 +412,11 @@ internal sealed class SoulMenuState : UIState
 			primaryRow.Top.Set(108f, 0f);
 			secondaryRow.Top.Set(198f, 0f);
 			tertiaryRow.Top.Set(288f, 0f);
+			quaternaryRow.Top.Set(378f, 0f);
 			panel.Append(primaryRow);
 			panel.Append(secondaryRow);
 			panel.Append(tertiaryRow);
+			panel.Append(quaternaryRow);
 		}
 		else
 		{
@@ -421,9 +428,9 @@ internal sealed class SoulMenuState : UIState
 			panel.Append(condenseButton);
 		}
 
-		feedback.Top.Set(soullessTab == SoullessTab.Services ? 416f : 326f, 0f);
+		feedback.Top.Set(soullessTab == SoullessTab.Services ? 506f : 326f, 0f);
 		panel.Append(feedback);
-		closeButton.Top.Set(soullessTab == SoullessTab.Services ? 448f : 358f, 0f);
+		closeButton.Top.Set(soullessTab == SoullessTab.Services ? 538f : 358f, 0f);
 		panel.Append(closeButton);
 		ApplySoullessTabStyles();
 	}
@@ -691,9 +698,19 @@ internal sealed class SoulMenuState : UIState
 				milestoneUnlocked ? "Temper" : "Locked", milestoneUnlocked, canAfford);
 		}
 
+		bool apparatusUnlocked = NPC.downedBoss1;
+		bool canAffordApparatus = Main.LocalPlayer.GetModPlayer<SoulPlayer>().SoulBalance >= SoulTransactions.SoulApparatusCost;
+		tertiaryRow.SetContent(
+			ModContent.ItemType<SoulApparatusItem>(),
+			"Soul Apparatus",
+			apparatusUnlocked ? $"Dissolves potions into soulspells  •  {SoulTransactions.SoulApparatusCost:N0} souls" : "Requires Eye of Cthulhu",
+			apparatusUnlocked ? "Purchase" : "Locked",
+			apparatusUnlocked,
+			canAffordApparatus);
+
 		bool keyUnlocked = NPC.downedBoss3;
 		bool canAffordKey = Main.LocalPlayer.GetModPlayer<SoulPlayer>().SoulBalance >= SoulTransactions.WardensFragmentCost;
-		tertiaryRow.SetContent(
+		quaternaryRow.SetContent(
 			ModContent.ItemType<WardensFragment>(),
 			"Warden's Fragment",
 			keyUnlocked ? $"Reusable Buried Court key  •  {SoulTransactions.WardensFragmentCost:N0} souls" : "Requires Skeletron",
@@ -1405,6 +1422,29 @@ internal sealed class SoulMenuState : UIState
 		ShowFeedback(completed ? "Warden's Fragment acquired." : "Purchase request sent.", true);
 	}
 
+	private void UseQuaternaryAction()
+	{
+		if (kind != MenuKind.Soulless || soullessTab != SoullessTab.Services)
+		{
+			return;
+		}
+
+		if (!NPC.downedBoss1)
+		{
+			ShowFeedback("Defeat the Eye of Cthulhu first.", false);
+			return;
+		}
+
+		if (!HasSouls(SoulTransactions.SoulApparatusCost))
+		{
+			return;
+		}
+
+		bool completed = SendNpcTransaction(SoulMessageType.RequestSoulApparatusPurchase,
+			() => SoulTransactions.TryPurchaseSoulApparatus(Main.LocalPlayer, npcIndex));
+		ShowFeedback(completed ? "Soul Apparatus acquired." : "Purchase request sent.", true);
+	}
+
 	private bool SendCrystalTransaction()
 	{
 		if (Main.netMode == NetmodeID.MultiplayerClient)
@@ -1855,6 +1895,28 @@ internal sealed class ImbuementRecipeRow : UIElement
 		ApplyStyle(false);
 	}
 
+	public void SetContent(SoulSpellDefinition spell, bool canSelect, string statusText)
+	{
+		string potionName = Lang.GetItemNameValue(spell.PotionItemType);
+		string essenceName = Lang.GetItemNameValue(spell.EssenceItemType);
+		weaponSlot.SetItem(spell.PotionItemType, potionName);
+		essenceSlot.SetItem(spell.EssenceItemType, essenceName);
+		outputSlot.SetBuff(spell.BuffType, spell.Name);
+		resultName.SetText(spell.Name);
+		ingredients.SetText($"{potionName} + {essenceName}  •  {spell.CostText}");
+		status.SetText(statusText);
+		ready = canSelect;
+		float opacity = ready ? 1f : 0.55f;
+		weaponSlot.Opacity = opacity;
+		essenceSlot.Opacity = opacity;
+		outputSlot.Opacity = opacity;
+		resultName.TextColor = ready ? new Color(137, 235, 205) : new Color(154, 168, 163);
+		ingredients.TextColor = ready ? new Color(210, 229, 220) : new Color(142, 153, 151);
+		status.TextColor = statusText == "Learned" ? new Color(131, 208, 177)
+			: ready ? new Color(144, 226, 190) : new Color(207, 164, 135);
+		ApplyStyle(false);
+	}
+
 	private ImbuementRecipeItemSlot CreateSlot(float left)
 	{
 		ImbuementRecipeItemSlot slot = new();
@@ -1889,6 +1951,7 @@ internal sealed class ImbuementRecipeRow : UIElement
 internal sealed class ImbuementRecipeItemSlot : UIElement
 {
 	private int itemType;
+	private int buffType;
 	private string tooltip = string.Empty;
 
 	public float Opacity { get; set; } = 1f;
@@ -1902,6 +1965,14 @@ internal sealed class ImbuementRecipeItemSlot : UIElement
 	public void SetItem(int requestedItemType, string requestedTooltip)
 	{
 		itemType = requestedItemType;
+		buffType = 0;
+		tooltip = requestedTooltip;
+	}
+
+	public void SetBuff(int requestedBuffType, string requestedTooltip)
+	{
+		itemType = ItemID.None;
+		buffType = requestedBuffType;
 		tooltip = requestedTooltip;
 	}
 
@@ -1909,7 +1980,17 @@ internal sealed class ImbuementRecipeItemSlot : UIElement
 	{
 		Rectangle area = GetDimensions().ToRectangle();
 		ImbuementSlotDrawing.DrawSlot(spriteBatch, area, IsMouseHovering);
-		ImbuementSlotDrawing.DrawItem(spriteBatch, itemType, area.Center.ToVector2(), 30f, Color.White * Opacity);
+		if (buffType > 0)
+		{
+			Texture2D texture = TextureAssets.Buff[buffType].Value;
+			float scale = Math.Min(1f, 30f / Math.Max(texture.Width, texture.Height));
+			spriteBatch.Draw(texture, area.Center.ToVector2(), null, Color.White * Opacity, 0f,
+				texture.Size() * 0.5f, scale, SpriteEffects.None, 0f);
+		}
+		else
+		{
+			ImbuementSlotDrawing.DrawItem(spriteBatch, itemType, area.Center.ToVector2(), 30f, Color.White * Opacity);
+		}
 		if (IsMouseHovering && !string.IsNullOrWhiteSpace(tooltip))
 		{
 			Main.instance.MouseText(tooltip);
@@ -1919,7 +2000,17 @@ internal sealed class ImbuementRecipeItemSlot : UIElement
 
 internal sealed class ImbuementRitualCanvas : UIElement
 {
+	private readonly string ritualTitle;
+	private readonly string ritualDescription;
+
 	public float Reveal { get; set; }
+
+	public ImbuementRitualCanvas(string ritualTitle = "IMBUEMENT RITUAL",
+		string ritualDescription = "Bind a defeated echo into its weapon.")
+	{
+		this.ritualTitle = ritualTitle;
+		this.ritualDescription = ritualDescription;
+	}
 
 	protected override void DrawSelf(SpriteBatch spriteBatch)
 	{
@@ -1927,10 +2018,9 @@ internal sealed class ImbuementRitualCanvas : UIElement
 		Vector2 center = new(dimensions.Center().X, dimensions.Y + 128f);
 		float opacity = MathHelper.Clamp(Reveal, 0f, 1f);
 
-		string title = "IMBUEMENT RITUAL";
-		Utils.DrawBorderString(spriteBatch, title, new Vector2(center.X, dimensions.Y + 20f),
+		Utils.DrawBorderString(spriteBatch, ritualTitle, new Vector2(center.X, dimensions.Y + 20f),
 			new Color(192, 239, 219) * opacity, 0.82f, 0.5f);
-		Utils.DrawBorderString(spriteBatch, "Bind a defeated echo into its weapon.",
+		Utils.DrawBorderString(spriteBatch, ritualDescription,
 			new Vector2(center.X, dimensions.Y + 49f), new Color(126, 161, 151) * opacity, 0.58f, 0.5f);
 	}
 

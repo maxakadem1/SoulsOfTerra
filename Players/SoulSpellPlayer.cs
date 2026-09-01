@@ -62,17 +62,16 @@ public class SoulSpellPlayer : ModPlayer, IPixelatedDrawable
 	public bool HasDashVisual => dashVisualTimer > 0 || SoulFlightActive;
 	public bool SoulFlightActive => soulFlightTimer > 0;
 
-	public uint SelectionMask { get; private set; } = SoulSpellRegistry.DefaultSelectionMask;
+	public ulong SelectionMask { get; private set; } = SoulSpellRegistry.DefaultSelectionMask;
+	public ulong LearnedMask { get; private set; } = SoulSpellRegistry.DefaultLearnedMask;
 	public bool StanceOn { get; private set; }
 
 	public bool DashEnabled => SoulSpellRegistry.IsSelected(SelectionMask, SoulSpellId.Dash);
 	public bool FlightEnabled => SoulSpellRegistry.IsSelected(SelectionMask, SoulSpellId.Flight);
-	public bool LightChecked => SoulSpellRegistry.IsSelected(SelectionMask, SoulSpellId.Light);
-	public bool LightActive => StanceOn && LightChecked;
-
 	public override void Initialize()
 	{
 		SelectionMask = SoulSpellRegistry.DefaultSelectionMask;
+		LearnedMask = SoulSpellRegistry.DefaultLearnedMask;
 		StanceOn = false;
 		dashCooldown = 0;
 		dashTimer = 0;
@@ -130,14 +129,21 @@ public class SoulSpellPlayer : ModPlayer, IPixelatedDrawable
 
 	public override void SaveData(TagCompound tag)
 	{
-		tag["soulspellMask"] = (int)SelectionMask;
+		tag["soulspellSelections"] = unchecked((long)SelectionMask);
+		tag["soulspellLearned"] = unchecked((long)LearnedMask);
 	}
 
 	public override void LoadData(TagCompound tag)
 	{
-		SelectionMask = tag.ContainsKey("soulspellMask")
-			? (uint)tag.GetInt("soulspellMask")
-			: SoulSpellRegistry.DefaultSelectionMask;
+		// The old 32-bit mask migrates Soul Light directly into the renamed Shine spell.
+		SelectionMask = tag.ContainsKey("soulspellSelections")
+			? unchecked((ulong)tag.GetLong("soulspellSelections"))
+			: tag.ContainsKey("soulspellMask") ? (uint)tag.GetInt("soulspellMask") : SoulSpellRegistry.DefaultSelectionMask;
+		LearnedMask = tag.ContainsKey("soulspellLearned")
+			? unchecked((ulong)tag.GetLong("soulspellLearned"))
+			: SoulSpellRegistry.DefaultLearnedMask;
+		LearnedMask = (LearnedMask | SoulSpellRegistry.DefaultLearnedMask) & SoulSpellRegistry.KnownSpellMask;
+		SelectionMask &= LearnedMask & SoulSpellRegistry.KnownSpellMask;
 		StanceOn = false;
 		drainAccumulator = 0d;
 	}
@@ -344,9 +350,23 @@ public class SoulSpellPlayer : ModPlayer, IPixelatedDrawable
 		SendState(toWho, fromWho);
 	}
 
+	public override void OnEnterWorld()
+	{
+		if (Player.whoAmI == Main.myPlayer && Main.netMode == NetmodeID.MultiplayerClient)
+		{
+			// Dedicated servers need the character-local learned mask before validating toggles.
+			SendState();
+		}
+	}
+
 	public void RequestSelection(SoulSpellId id, bool selected)
 	{
-		uint nextMask = SoulSpellRegistry.WithExclusiveSelection(SelectionMask, id, selected);
+		if (!SoulSpellRegistry.TryGet(id, out _) || !HasLearned(id))
+		{
+			return;
+		}
+
+		ulong nextMask = SoulSpellRegistry.WithExclusiveSelection(SelectionMask, id, selected);
 		ApplySelection(nextMask);
 		if (Main.netMode == NetmodeID.MultiplayerClient)
 		{
@@ -394,6 +414,11 @@ public class SoulSpellPlayer : ModPlayer, IPixelatedDrawable
 		}
 
 		SoulSpellPlayer spellPlayer = player.GetModPlayer<SoulSpellPlayer>();
+		if (!SoulSpellRegistry.TryGet(id, out _) || !spellPlayer.HasLearned(id))
+		{
+			return;
+		}
+
 		spellPlayer.ApplySelection(SoulSpellRegistry.WithExclusiveSelection(spellPlayer.SelectionMask, id, selected));
 		spellPlayer.SendState();
 	}
@@ -418,24 +443,27 @@ public class SoulSpellPlayer : ModPlayer, IPixelatedDrawable
 		spellPlayer.SendState();
 	}
 
-	public static void HandleStateSync(BinaryReader reader)
+	public static void HandleStateSync(BinaryReader reader, int whoAmI)
 	{
-		if (Main.netMode == NetmodeID.Server)
-		{
-			return;
-		}
-
 		int playerIndex = reader.ReadByte();
-		uint mask = reader.ReadUInt32();
+		ulong mask = reader.ReadUInt64();
+		ulong learnedMask = reader.ReadUInt64();
 		bool stance = reader.ReadBoolean();
-		if (playerIndex < 0 || playerIndex >= Main.maxPlayers)
+		if (playerIndex < 0 || playerIndex >= Main.maxPlayers
+			|| Main.netMode == NetmodeID.Server && playerIndex != whoAmI)
 		{
 			return;
 		}
 
 		SoulSpellPlayer spellPlayer = Main.player[playerIndex].GetModPlayer<SoulSpellPlayer>();
-		spellPlayer.SelectionMask = mask;
-		spellPlayer.ApplyStance(stance);
+		spellPlayer.LearnedMask = (learnedMask | SoulSpellRegistry.DefaultLearnedMask) & SoulSpellRegistry.KnownSpellMask;
+		spellPlayer.ApplySelection(mask & spellPlayer.LearnedMask);
+		spellPlayer.ApplyStance(stance && spellPlayer.CanAffordStance(spellPlayer.SelectionMask));
+		if (Main.netMode == NetmodeID.Server)
+		{
+			// Character-local learned rites are relayed after ownership validation.
+			spellPlayer.SendState(-1, whoAmI);
+		}
 	}
 
 	public static void HandleSoulFlightRequest(BinaryReader reader, int whoAmI)
@@ -474,16 +502,32 @@ public class SoulSpellPlayer : ModPlayer, IPixelatedDrawable
 		spellPlayer.StartSoulFlight(direction, false);
 	}
 
-	private void ApplySelection(uint mask)
+	public bool HasLearned(SoulSpellId id) => SoulSpellRegistry.IsSelected(LearnedMask, id);
+
+	public bool TryLearn(SoulSpellId id)
 	{
-		SelectionMask = mask;
+		if (!SoulSpellRegistry.TryGet(id, out SoulSpellDefinition spell) || !spell.IsPotionSpell || HasLearned(id))
+		{
+			return false;
+		}
+
+		LearnedMask = SoulSpellRegistry.WithSelection(LearnedMask, id, true);
+		// Learned potion spells remain unchecked until the player chooses them.
+		SelectionMask = SoulSpellRegistry.WithSelection(SelectionMask, id, false);
+		SendState();
+		return true;
+	}
+
+	private void ApplySelection(ulong mask)
+	{
+		SelectionMask = mask & LearnedMask & SoulSpellRegistry.KnownSpellMask;
 		if (StanceOn && !CanAffordStance(SelectionMask))
 		{
 			ApplyStance(false);
 			NotifyNeedSouls();
 		}
 
-		if (SoulSpellRegistry.GetCheckedPaidSoulsPerTick(SelectionMask) <= 0d)
+		if (SoulSpellRegistry.GetCheckedPaidSoulsPerTick(SelectionMask, LearnedMask) <= 0d)
 		{
 			drainAccumulator = 0d;
 		}
@@ -500,9 +544,9 @@ public class SoulSpellPlayer : ModPlayer, IPixelatedDrawable
 		drainAccumulator = 0d;
 	}
 
-	private bool CanAffordStance(uint mask)
+	private bool CanAffordStance(ulong mask)
 	{
-		return SoulSpellRegistry.GetCheckedPaidSoulsPerTick(mask) <= 0d
+		return SoulSpellRegistry.GetCheckedPaidSoulsPerTick(mask, LearnedMask) <= 0d
 			|| Player.GetModPlayer<SoulPlayer>().SoulBalance >= 1;
 	}
 
@@ -513,7 +557,7 @@ public class SoulSpellPlayer : ModPlayer, IPixelatedDrawable
 			return;
 		}
 
-		double soulsPerTick = SoulSpellRegistry.GetSoulsPerTick(SelectionMask, StanceOn);
+		double soulsPerTick = SoulSpellRegistry.GetSoulsPerTick(SelectionMask, LearnedMask, StanceOn);
 		if (soulsPerTick <= 0d)
 		{
 			drainAccumulator = 0d;
@@ -560,9 +604,30 @@ public class SoulSpellPlayer : ModPlayer, IPixelatedDrawable
 			Player.AddBuff(ModContent.BuffType<SoulFlightBuff>(), 2);
 		}
 
-		if (LightActive)
+		if (!StanceOn)
 		{
-			Player.AddBuff(ModContent.BuffType<SoulLightBuff>(), 2);
+			return;
+		}
+
+		foreach (SoulSpellDefinition spell in SoulSpellRegistry.PotionSpells)
+		{
+			if (HasLearned(spell.Id) && SoulSpellRegistry.IsSelected(SelectionMask, spell.Id))
+			{
+				// Vanilla buff IDs prevent potion and soulspell effects from stacking.
+				Player.AddBuff(spell.BuffType, 2);
+				if (spell.BuffType == BuffID.Lucky)
+				{
+					// Luck strength normally derives from remaining potion time, so sustain it explicitly.
+					byte strength = spell.Id switch
+					{
+						SoulSpellId.LesserLuck => 1,
+						SoulSpellId.Luck => 2,
+						SoulSpellId.GreaterLuck => 3,
+						_ => 0
+					};
+					Player.luckPotion = Math.Max(Player.luckPotion, strength);
+				}
+			}
 		}
 	}
 
@@ -990,6 +1055,7 @@ public class SoulSpellPlayer : ModPlayer, IPixelatedDrawable
 		packet.Write((byte)SoulMessageType.SyncSoulSpellState);
 		packet.Write((byte)Player.whoAmI);
 		packet.Write(SelectionMask);
+		packet.Write(LearnedMask);
 		packet.Write(StanceOn);
 		packet.Send(toWho, fromWho);
 	}

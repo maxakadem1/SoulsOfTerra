@@ -28,7 +28,9 @@ public enum SoulMessageType : byte
 	RequestSoulSpellToggle,
 	SyncSoulSpellState,
 	RequestSoulFlight,
-	SyncSoulFlight
+	SyncSoulFlight,
+	RequestSoulApparatusPurchase,
+	RequestSoulspellDissolution
 }
 
 public class SoulsOfTerra : Mod
@@ -64,10 +66,10 @@ public class SoulsOfTerra : Mod
 		("UI.SoulspellDashDescription", "Double-tap to surge forward and leave a chasing soul echo"),
 		("UI.SoulspellFlightName", "Soul Flight"),
 		("UI.SoulspellFlightDescription", "Double-tap left or right to fly as a soul for 2 seconds; cannot use items, take damage, or deal damage"),
-		("UI.SoulspellLightName", "Soul Light"),
-		("UI.SoulspellLightDescription", "Teal light while Stance is on"),
 		("UI.SoulspellCategory.Exploration", "Exploration"),
 		("UI.SoulspellCategory.Combat", "Combat"),
+		("UI.SoulspellCategory.Gathering", "Gathering"),
+		("UI.SoulspellCategory.Building", "Building"),
 		("Dialogue.Soulless.Introduction", "So another bearer wakes. Keep close the souls you gather; death is eager to loosen your grasp."),
 		("Dialogue.Soulless.BloodstainHint", "What spills from you does not vanish. Return to the stain, reach into it, and take back what remains."),
 		("Dialogue.Soulless.AfterKingSlime", "Even a crown of gel leaves an echo. The Terraforge can press that echo into useful form."),
@@ -136,13 +138,19 @@ public class SoulsOfTerra : Mod
 				SoulSpellPlayer.HandleToggleRequest(reader, whoAmI);
 				break;
 			case SoulMessageType.SyncSoulSpellState:
-				SoulSpellPlayer.HandleStateSync(reader);
+				SoulSpellPlayer.HandleStateSync(reader, whoAmI);
 				break;
 			case SoulMessageType.RequestSoulFlight:
 				SoulSpellPlayer.HandleSoulFlightRequest(reader, whoAmI);
 				break;
 			case SoulMessageType.SyncSoulFlight:
 				SoulSpellPlayer.HandleSoulFlightSync(reader);
+				break;
+			case SoulMessageType.RequestSoulApparatusPurchase:
+				HandleSoulApparatusPurchase(reader, whoAmI);
+				break;
+			case SoulMessageType.RequestSoulspellDissolution:
+				HandleSoulspellDissolution(reader, whoAmI);
 				break;
 		}
 	}
@@ -312,6 +320,29 @@ public class SoulsOfTerra : Mod
 		if (player is not null)
 		{
 			Systems.BuriedCourtSystem.TrySummonBoss(player, clickedTile);
+		}
+	}
+
+	private static void HandleSoulApparatusPurchase(BinaryReader reader, int whoAmI)
+	{
+		int npcIndex = reader.ReadInt16();
+		Player player = GetRequestingPlayer(whoAmI);
+		if (player is not null)
+		{
+			SoulTransactions.TryPurchaseSoulApparatus(player, npcIndex);
+		}
+	}
+
+	private static void HandleSoulspellDissolution(BinaryReader reader, int whoAmI)
+	{
+		int recipeIndex = reader.ReadByte();
+		int potionSlot = reader.ReadByte();
+		int essenceSlot = reader.ReadByte();
+		Point16 apparatusPosition = new(reader.ReadInt16(), reader.ReadInt16());
+		Player player = GetRequestingPlayer(whoAmI);
+		if (player is not null)
+		{
+			SoulTransactions.TryDissolveSoulspell(player, apparatusPosition, recipeIndex, potionSlot, essenceSlot);
 		}
 	}
 }

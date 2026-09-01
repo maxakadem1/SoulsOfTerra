@@ -36,9 +36,12 @@
 - Spellbook keybind (`K`) and Stance keybind (`Left Alt`), rebound in Controls.
 - Always band: Soul Skip on by default, double-tap easing surge, preserved vertical momentum, brief i-frames, no ram, chasing equipped-player echoes, converging fragments, reunion impact, and a full-height torn wake.
 - Mutually exclusive Soul Flight alternative: horizontal double-tap becomes two seconds of collision-aware free flight as the collectible soul, with ten-tick in/out dissolves, a continuous soul wake, seamless momentum, full damage immunity and outgoing-damage suppression, followed by a shared three-second cooldown.
-- Stance band: Soul Light checked by default, Stance off, teal Shine-class light at 1 soul every 5 seconds.
+- Stance band: vanilla Shine learned and checked by default, Stance off, at 0.08 souls per second.
 - Live loadout edits, server-authoritative drain, Stance drop at 0 souls or death, Always spells persist.
-- Buff-tray icons for Soul Skip, Soul Flight, and Light; right-click toggles the matching book state.
+- Four learned-spell categories across paged two-page spreads using the authored base, hover, and pressed arrows.
+- Buff-tray icons for Soul Skip, Soul Flight, and potion spells; right-click toggles the matching book state.
+- Soul Apparatus sold by Soulless for 1,000 souls after the Eye, with a 3-by-3 placeable tile, full recipe catalogue, focused dissolution ritual, and per-character permanent learning.
+- Forty eligible vanilla buff potions with exact fixed essences, progression/strength drain rates, multiplayer-authoritative consumption, and no vanilla-potion stat stacking.
 
 ### Soul orb presentation
 
@@ -150,7 +153,7 @@ These values have not been reconciled with measured boss rewards and are deliber
 - Menu text is functional but not yet visually themed.
 - The Buried Court uses layered vanilla masonry with an original custom-drawn Warden's Reliquary monument while its broader architecture is validated before original court tiles are authored.
 - Congregation Essence temporarily reuses existing placeholder essence art.
-- Soul Skip, Soul Flight, and Soul Light buff icons temporarily reuse vanilla Swiftness, Featherfall, and Shine icons.
+- Soul Skip and Soul Flight buff icons temporarily reuse vanilla Swiftness and Featherfall icons; potion spells reuse their exact vanilla buff icons.
 
 ## Known limitations and risks
 
@@ -196,7 +199,7 @@ These values have not been reconciled with measured boss rewards and are deliber
 21. Imbue a Handgun into Crux; confirm a cursor-locked X that writes inward and knots, both arms hit once, bullets are consumed, and a second volley cannot start until the first ends.
 22. Imbue a Magic Missile into Stars of Ruin; confirm the staff waves, twelve stars gather at its tip, lock one visible NPC near the cursor, launch rapidly from that shared origin into six mirrored curve pairs filling both sides of the aim line, begin homing only after the bouquet forms, collide with terrain, and continue without retargeting if their target dies; mana is consumed once per verse, and a second verse cannot start until the conductor ends.
 23. Die with low, medium, and high soul balances; verify capped bloodstain tiers, grounded rendering, hover and Smart Interact response, immediate recovery, collapse and burst feedback, second-death replacement, save/reload persistence, and multiplayer recovery synchronization.
-24. Open the spellbook, confirm Soul Skip on and Soul Light checked, double-tap to surge without ram damage, press Stance with 0 souls and confirm it fails, collect souls, hold Stance for more than 5 seconds, and confirm 1 soul is spent and the teal light matches Shine range.
+24. Open the spellbook, confirm Soul Skip on and Shine checked, double-tap to surge without ram damage, press Stance with 0 souls and confirm it fails, collect souls, hold Stance and confirm the displayed 0.08 souls-per-second drain uses the vanilla Shine effect.
 25. Uncheck Light while Stance is on, confirm drain stops, die with Stance on, and confirm Soul Skip remains available after respawn.
 26. Select Soul Flight and confirm Soul Skip unchecks; double-tap left or right while running, steer with movement or Jump, collide with tiles, take and deal no damage for two seconds, preserve exit momentum, then verify neither dash can activate during the shared three-second cooldown.
 

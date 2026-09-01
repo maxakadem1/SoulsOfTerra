@@ -27,6 +27,7 @@ public static class SoulTransactions
 {
 	public const long FragmentCost = 100;
 	public const long WardensFragmentCost = 10_000;
+	public const long SoulApparatusCost = 1_000;
 	private static readonly long[] SoulCrystalCosts = { 1_250, 6_250, 31_250 };
 	private static readonly long[] SoulCrystalValues = { 1_000, 5_000, 25_000 };
 	private const float InteractionRange = 12f * 16f;
@@ -70,6 +71,20 @@ public static class SoulTransactions
 
 		// The fragment is a permanent reusable key, but spare copies remain purchasable.
 		player.QuickSpawnItem(new EntitySource_Misc("SoulsOfTerra:WardensFragmentPurchase"), ModContent.ItemType<WardensFragment>());
+		return true;
+	}
+
+	public static bool TryPurchaseSoulApparatus(Player player, int npcIndex)
+	{
+		if (!NPC.downedBoss1 || !IsValidSoullessInteraction(player, npcIndex)
+			|| !player.GetModPlayer<SoulPlayer>().TrySpendSouls(SoulApparatusCost))
+		{
+			return false;
+		}
+
+		// Unlimited copies keep the station replaceable and useful for multiple bases.
+		player.QuickSpawnItem(new EntitySource_Misc("SoulsOfTerra:SoulApparatusPurchase"),
+			ModContent.ItemType<SoulApparatusItem>());
 		return true;
 	}
 
@@ -177,6 +192,54 @@ public static class SoulTransactions
 			ModContent.ProjectileType<EssenceBindingRitualProjectile>(), 0, 0f, player.whoAmI,
 			imbuementIndex, preservedPrefix, consumedWeaponType);
 		CondensationSoulWispProjectile.Spawn(player, terraforgePosition);
+		return true;
+	}
+
+	public static bool TryDissolveSoulspell(Player player, Point16 apparatusPosition, int recipeIndex,
+		int potionSlot, int essenceSlot)
+	{
+		if (recipeIndex < 0 || recipeIndex >= SoulSpellRegistry.PotionSpells.Length
+			|| potionSlot == essenceSlot || potionSlot < 0 || potionSlot >= player.inventory.Length
+			|| essenceSlot < 0 || essenceSlot >= player.inventory.Length
+			|| !IsValidSoulApparatusInteraction(player, apparatusPosition))
+		{
+			return false;
+		}
+
+		SoulSpellDefinition spell = SoulSpellRegistry.PotionSpells[recipeIndex];
+		SoulSpellPlayer spellPlayer = player.GetModPlayer<SoulSpellPlayer>();
+		if (spellPlayer.HasLearned(spell.Id)
+			|| !SoulEssenceRegistry.TryFindByItemType(spell.EssenceItemType, out SoulEssenceDefinition essenceDefinition)
+			|| !essenceDefinition.IsUnlocked())
+		{
+			return false;
+		}
+
+		Item potion = player.inventory[potionSlot];
+		Item essence = player.inventory[essenceSlot];
+		if (potion.type != spell.PotionItemType || potion.stack <= 0
+			|| essence.type != spell.EssenceItemType || essence.stack <= 0)
+		{
+			return false;
+		}
+
+		if (!spellPlayer.TryLearn(spell.Id))
+		{
+			return false;
+		}
+
+		ConsumeOne(potion);
+		ConsumeOne(essence);
+		if (Main.netMode == NetmodeID.Server)
+		{
+			NetMessage.SendData(MessageID.SyncEquipment, -1, -1, null, player.whoAmI, potionSlot);
+			NetMessage.SendData(MessageID.SyncEquipment, -1, -1, null, player.whoAmI, essenceSlot);
+		}
+
+		Vector2 center = apparatusPosition.ToWorldCoordinates(SoulApparatusTile.Width * 8f, 8f);
+		Projectile.NewProjectile(new EntitySource_Misc("SoulsOfTerra:SoulspellDissolution"), center, Vector2.Zero,
+			ModContent.ProjectileType<SoulspellDissolutionRitualProjectile>(), 0, 0f, player.whoAmI,
+			recipeIndex, spell.PotionItemType, spell.EssenceItemType);
 		return true;
 	}
 
@@ -331,5 +394,12 @@ public static class SoulTransactions
 		Tile tile = Framing.GetTileSafely(terraforgePosition.X, terraforgePosition.Y);
 		return player.active && !player.dead && tile.HasTile && tile.TileType == ModContent.TileType<TerraforgeTile>()
 			&& Vector2.DistanceSquared(player.Center, terraforgePosition.ToWorldCoordinates(32f, 24f)) <= InteractionRange * InteractionRange;
+	}
+
+	private static bool IsValidSoulApparatusInteraction(Player player, Point16 apparatusPosition)
+	{
+		Tile tile = Framing.GetTileSafely(apparatusPosition.X, apparatusPosition.Y);
+		return player.active && !player.dead && tile.HasTile && tile.TileType == ModContent.TileType<SoulApparatusTile>()
+			&& Vector2.DistanceSquared(player.Center, apparatusPosition.ToWorldCoordinates(24f, 24f)) <= InteractionRange * InteractionRange;
 	}
 }
