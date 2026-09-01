@@ -75,6 +75,13 @@ public static class EssenceImbuementRegistry
 			ModContent.ItemType<StarsOfRuin>(),
 			"Stars of Ruin"),
 		new(
+			"carrionCall",
+			new int[] { ItemID.Musket },
+			"Musket",
+			ModContent.ItemType<EaterOfWorldsEssence>(),
+			ModContent.ItemType<CarrionCall>(),
+			"Carrion Call"),
+		new(
 			"moonstoneStaff",
 			new int[] { ItemID.DiamondStaff },
 			"Diamond Staff",
