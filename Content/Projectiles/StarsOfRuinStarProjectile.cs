@@ -66,6 +66,14 @@ public class StarsOfRuinStarProjectile : ModProjectile, IPixelatedDrawable
 
 	public override bool ShouldUpdatePosition() => Launched && leftLane;
 
+	public override bool TileCollideStyle(ref int width, ref int height, ref bool fallThrough,
+		ref Vector2 hitboxCenterFrac)
+	{
+		// Stars pass through platforms while solid terrain still stops them.
+		fallThrough = true;
+		return true;
+	}
+
 	public override void SendExtraAI(BinaryWriter writer)
 	{
 		writer.WriteVector2(openingOrigin);
@@ -355,7 +363,7 @@ public class StarsOfRuinStarProjectile : ModProjectile, IPixelatedDrawable
 		Vector2 next = CubicBezier(openingOrigin, controlOne, controlTwo, end, progress);
 		Vector2 movement = next - previous;
 		Vector2 allowedMovement = Collision.TileCollision(previous - Projectile.Size * 0.5f, movement,
-			Projectile.width, Projectile.height);
+			Projectile.width, Projectile.height, fallThrough: true);
 		if (Vector2.DistanceSquared(movement, allowedMovement) > 0.01f)
 		{
 			// Manual curve movement needs an explicit swept check to prevent tunneling through thin walls.

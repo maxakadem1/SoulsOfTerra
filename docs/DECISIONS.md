@@ -129,6 +129,24 @@
 | Current bindings | Any Copper-through-Platinum broadsword + Slime Essence; Ruby Staff + Eye Essence; Breaker Blade + Wall of Flesh Essence; Imp Staff + Congregation Essence; Muramasa + Congregation Essence; Handgun + Congregation Essence; Magic Missile + Congregation Essence (Stars of Ruin); Diamond Staff + Moon Lord Essence. | Establishes flexible early bases and precise thematic bases where desired. |
 | Future enforcement | Every mod weapon inherits `ImbuementWeaponItem`, must be a registry output, and may not have a conventional recipe. | Turns the design rule into a load-time invariant instead of documentation alone. |
 
+## Soulspells
+
+| Topic | Decision | Reason |
+|---|---|---|
+| Role | Repeatable throughout-game sink via toggleable buffs, not projectiles. | Gives ordinary play a reason to spend souls between Temper and essence purchases. |
+| Book | One page with Always and Stance bands; category headers only when a category has a spell. | Matches existing menu language and stays readable before potion-spells exist. |
+| Always spells | Toggled only in the book (or by right-clicking their buff). No Stance key, no drain. | Soul Skip can teach the book and stay up for corpse runs. |
+| Stance | One keybind activates every checked paid spell as buffs; press again to stop drain. | One mix, one power switch. |
+| Loadout cap | None. Drain is the cap. | Checking every box is a valid, expensive choice. |
+| Cost model | Flat souls per interval per spell, no Temper scaling. | The printed number never silently changes. |
+| First Always spell | Soul Skip: a double-tap easing surge that preserves vertical momentum, grants brief i-frames, and has no ram damage. A soul echo chases the player through a full-height torn wake and merges in a landing snap. | Expressive exploration movement without competing with combat accessories. |
+| Alternate dash | Soul Flight is mutually exclusive with Soul Skip but both may be off. A horizontal double-tap gives two seconds of tile-colliding, four-direction flight at 9 px/tick as a 1.35x pickup soul, then a shared three-second cooldown. Ten-tick dissolves exchange the player and orb around a continuous soul wake. It preserves entry/exit momentum, releases grapples, blocks items, incoming damage, and all player-owned damage, but does not cleanse debuffs. | Creates seamless precision traversal with an explicit invulnerability tradeoff and no input conflict with vertical double-tap equipment. |
+| First paid spell | Soul Light, 1 soul every 5 seconds, from spawn. | Cheap enough to leave on; teaches Stance and drain. |
+| Spawn defaults | Soul Skip on, Light checked, Stance off. | They can skip immediately; Stance is a deliberate press. |
+| Empty balance | Stance cannot start if paid drain is active and the pile is 0; Stance drops when a charge cannot be paid. | Closes a toggle exploit and keeps Always spells up. |
+| Live-edit | Checks change while Stance is on. | The book is the mixer; Stance is the switch. |
+| Potion-dissolve | Deferred. | Later content; not required for the machine. |
+
 ## Ranged melee
 
 | Topic | Decision | Reason |
@@ -150,3 +168,4 @@
 - The order and content of later boss essence families.
 - How Soul Crystal conversion fees are expressed in Soulless's later story without a tracked hoard counter.
 - Original visual designs and final UI presentation.
+- Potion-dissolve into permanent soulspells and the first combat soulspell.

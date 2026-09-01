@@ -2,6 +2,40 @@ UI: {
 	RecoverBloodstain: Right-click to recover {0} souls
 	Commune: Commune
 	SentenceAbsolved: ABSOLVED
+	SoulspellAlwaysHeader: Always
+	SoulspellStanceHeader: Stance
+	SoulspellStanceOn: Stance on  •  {0} souls
+	SoulspellStanceOff: Stance off  •  {0} souls
+	SoulspellOn: On
+	SoulspellOff: Off
+	SoulspellFree: Free
+	SoulspellCostInterval: 1 soul every {0} seconds
+	SoulspellDrainPerSecond: "{0} souls/sec"
+	SoulspellNoDrain: No drain
+	SoulspellEmptyNow: Empty now
+	SoulspellEmptyInSeconds: "{0}s"
+	SoulspellEmptyInMinutes: "{0}m {1}s"
+	SoulspellEmptyInHours: "{0}h {1}m"
+	SoulspellEmptyInDays: "{0}d {1}h"
+	SoulspellDrainFooter: Drain: {0}
+	SoulspellEmptyFooter: Empty in: {0}
+	SoulspellFooterStance: STANCE
+	SoulspellFooterSouls: SOULS
+	SoulspellFooterDrain: DRAIN
+	SoulspellFooterRuntime: RUNTIME
+	SoulspellNeedSouls: You need at least 1 soul to hold Stance.
+	SoulspellDraining: Draining
+	SoulspellDashName: Soul Skip
+	SoulspellDashDescription: Double-tap to surge forward and leave a chasing soul echo
+	SoulspellFlightName: Soul Flight
+	SoulspellFlightDescription: Double-tap left or right to fly as a soul for 2 seconds; cannot use items, take damage, or deal damage
+	SoulspellLightName: Soul Light
+	SoulspellLightDescription: Teal light while Stance is on
+
+	SoulspellCategory: {
+		Exploration: Exploration
+		Combat: Combat
+	}
 }
 
 Dialogue: {
@@ -77,6 +111,21 @@ Buffs: {
 	CompeditusBuff: {
 		DisplayName: Compeditus
 		Description: A shackled choir fights at your command
+	}
+
+	SoulDashBuff: {
+		DisplayName: Soul Skip
+		Description: Double-tap left or right to surge forward
+	}
+
+	SoulFlightBuff: {
+		DisplayName: Soul Flight
+		Description: Double-tap left or right to become a freely moving soul
+	}
+
+	SoulLightBuff: {
+		DisplayName: Soul Light
+		Description: Teal light surrounds you
 	}
 }
 
@@ -344,3 +393,8 @@ Items: {
 }
 
 DeathMessage.BorrowedSentence: "{0} was claimed by a borrowed sentence."
+
+Keybinds: {
+	"Soulspell Book.DisplayName": Soulspell Book
+	"Soulspell Stance.DisplayName": Soulspell Stance
+}
