@@ -7,6 +7,7 @@ using SoulsOfTerra.Common;
 using SoulsOfTerra.Content.Tiles;
 using SoulsOfTerra.Players;
 using Terraria;
+using Terraria.Audio;
 using Terraria.DataStructures;
 using Terraria.GameContent;
 using Terraria.GameContent.UI.Elements;
@@ -57,13 +58,18 @@ public sealed class GraftingAltarSystem : ModSystem
 		graftingInterface.SetState(graftingState);
 	}
 
-	public static void Close() => graftingInterface?.SetState(null);
+	public static void Close()
+	{
+		MutationUIFrameRenderer.ResetInteraction();
+		graftingInterface?.SetState(null);
+	}
 
 	public override void UpdateUI(GameTime gameTime)
 	{
 		if (graftingInterface?.CurrentState is not null)
 		{
 			graftingInterface.Update(gameTime);
+			MutationUIFrameRenderer.Update(gameTime);
 		}
 	}
 
@@ -94,13 +100,14 @@ internal sealed class GraftingAltarState : UIState
 	private const float MinimumPanelHeight = 480f;
 	private const int CursorInventorySlot = 58;
 
-	private SoulMenuFramePanel panel;
+	private MutationPanelElement panel;
 	private UIText title;
 	private UIText subtitle;
 	private UIText insertInstruction;
 	private UIText removeInstruction;
-	private UITextPanel<string> closeButton;
+	private MutationCloseElement closeButton;
 	private readonly MutationSocketElement[] sockets = new MutationSocketElement[MutationPlayer.SlotCount];
+	private readonly MutationId[] previousMutations = new MutationId[MutationPlayer.SlotCount];
 	private MutationDetailsElement details;
 	private Point16 altarPosition;
 	private int selectedSlot = -1;
@@ -121,6 +128,7 @@ internal sealed class GraftingAltarState : UIState
 		altarPosition = topLeft;
 		RefreshLocalizedText();
 		SelectFirstOccupied();
+		SnapshotMutations();
 		ApplyLayout(force: true);
 	}
 
@@ -138,6 +146,7 @@ internal sealed class GraftingAltarState : UIState
 		}
 
 		ApplyLayout();
+		DetectMutationChanges();
 		RefreshSelection();
 		if (panel.ContainsPoint(Main.MouseScreen))
 		{
@@ -147,14 +156,10 @@ internal sealed class GraftingAltarState : UIState
 
 	private void CreatePanel()
 	{
-		panel = new SoulMenuFramePanel
-		{
-			BackgroundColor = SoullessUIPalette.Panel,
-			BorderColor = SoullessUIPalette.PanelBorder
-		};
+		panel = new MutationPanelElement();
 
 		title = new UIText(Localize("MutationTitle"), 1.05f);
-		title.Left.Set(22f, 0f);
+		title.Left.Set(28f, 0f);
 		title.Top.Set(14f, 0f);
 		panel.Append(title);
 
@@ -164,12 +169,10 @@ internal sealed class GraftingAltarState : UIState
 		subtitle.TextColor = SoullessUIPalette.TextSecondary;
 		panel.Append(subtitle);
 
-		closeButton = new UITextPanel<string>("×", 0.82f, false);
+		closeButton = new MutationCloseElement();
 		closeButton.Width.Set(34f, 0f);
 		closeButton.Height.Set(30f, 0f);
 		closeButton.Top.Set(12f, 0f);
-		closeButton.BackgroundColor = SoullessUIPalette.SurfaceRaised;
-		closeButton.BorderColor = SoullessUIPalette.Steel;
 		closeButton.OnMouseOver += (_, _) => SetCloseButtonHover(true);
 		closeButton.OnMouseOut += (_, _) => SetCloseButtonHover(false);
 		closeButton.OnLeftClick += (_, _) => GraftingAltarSystem.Close();
@@ -196,17 +199,15 @@ internal sealed class GraftingAltarState : UIState
 			sockets[slot] = new MutationSocketElement(slot);
 			sockets[slot].OnLeftClick += (_, _) => HandleSocketLeftClick(capturedSlot);
 			sockets[slot].OnRightClick += (_, _) => HandleSocketRightClick(capturedSlot);
+			sockets[slot].OnMouseOver += (_, _) => HandleSocketHover(capturedSlot, true);
+			sockets[slot].OnMouseOut += (_, _) => HandleSocketHover(capturedSlot, false);
 			panel.Append(sockets[slot]);
 		}
 	}
 
 	private void CreateDetails()
 	{
-		details = new MutationDetailsElement
-		{
-			BackgroundColor = SoullessUIPalette.SurfaceInset,
-			BorderColor = SoullessUIPalette.SteelMuted
-		};
+		details = new MutationDetailsElement();
 		panel.Append(details);
 	}
 
@@ -226,8 +227,10 @@ internal sealed class GraftingAltarState : UIState
 		currentPanelWidth = panelWidth;
 		currentPanelHeight = panelHeight;
 		// Compact widths preserve the three-column composition instead of covering the inventory.
-		panel.Left.Set(Math.Min(InventoryRight, virtualWidth - panelWidth - 12f), 0f);
-		panel.Top.Set(Math.Max(38f, (virtualHeight - panelHeight) * 0.5f), 0f);
+		float panelLeft = SnapEven(Math.Min(InventoryRight, virtualWidth - panelWidth - 12f));
+		float panelTop = SnapEven(Math.Max(38f, (virtualHeight - panelHeight) * 0.5f));
+		panel.Left.Set(panelLeft, 0f);
+		panel.Top.Set(panelTop, 0f);
 		panel.Width.Set(panelWidth, 0f);
 		panel.Height.Set(panelHeight, 0f);
 		closeButton.Left.Set(panelWidth - 52f, 0f);
@@ -248,6 +251,15 @@ internal sealed class GraftingAltarState : UIState
 		details.Width.Set(panelWidth - 40f, 0f);
 		details.Height.Set(panelHeight - 278f, 0f);
 		Recalculate();
+
+		Vector2[] centers = new Vector2[sockets.Length];
+		for (int slot = 0; slot < sockets.Length; slot++)
+		{
+			centers[slot] = new Vector2(socketsLeft + slot * (socketWidth + socketGap) + socketWidth * 0.5f,
+				128f + 37f);
+		}
+		MutationUIFrameRenderer.Configure(altarPosition, panelWidth, panelHeight, centers,
+			new Vector2(panelWidth - 35f, 27f));
 	}
 
 	private void HandleSocketLeftClick(int slot)
@@ -255,7 +267,7 @@ internal sealed class GraftingAltarState : UIState
 		MutationPlayer mutationPlayer = Main.LocalPlayer.GetModPlayer<MutationPlayer>();
 		if (!mutationPlayer.IsSlotAvailable(slot))
 		{
-			selectedSlot = slot;
+			SelectSlot(slot);
 			RefreshSelection();
 			return;
 		}
@@ -263,7 +275,7 @@ internal sealed class GraftingAltarState : UIState
 		Item held = Main.mouseItem;
 		if (held.IsAir)
 		{
-			selectedSlot = slot;
+			SelectSlot(slot);
 			RefreshSelection();
 			return;
 		}
@@ -288,7 +300,7 @@ internal sealed class GraftingAltarState : UIState
 			return;
 		}
 
-		selectedSlot = slot;
+		SelectSlot(slot);
 		RequestGraft(slot);
 		RefreshSelection();
 	}
@@ -371,8 +383,73 @@ internal sealed class GraftingAltarState : UIState
 
 	private void SetCloseButtonHover(bool hovered)
 	{
-		closeButton.BackgroundColor = hovered ? SoullessUIPalette.SurfaceHover : SoullessUIPalette.SurfaceRaised;
-		closeButton.BorderColor = hovered ? SoullessUIPalette.AccentHoverBorder : SoullessUIPalette.Steel;
+		closeButton.Hovered = hovered;
+		MutationUIFrameRenderer.SetCloseHovered(hovered);
+		if (hovered)
+		{
+			PlayTick(0.38f);
+		}
+	}
+
+	private void HandleSocketHover(int slot, bool hovered)
+	{
+		MutationUIFrameRenderer.SetHoveredSlot(hovered ? slot : -1);
+		if (hovered)
+		{
+			PlayTick(0.2f);
+		}
+	}
+
+	private void SelectSlot(int slot)
+	{
+		if (selectedSlot == slot)
+		{
+			return;
+		}
+
+		selectedSlot = slot;
+		MutationUIFrameRenderer.TriggerSelection(slot);
+		PlayTick(0.44f);
+	}
+
+	private void SnapshotMutations()
+	{
+		MutationPlayer mutationPlayer = Main.LocalPlayer.GetModPlayer<MutationPlayer>();
+		for (int slot = 0; slot < previousMutations.Length; slot++)
+		{
+			previousMutations[slot] = mutationPlayer.GetMutation(slot);
+		}
+	}
+
+	private void DetectMutationChanges()
+	{
+		MutationPlayer mutationPlayer = Main.LocalPlayer.GetModPlayer<MutationPlayer>();
+		for (int slot = 0; slot < previousMutations.Length; slot++)
+		{
+			MutationId current = mutationPlayer.GetMutation(slot);
+			MutationId previous = previousMutations[slot];
+			if (current == previous)
+			{
+				continue;
+			}
+
+			if (previous == MutationId.None && current != MutationId.None)
+			{
+				MutationUIFrameRenderer.TriggerInsertion(slot);
+				SoundEngine.PlaySound(SoundID.Item29 with { Volume = 0.32f, Pitch = 0.22f });
+			}
+			else if (previous != MutationId.None && current == MutationId.None)
+			{
+				MutationUIFrameRenderer.TriggerRemoval(slot);
+				SoundEngine.PlaySound(SoundID.Shatter with { Volume = 0.26f, Pitch = 0.18f });
+			}
+			previousMutations[slot] = current;
+		}
+	}
+
+	private static void PlayTick(float pitch)
+	{
+		SoundEngine.PlaySound(SoundID.MenuTick with { Volume = 0.2f, Pitch = pitch });
 	}
 
 	private void RefreshLocalizedText()
@@ -390,6 +467,35 @@ internal sealed class GraftingAltarState : UIState
 	}
 
 	private static string Localize(string key) => Language.GetTextValue($"Mods.SoulsOfTerra.UI.{key}");
+
+	private static float SnapEven(float value) => MathF.Round(value * 0.5f) * 2f;
+}
+
+internal sealed class MutationPanelElement : UIElement
+{
+	protected override void DrawSelf(SpriteBatch spriteBatch)
+	{
+		CalculatedStyle dimensions = GetDimensions();
+		Texture2D pixel = TextureAssets.MagicPixel.Value;
+		Rectangle panelArea = dimensions.ToRectangle();
+		// A quiet drop shadow separates the borderless panel from busy world backgrounds.
+		spriteBatch.Draw(pixel, new Rectangle(panelArea.X + 5, panelArea.Y + 7, panelArea.Width, panelArea.Height),
+			Color.Black * 0.32f);
+		spriteBatch.Draw(pixel, panelArea, SoullessUIPalette.Panel);
+		MutationUIFrameRenderer.Draw(spriteBatch, new Vector2(dimensions.X, dimensions.Y));
+	}
+}
+
+internal sealed class MutationCloseElement : UIElement
+{
+	public bool Hovered { get; set; }
+
+	protected override void DrawSelf(SpriteBatch spriteBatch)
+	{
+		CalculatedStyle dimensions = GetDimensions();
+		Color color = Hovered ? SoullessUIPalette.AccentText : SoullessUIPalette.TextSecondary;
+		Utils.DrawBorderString(spriteBatch, "×", dimensions.Center(), color, 0.82f, 0.5f, 0.5f);
+	}
 }
 
 internal sealed class MutationSocketElement : UIElement
@@ -413,7 +519,7 @@ internal sealed class MutationSocketElement : UIElement
 		bool occupied = MutationRegistry.TryGet(id, out MutationDefinition definition);
 		Rectangle socket = new((int)(dimensions.Center().X - SocketSize * 0.5f), (int)dimensions.Y,
 			SocketSize, SocketSize);
-		DrawSocket(spriteBatch, socket, available);
+		DrawSocketGround(spriteBatch, socket, available);
 
 		string label;
 		if (!available)
@@ -423,6 +529,10 @@ internal sealed class MutationSocketElement : UIElement
 		}
 		else if (occupied)
 		{
+			if (Selected || IsMouseHovering)
+			{
+				DrawItemGlow(spriteBatch, definition.EssenceItemType, socket.Center.ToVector2());
+			}
 			ImbuementSlotDrawing.DrawItem(spriteBatch, definition.EssenceItemType,
 				socket.Center.ToVector2(), 50f);
 			label = definition.DisplayName;
@@ -444,20 +554,40 @@ internal sealed class MutationSocketElement : UIElement
 		}
 	}
 
-	private void DrawSocket(SpriteBatch spriteBatch, Rectangle area, bool available)
+	private void DrawSocketGround(SpriteBatch spriteBatch, Rectangle area, bool available)
 	{
 		Texture2D pixel = TextureAssets.MagicPixel.Value;
-		Color border = Selected ? SoullessUIPalette.Accent
-			: IsMouseHovering ? SoullessUIPalette.AccentHoverBorder
-			: available ? SoullessUIPalette.Steel : SoullessUIPalette.SteelMuted;
-		Color fill = available ? SoullessUIPalette.Surface : SoullessUIPalette.SurfaceDisabled;
-		spriteBatch.Draw(pixel, area, border);
-		spriteBatch.Draw(pixel, new Rectangle(area.X + 3, area.Y + 3, area.Width - 6, area.Height - 6), fill);
+		Vector2 center = area.Center.ToVector2();
+		// Layered inset shadows suggest a drop area without enclosing it in a box.
+		spriteBatch.Draw(pixel, new Rectangle((int)center.X - 29, area.Y + 10, 58, 48),
+			Color.Black * (available ? 0.16f : 0.24f));
+		spriteBatch.Draw(pixel, new Rectangle((int)center.X - 25, area.Y + 14, 50, 40),
+			SoullessUIPalette.SurfaceInset * (available ? 0.38f : 0.24f));
+
+		int lineY = area.Bottom - 4;
+		Color lineColor = available ? SoullessUIPalette.SteelMuted : SoullessUIPalette.SteelLow;
+		spriteBatch.Draw(pixel, new Rectangle((int)center.X - 25, lineY, 50, 2), lineColor * 0.72f);
 		if (Selected)
 		{
-			// The inner hairline keeps selection legible behind bright Essence sprites.
-			spriteBatch.Draw(pixel, new Rectangle(area.X + 5, area.Y + 5, area.Width - 10, 1),
+			spriteBatch.Draw(pixel, new Rectangle((int)center.X - 32, lineY - 2, 64, 6),
+				SoullessUIPalette.Accent * 0.14f);
+			spriteBatch.Draw(pixel, new Rectangle((int)center.X - 26, lineY, 52, 2),
+				SoullessUIPalette.Accent);
+		}
+		else if (IsMouseHovering && available)
+		{
+			spriteBatch.Draw(pixel, new Rectangle((int)center.X - 25, lineY, 50, 2),
 				SoullessUIPalette.AccentMuted);
+		}
+	}
+
+	private static void DrawItemGlow(SpriteBatch spriteBatch, int itemType, Vector2 center)
+	{
+		for (int direction = 0; direction < 4; direction++)
+		{
+			Vector2 offset = (MathHelper.PiOver2 * direction).ToRotationVector2() * 2f;
+			ImbuementSlotDrawing.DrawItem(spriteBatch, itemType, center + offset, 50f,
+				SoullessUIPalette.Accent * 0.16f);
 		}
 	}
 
@@ -492,14 +622,14 @@ internal sealed class MutationSocketElement : UIElement
 	private static string Localize(string key) => Language.GetTextValue($"Mods.SoulsOfTerra.UI.{key}");
 }
 
-internal sealed class MutationDetailsElement : UIPanel
+internal sealed class MutationDetailsElement : UIElement
 {
 	public int SelectedSlot { get; set; } = -1;
 
 	protected override void DrawSelf(SpriteBatch spriteBatch)
 	{
-		base.DrawSelf(spriteBatch);
 		CalculatedStyle dimensions = GetDimensions();
+		DrawEffectWash(spriteBatch, dimensions);
 		DrawHeader(spriteBatch, dimensions);
 
 		MutationPlayer mutationPlayer = Main.LocalPlayer.GetModPlayer<MutationPlayer>();
@@ -529,7 +659,25 @@ internal sealed class MutationDetailsElement : UIPanel
 			new Vector2(dimensions.X + 14f, dimensions.Y + 11f), SoullessUIPalette.AccentMuted, 0.62f);
 		Texture2D pixel = TextureAssets.MagicPixel.Value;
 		spriteBatch.Draw(pixel, new Rectangle((int)dimensions.X + 14, (int)dimensions.Y + 38,
-			(int)dimensions.Width - 28, 1), SoullessUIPalette.SteelMuted);
+			92, 2), SoullessUIPalette.AccentBorder * 0.7f);
+	}
+
+	private static void DrawEffectWash(SpriteBatch spriteBatch, CalculatedStyle dimensions)
+	{
+		Texture2D pixel = TextureAssets.MagicPixel.Value;
+		// Stepped transparency becomes a soft pixel gradient without enclosing the content.
+		for (int band = 0; band < 7; band++)
+		{
+			int inset = band * 6;
+			int width = Math.Max(0, (int)dimensions.Width - inset * 2);
+			if (width <= 0)
+			{
+				break;
+			}
+			spriteBatch.Draw(pixel, new Rectangle((int)dimensions.X + inset,
+				(int)dimensions.Y + 43 + band * 5, width, 9),
+				SoullessUIPalette.AccentSurface * (0.055f - band * 0.006f));
+		}
 	}
 
 	private static void DrawMutationDetails(SpriteBatch spriteBatch, CalculatedStyle dimensions,
