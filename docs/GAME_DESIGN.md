@@ -70,7 +70,7 @@ Souls are not a permanent-stat currency. Their principal uses are:
 - Purchasing access items from Soulless.
 - Tempering the Terra Blade Fragment after major progression milestones.
 - Condensing souls into boss-specific crafting essences.
-- Fueling Stance soulspells such as Soul Light, as a repeatable throughout-game sink.
+- Fueling Stance soulspells such as Shine, as a repeatable throughout-game sink.
 - Eventually funding other equipment, utilities, rituals, and content that respect Terraria's normal progression.
 
 Soul costs should provide a reason to fight and farm without forcing one optimal enemy farm. Major Temper increases initially target roughly half of the relevant boss's reward; exact values remain balance knobs and must be evaluated in playtesting.
@@ -136,13 +136,13 @@ Current costs and equipment statistics are prototypes, not final balance.
 
 ## Soulspells
 
-Soulspells are a player-held rite list, not fireballs. A Spellbook keybind opens one page with two bands. An Always band holds free spells that stay on without Stance. A Stance keybind turns every checked paid spell on or off together as buffs. Paid spells drain a fixed souls-per-interval that never scales with Temper; the sum of checked paid spells is the price, with no slot cap. Live edits apply immediately.
+Soulspells are a player-held rite list, not fireballs. A Spellbook keybind opens paged two-page spreads. An Always band holds free spells that stay on without Stance. A Stance keybind turns every checked paid spell on or off together as buffs. Paid spells drain a fixed souls-per-interval that never scales with Temper; the sum of checked paid spells is the price, with no slot cap. Live edits apply immediately.
 
 Soul Skip and Soul Flight are mutually exclusive free dash choices, though both may be disabled. Soul Flight transforms a horizontal double-tap into two seconds of tile-colliding four-direction flight using the collectible-soul appearance. The form preserves momentum into and out of flight, cannot use items, deal damage, or take damage, then enters a shared three-second dash cooldown.
 
-Soul Skip is the first Always spell: a double-tap surge that preserves vertical momentum, eases back into player control, grants brief i-frames, and deals no ram damage. Copies of the player's actual appearance form an abandoned soul and staggered catching-up silhouettes, accompanied by converging fragments and a full-height torn pixelated wake. They reunite precisely when the surge ends in a jagged double ring, radial cuts, soul sparks, and a restrained camera kick; the wake then burns forward from the cast origin. It is free and on by default from spawn. Soul Light is the first paid spell: Shine-class teal light, checked by default, Stance off by default, 1 soul every 5 seconds, charged after each 5 seconds of Stance time rather than up front. Stance requires at least 1 soul if any checked paid spell has a cost. Empty balance or death turns Stance off; Always spells are unaffected. Empty categories stay hidden.
+Soul Skip is the first Always spell: a double-tap surge that preserves vertical momentum, eases back into player control, grants brief i-frames, and deals no ram damage. Copies of the player's actual appearance form an abandoned soul and staggered catching-up silhouettes, accompanied by converging fragments and a full-height torn pixelated wake. They reunite precisely when the surge ends in a jagged double ring, radial cuts, soul sparks, and a restrained camera kick; the wake then burns forward from the cast origin. It is free and on by default from spawn. Shine is learned and checked by default, uses the exact vanilla Shine buff, drains 0.08 souls per second, and teaches Stance before the apparatus is acquired. Stance requires at least 1 soul if any checked paid spell has a cost. Empty balance or death turns Stance off; Always spells are unaffected. Empty categories stay hidden.
 
-Potion-dissolve into permanent paid soulspells is intended later and is not part of the first slice.
+After the Eye of Cthulhu, Soulless sells unlimited Soul Apparatuses for 1,000 souls. Its catalogue shows every supported potion recipe as Potion + one specific Boss Essence → buff-named soulspell. A ready recipe opens a focused dissolution ritual; both items are consumed immediately and the spell is permanently learned, unchecked, for that character. Learned rows disable permanently. Recipes cover vanilla drinkable timed positive buff potions and exclude recovery potions, food, flasks, teleportation, permanent upgrades, and thrown potions. The resulting soulspell and an ordinary potion share the same vanilla buff ID, so their effects cannot stack.
 
 ## The Buried Court and The Sealed Congregation
 

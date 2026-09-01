@@ -92,7 +92,9 @@ public class ImbuementOrbitSoulRenderer : ModSystem
 	{
 		orig();
 		hasContent = false;
-		if (Main.gameMenu || atlas is null || atlas.IsDisposed || !SoulMenuSystem.IsImbuementResonating())
+		// Both stations use the same resonant soul animation and render target.
+		bool isResonating = SoulMenuSystem.IsImbuementResonating() || SoulApparatusSystem.IsDissolutionResonating();
+		if (Main.gameMenu || atlas is null || atlas.IsDisposed || !isResonating)
 		{
 			return;
 		}

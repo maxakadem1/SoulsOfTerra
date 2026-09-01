@@ -9,7 +9,6 @@ UI: {
 	SoulspellOn: On
 	SoulspellOff: Off
 	SoulspellFree: Free
-	SoulspellCostInterval: 1 soul every {0} seconds
 	SoulspellDrainPerSecond: "{0} souls/sec"
 	SoulspellNoDrain: No drain
 	SoulspellEmptyNow: Empty now
@@ -29,13 +28,15 @@ UI: {
 	SoulspellDashDescription: Double-tap to surge forward and leave a chasing soul echo
 	SoulspellFlightName: Soul Flight
 	SoulspellFlightDescription: Double-tap left or right to fly as a soul for 2 seconds; cannot use items, take damage, or deal damage
-	SoulspellLightName: Soul Light
-	SoulspellLightDescription: Teal light while Stance is on
 
 	SoulspellCategory: {
 		Exploration: Exploration
 		Combat: Combat
+		Gathering: Gathering
+		Building: Building
 	}
+
+	SoulspellCostInterval: 1 soul every {0} seconds
 }
 
 Dialogue: {
@@ -103,6 +104,7 @@ Projectiles: {
 	StarsOfRuinCastProjectile.DisplayName: Stars of Ruin
 	StarsOfRuinStarProjectile.DisplayName: Ruinous Star
 	SoulBloodstainRecoveryProjectile.DisplayName: Soul Bloodstain Recovery Projectile
+	SoulspellDissolutionRitualProjectile.DisplayName: Soulspell Dissolution
 	UnkemptHaroldGyrojetProjectile.DisplayName: Gyrojet
 	UnkemptHaroldExplosionProjectile.DisplayName: Gyrojet Burst
 }
@@ -121,11 +123,6 @@ Buffs: {
 	SoulFlightBuff: {
 		DisplayName: Soul Flight
 		Description: Double-tap left or right to become a freely moving soul
-	}
-
-	SoulLightBuff: {
-		DisplayName: Soul Light
-		Description: Teal light surrounds you
 	}
 }
 
@@ -154,10 +151,16 @@ NPCs: {
 Tiles: {
 	SoulShrineTile.MapEntry: Warden's Reliquary
 	TerraforgeTile.MapEntry: Terraforge
+	SoulApparatusTile.MapEntry: Soul Apparatus
 	CourtBrickUnsafe.MapEntry: Court Brick Unsafe
 }
 
 Items: {
+	SoulApparatusItem: {
+		DisplayName: Soul Apparatus
+		Tooltip: Dissolves potions and boss essences into permanent soulspells
+	}
+
 	PulsingBait: {
 		DisplayName: Pulsing Bait
 		Tooltip: Summons The Soul Eater at night on the Surface
