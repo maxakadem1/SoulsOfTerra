@@ -99,6 +99,8 @@
 - Breaker recalls spin through terrain, hit each non-host enemy once at 70% damage, and extract from a living lodged host for a separate 125% hit.
 - Servant's Gaze binding consumes one Ruby Staff and one Eye Essence.
 - Servant's Gaze releases three custom-art harmless eye servants that awaken after one second, independently home through terrain, and rupture into small damaging gore bursts.
+- Carrion Call binding consumes one Musket and one Eater of Worlds Essence.
+- Carrion Call throws slow Worm Food bait that sticks to the first enemy or sits on a tile, then a boss-scale Eater rises from below in one frozen dive; each enemy is scraped once, a remaining tagged host takes a 1.75× chomp, and a floor meal bursts smaller. No ammo.
 
 ### Buried Court and Sealed Congregation
 
@@ -197,11 +199,12 @@ These values have not been reconciled with measured boss rewards and are deliber
 19. Imbue Muramasa into Unison; confirm the clap animation, a closed expanding ring with no safe gaps, one hit per enemy, knockback away from the smash, and that a second clap cannot start until the ring ends.
 20. Imbue Essencebound Breaker Blade; throw five straight blades, lodge several in one enemy and terrain, recall all at once, and verify extraction, one return hit per enemy per blade, terrain piercing, distance recall, death recall, and weapon-switch recall.
 21. Imbue a Handgun into Crux; confirm a cursor-locked X that writes inward and knots, both arms hit once, bullets are consumed, and a second volley cannot start until the first ends.
-22. Imbue a Magic Missile into Stars of Ruin; confirm the staff waves, twelve stars gather at its tip, lock one visible NPC near the cursor, launch rapidly from that shared origin into six mirrored curve pairs filling both sides of the aim line, begin homing only after the bouquet forms, collide with terrain, and continue without retargeting if their target dies; mana is consumed once per verse, and a second verse cannot start until the conductor ends.
-23. Die with low, medium, and high soul balances; verify capped bloodstain tiers, grounded rendering, hover and Smart Interact response, immediate recovery, collapse and burst feedback, second-death replacement, save/reload persistence, and multiplayer recovery synchronization.
-24. Open the spellbook, confirm Soul Skip on and Shine checked, double-tap to surge without ram damage, press Stance with 0 souls and confirm it fails, collect souls, hold Stance and confirm the displayed 0.08 souls-per-second drain uses the vanilla Shine effect.
-25. Uncheck Light while Stance is on, confirm drain stops, die with Stance on, and confirm Soul Skip remains available after respawn.
-26. Select Soul Flight and confirm Soul Skip unchecks; double-tap left or right while running, steer with movement or Jump, collide with tiles, take and deal no damage for two seconds, preserve exit momentum, then verify neither dash can activate during the shared three-second cooldown.
+22. Imbue a Musket into Carrion Call; throw bait onto an enemy and onto a tile, confirm the rumble, one boss-scale rise-and-dive from below, underground scrapes, one hit per enemy, a 1.75× chomp on a still-tagged host, a smaller burst on a floor meal, a miss when the host walks out, no ammo, and that a second slow throw can start while the first worm is still diving.
+23. Imbue a Magic Missile into Stars of Ruin; confirm the staff waves, twelve stars gather at its tip, lock one visible NPC near the cursor, launch rapidly from that shared origin into six mirrored curve pairs filling both sides of the aim line, begin homing only after the bouquet forms, collide with terrain, and continue without retargeting if their target dies; mana is consumed once per verse, and a second verse cannot start until the conductor ends.
+24. Die with low, medium, and high soul balances; verify capped bloodstain tiers, grounded rendering, hover and Smart Interact response, immediate recovery, collapse and burst feedback, second-death replacement, save/reload persistence, and multiplayer recovery synchronization.
+25. Open the spellbook, confirm Soul Skip on and Shine checked, double-tap to surge without ram damage, press Stance with 0 souls and confirm it fails, collect souls, hold Stance and confirm the displayed 0.08 souls-per-second drain uses the vanilla Shine effect.
+26. Uncheck Light while Stance is on, confirm drain stops, die with Stance on, and confirm Soul Skip remains available after respawn.
+27. Select Soul Flight and confirm Soul Skip unchecks; double-tap left or right while running, steer with movement or Jump, collide with tiles, take and deal no damage for two seconds, preserve exit momentum, then verify neither dash can activate during the shared three-second cooldown.
 
 ## Near-term implementation backlog
 

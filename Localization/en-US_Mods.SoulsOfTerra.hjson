@@ -107,6 +107,9 @@ Projectiles: {
 	SoulspellDissolutionRitualProjectile.DisplayName: Soulspell Dissolution
 	UnkemptHaroldGyrojetProjectile.DisplayName: Gyrojet
 	UnkemptHaroldExplosionProjectile.DisplayName: Gyrojet Burst
+	CarrionCallBaitProjectile.DisplayName: Carrion Meal
+	CarrionCallEaterProjectile.DisplayName: Called Eater
+	CarrionCallChompProjectile.DisplayName: Carrion Chomp
 }
 
 Buffs: {
@@ -202,6 +205,16 @@ Items: {
 			Marks the cursor with a crossed sentence
 			Both arms strike each enemy once
 			Uses bullets
+			'''
+	}
+
+	CarrionCall: {
+		DisplayName: Carrion Call
+		Tooltip:
+			'''
+			Throws a meal that calls an Eater of Worlds from below
+			The worm makes one frozen rise and dive through the bait
+			Each enemy is scraped once; eating a tagged meal bites harder
 			'''
 	}
 

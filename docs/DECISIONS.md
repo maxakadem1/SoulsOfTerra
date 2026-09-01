@@ -115,6 +115,13 @@
 | Stars of Ruin combat | Click locks one visible NPC near the cursor; twelve sapphire-white stars gather at one wand-tip origin, follow six mirrored pairs of nested cubic lanes to form a complete teardrop bouquet, then begin homing. | Reproduces the source spell's two-sided parallel arcs without collapsing the stars into one line or leaving half of the bouquet empty. |
 | Compeditus combat | Non-contact seals perform a staggered lance verse followed by a localized implosion judgment; the formation crosses terrain but attacks require line of sight. | Provides reliable summon damage and a coordinated payoff without enabling passive through-wall farming. |
 
+## Eater of Worlds
+
+| Topic | Decision | Reason |
+|---|---|---|
+| Ranged reward | Musket + Eater of Worlds Essence produces Carrion Call, a slow thrown meal that calls a boss-scale Eater dive. | Uses the Shadow Orb gun as the sacrifice while the held identity is Worm Food bait. |
+| Carrion Call combat | Bait sticks to the first enemy or sits on a tile; after a rumble a frozen rise-and-dive comes from below, through the meal, then buries. Contact hits in air and tiles. One scrape per enemy per worm. A still-tagged host takes a 1.75× chomp; a floor meal makes a smaller burst. Misses get no bonus and the bait still vanishes. No ammo. Multiple hunts are allowed; throw speed is very slow. | Turns Worm Food into a readable hunt instead of a homing worm or a delayed javelin. |
+
 ## Essence imbuement catalogue
 
 | Topic | Decision | Reason |
@@ -126,7 +133,7 @@
 | Ritual presentation | The ready recipe opens a centered, mostly frameless canvas over the visible world, with an authored weapon frame, orbiting pickup-soul visuals, pixel-grid soul currents, and compact Back and Bind controls. | Reuses the soul economy's strongest visual identity while keeping the Terraforge and surrounding world visible. |
 | Ritual completion | Successful binding returns to the recipe catalogue; the focused screen also provides Back to Recipes. | Keeps repeated bindings and cancellation predictable without exposing an empty ritual screen. |
 | Imbuement cost | One valid base weapon and one matching essence, with no additional materials. | The expensive essence already carries the soul and progression cost. |
-| Current bindings | Any Copper-through-Platinum broadsword + Slime Essence; Ruby Staff + Eye Essence; Breaker Blade + Wall of Flesh Essence; Imp Staff + Congregation Essence; Muramasa + Congregation Essence; Handgun + Congregation Essence; Magic Missile + Congregation Essence (Stars of Ruin); Diamond Staff + Moon Lord Essence. | Establishes flexible early bases and precise thematic bases where desired. |
+| Current bindings | Any Copper-through-Platinum broadsword + Slime Essence; Ruby Staff + Eye Essence; Musket + Eater of Worlds Essence (Carrion Call); Breaker Blade + Wall of Flesh Essence; Imp Staff + Congregation Essence; Muramasa + Congregation Essence; Handgun + Congregation Essence; Magic Missile + Congregation Essence (Stars of Ruin); Diamond Staff + Moon Lord Essence; Venus Magnum + Moon Lord Essence. | Establishes flexible early bases and precise thematic bases where desired. |
 | Future enforcement | Every mod weapon inherits `ImbuementWeaponItem`, must be a registry output, and may not have a conventional recipe. | Turns the design rule into a load-time invariant instead of documentation alone. |
 
 ## Soulspells
