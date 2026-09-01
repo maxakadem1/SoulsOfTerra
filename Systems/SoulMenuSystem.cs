@@ -57,6 +57,7 @@ public class SoulMenuSystem : ModSystem
 
 		menuState.ConfigureSoulless(npcIndex);
 		soulInterface.SetState(menuState);
+		SoulSpellBookSystem.Close();
 	}
 
 	public static void OpenTerraforge(Point16 terraforgePosition)
@@ -68,6 +69,7 @@ public class SoulMenuSystem : ModSystem
 
 		menuState.ConfigureTerraforge(terraforgePosition);
 		soulInterface.SetState(menuState);
+		SoulSpellBookSystem.Close();
 	}
 
 	public static void Close()

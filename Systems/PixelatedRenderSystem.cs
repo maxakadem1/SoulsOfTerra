@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using SoulsOfTerra.Common.Rendering;
+using SoulsOfTerra.Players;
 using Terraria;
 using Terraria.ModLoader;
 
@@ -136,6 +137,15 @@ public class PixelatedRenderSystem : ModSystem
 			if (projectile.ModProjectile is IPixelatedDrawable drawable)
 			{
 				DrawQueue.Add(drawable);
+			}
+		}
+
+		foreach (Player player in Main.ActivePlayers)
+		{
+			SoulSpellPlayer spellPlayer = player.GetModPlayer<SoulSpellPlayer>();
+			if (spellPlayer.HasDashVisual)
+			{
+				DrawQueue.Add(spellPlayer);
 			}
 		}
 	}

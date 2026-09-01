@@ -23,7 +23,12 @@ public enum SoulMessageType : byte
 	RequestTerraforgeFormation,
 	TerraforgeFormationFailed,
 	RequestWardenFragmentPurchase,
-	RequestCongregationSummon
+	RequestCongregationSummon,
+	RequestSoulSpellStance,
+	RequestSoulSpellToggle,
+	SyncSoulSpellState,
+	RequestSoulFlight,
+	SyncSoulFlight
 }
 
 public class SoulsOfTerra : Mod
@@ -32,6 +37,37 @@ public class SoulsOfTerra : Mod
 	{
 		("UI.RecoverBloodstain", "Right-click to recover {0} souls"),
 		("UI.Commune", "Commune"),
+		("UI.SoulspellAlwaysHeader", "Always"),
+		("UI.SoulspellStanceHeader", "Stance"),
+		("UI.SoulspellStanceOn", "Stance on  •  {0} souls"),
+		("UI.SoulspellStanceOff", "Stance off  •  {0} souls"),
+		("UI.SoulspellOn", "On"),
+		("UI.SoulspellOff", "Off"),
+		("UI.SoulspellFree", "Free"),
+		("UI.SoulspellCostInterval", "1 soul every {0} seconds"),
+		("UI.SoulspellDrainPerSecond", "{0} souls/sec"),
+		("UI.SoulspellNoDrain", "No drain"),
+		("UI.SoulspellEmptyNow", "Empty now"),
+		("UI.SoulspellEmptyInSeconds", "{0}s"),
+		("UI.SoulspellEmptyInMinutes", "{0}m {1}s"),
+		("UI.SoulspellEmptyInHours", "{0}h {1}m"),
+		("UI.SoulspellEmptyInDays", "{0}d {1}h"),
+		("UI.SoulspellDrainFooter", "Drain: {0}"),
+		("UI.SoulspellEmptyFooter", "Empty in: {0}"),
+		("UI.SoulspellFooterStance", "STANCE"),
+		("UI.SoulspellFooterSouls", "SOULS"),
+		("UI.SoulspellFooterDrain", "DRAIN"),
+		("UI.SoulspellFooterRuntime", "RUNTIME"),
+		("UI.SoulspellNeedSouls", "You need at least 1 soul to hold Stance."),
+		("UI.SoulspellDraining", "Draining"),
+		("UI.SoulspellDashName", "Soul Skip"),
+		("UI.SoulspellDashDescription", "Double-tap to surge forward and leave a chasing soul echo"),
+		("UI.SoulspellFlightName", "Soul Flight"),
+		("UI.SoulspellFlightDescription", "Double-tap left or right to fly as a soul for 2 seconds; cannot use items, take damage, or deal damage"),
+		("UI.SoulspellLightName", "Soul Light"),
+		("UI.SoulspellLightDescription", "Teal light while Stance is on"),
+		("UI.SoulspellCategory.Exploration", "Exploration"),
+		("UI.SoulspellCategory.Combat", "Combat"),
 		("Dialogue.Soulless.Introduction", "So another bearer wakes. Keep close the souls you gather; death is eager to loosen your grasp."),
 		("Dialogue.Soulless.BloodstainHint", "What spills from you does not vanish. Return to the stain, reach into it, and take back what remains."),
 		("Dialogue.Soulless.AfterKingSlime", "Even a crown of gel leaves an echo. The Terraforge can press that echo into useful form."),
@@ -92,6 +128,21 @@ public class SoulsOfTerra : Mod
 				break;
 			case SoulMessageType.RequestCongregationSummon:
 				HandleCongregationSummon(reader, whoAmI);
+				break;
+			case SoulMessageType.RequestSoulSpellStance:
+				SoulSpellPlayer.HandleStanceRequest(reader, whoAmI);
+				break;
+			case SoulMessageType.RequestSoulSpellToggle:
+				SoulSpellPlayer.HandleToggleRequest(reader, whoAmI);
+				break;
+			case SoulMessageType.SyncSoulSpellState:
+				SoulSpellPlayer.HandleStateSync(reader);
+				break;
+			case SoulMessageType.RequestSoulFlight:
+				SoulSpellPlayer.HandleSoulFlightRequest(reader, whoAmI);
+				break;
+			case SoulMessageType.SyncSoulFlight:
+				SoulSpellPlayer.HandleSoulFlightSync(reader);
 				break;
 		}
 	}

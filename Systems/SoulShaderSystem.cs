@@ -9,6 +9,7 @@ public class SoulShaderSystem : ModSystem
 {
 	private static Asset<Effect> bloodstainEffect;
 	private static Asset<Effect> soulEaterCoreEffect;
+	private static Asset<Effect> dashWakeEffect;
 
 	public override void Load()
 	{
@@ -16,6 +17,7 @@ public class SoulShaderSystem : ModSystem
 		{
 			bloodstainEffect = Mod.Assets.Request<Effect>("Effects/SoulBloodstain", AssetRequestMode.ImmediateLoad);
 			soulEaterCoreEffect = Mod.Assets.Request<Effect>("Effects/SoulEaterCore", AssetRequestMode.ImmediateLoad);
+			dashWakeEffect = Mod.Assets.Request<Effect>("Effects/SoulDashWake", AssetRequestMode.ImmediateLoad);
 		}
 	}
 
@@ -23,6 +25,7 @@ public class SoulShaderSystem : ModSystem
 	{
 		bloodstainEffect = null;
 		soulEaterCoreEffect = null;
+		dashWakeEffect = null;
 	}
 
 	public static Effect GetBloodstainEffect()
@@ -33,6 +36,11 @@ public class SoulShaderSystem : ModSystem
 	public static Effect GetSoulEaterCoreEffect()
 	{
 		return !Main.dedServ && soulEaterCoreEffect is not null ? soulEaterCoreEffect.Value : null;
+	}
+
+	public static Effect GetDashWakeEffect()
+	{
+		return !Main.dedServ && dashWakeEffect is not null ? dashWakeEffect.Value : null;
 	}
 
 	public static void ConfigureSoulEaterCore(Texture2D texture, float time, float intensity)
@@ -61,5 +69,25 @@ public class SoulShaderSystem : ModSystem
 		effect.Parameters["bloodstainSeed"].SetValue(seed);
 		effect.Parameters["bloodstainReactive"].SetValue(reactive);
 		effect.CurrentTechnique.Passes["BloodstainPass"].Apply();
+	}
+
+	public static bool ApplyDashWake(float intensity, float snapFlash, float alongStart, float alongEnd, float time,
+		float seed, float mode)
+	{
+		Effect effect = GetDashWakeEffect();
+		if (effect is null)
+		{
+			return false;
+		}
+
+		effect.Parameters["wakeIntensity"].SetValue(intensity);
+		effect.Parameters["snapFlash"].SetValue(snapFlash);
+		effect.Parameters["alongStart"].SetValue(alongStart);
+		effect.Parameters["alongEnd"].SetValue(alongEnd);
+		effect.Parameters["wakeTime"].SetValue(time);
+		effect.Parameters["wakeSeed"].SetValue(seed);
+		effect.Parameters["wakeMode"].SetValue(mode);
+		effect.CurrentTechnique.Passes["WakePass"].Apply();
+		return true;
 	}
 }
