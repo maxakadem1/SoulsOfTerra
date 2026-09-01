@@ -59,6 +59,7 @@ public class SoulMenuSystem : ModSystem
 		soulInterface.SetState(menuState);
 		SoulSpellBookSystem.Close();
 		SoulApparatusSystem.Close();
+		GraftingAltarSystem.Close();
 	}
 
 	public static void OpenTerraforge(Point16 terraforgePosition)
@@ -72,6 +73,7 @@ public class SoulMenuSystem : ModSystem
 		soulInterface.SetState(menuState);
 		SoulSpellBookSystem.Close();
 		SoulApparatusSystem.Close();
+		GraftingAltarSystem.Close();
 	}
 
 	public static void Close()
@@ -215,6 +217,7 @@ internal sealed class SoulMenuState : UIState
 	private SoulActionRow secondaryRow;
 	private SoulActionRow tertiaryRow;
 	private SoulActionRow quaternaryRow;
+	private SoulActionRow graftingRow;
 	private UITextPanel<string> servicesTabButton;
 	private UITextPanel<string> crystalsTabButton;
 	private UITextPanel<string> condensationTabButton;
@@ -271,8 +274,8 @@ internal sealed class SoulMenuState : UIState
 		// Shop-style placement keeps the world and player visible during interaction.
 		panel.Left.Set(36f, 0f);
 		panel.VAlign = 0.5f;
-		panel.BackgroundColor = new Color(17, 22, 28, 245);
-		panel.BorderColor = new Color(76, 111, 103, 255);
+		panel.BackgroundColor = SoullessUIPalette.Panel;
+		panel.BorderColor = SoullessUIPalette.PanelBorder;
 		Append(panel);
 
 		title = new UIText(string.Empty, 1.05f);
@@ -283,14 +286,14 @@ internal sealed class SoulMenuState : UIState
 		subtitle = new UIText(string.Empty, 0.72f);
 		subtitle.Left.Set(21f, 0f);
 		subtitle.Top.Set(43f, 0f);
-		subtitle.TextColor = new Color(154, 177, 169);
+		subtitle.TextColor = SoullessUIPalette.TextSecondary;
 		panel.Append(subtitle);
 
 		balance = new UIText(string.Empty, 0.82f);
 		balance.HAlign = 1f;
 		balance.Left.Set(-20f, 0f);
 		balance.Top.Set(22f, 0f);
-		balance.TextColor = new Color(180, 238, 210);
+		balance.TextColor = SoullessUIPalette.AccentText;
 		panel.Append(balance);
 
 		primaryRow = CreateRow(78f);
@@ -301,6 +304,8 @@ internal sealed class SoulMenuState : UIState
 		tertiaryRow.SetAction(UseQuaternaryAction);
 		quaternaryRow = CreateRow(348f);
 		quaternaryRow.SetAction(UseTertiaryAction);
+		graftingRow = CreateRow(438f);
+		graftingRow.SetAction(UseGraftingAltarAction);
 		CreateSoullessTabs();
 		CreateTerraforgeTabs();
 		CreateEssenceCatalogue();
@@ -311,7 +316,7 @@ internal sealed class SoulMenuState : UIState
 		feedback = new UIText(string.Empty, 0.72f);
 		feedback.HAlign = 0.5f;
 		feedback.Top.Set(266f, 0f);
-		feedback.TextColor = new Color(205, 220, 212);
+		feedback.TextColor = SoullessUIPalette.TextPrimary;
 		panel.Append(feedback);
 
 		closeButton = new UITextPanel<string>("Close", 0.72f, false);
@@ -319,10 +324,18 @@ internal sealed class SoulMenuState : UIState
 		closeButton.Height.Set(32f, 0f);
 		closeButton.HAlign = 0.5f;
 		closeButton.Top.Set(294f, 0f);
-		closeButton.BackgroundColor = new Color(48, 58, 66);
-		closeButton.BorderColor = new Color(83, 103, 99);
-		closeButton.OnMouseOver += (_, _) => closeButton.BackgroundColor = new Color(65, 82, 79);
-		closeButton.OnMouseOut += (_, _) => closeButton.BackgroundColor = new Color(48, 58, 66);
+		closeButton.BackgroundColor = SoullessUIPalette.SurfaceRaised;
+		closeButton.BorderColor = SoullessUIPalette.Steel;
+		closeButton.OnMouseOver += (_, _) =>
+		{
+			closeButton.BackgroundColor = SoullessUIPalette.SurfaceHover;
+			closeButton.BorderColor = SoullessUIPalette.AccentHoverBorder;
+		};
+		closeButton.OnMouseOut += (_, _) =>
+		{
+			closeButton.BackgroundColor = SoullessUIPalette.SurfaceRaised;
+			closeButton.BorderColor = SoullessUIPalette.Steel;
+		};
 		closeButton.OnLeftClick += (_, _) => SoulMenuSystem.Close();
 		panel.Append(closeButton);
 	}
@@ -401,7 +414,7 @@ internal sealed class SoulMenuState : UIState
 	{
 		ShowFramedPanel();
 		panel.RemoveAllChildren();
-		panel.Height.Set(soullessTab == SoullessTab.Services ? 580f : 400f, 0f);
+		panel.Height.Set(soullessTab == SoullessTab.Services ? 670f : 400f, 0f);
 		panel.Append(title);
 		panel.Append(subtitle);
 		panel.Append(balance);
@@ -412,11 +425,13 @@ internal sealed class SoulMenuState : UIState
 			primaryRow.Top.Set(108f, 0f);
 			secondaryRow.Top.Set(198f, 0f);
 			tertiaryRow.Top.Set(288f, 0f);
-			quaternaryRow.Top.Set(378f, 0f);
+			graftingRow.Top.Set(378f, 0f);
+			quaternaryRow.Top.Set(468f, 0f);
 			panel.Append(primaryRow);
 			panel.Append(secondaryRow);
 			panel.Append(tertiaryRow);
 			panel.Append(quaternaryRow);
+			panel.Append(graftingRow);
 		}
 		else
 		{
@@ -428,9 +443,9 @@ internal sealed class SoulMenuState : UIState
 			panel.Append(condenseButton);
 		}
 
-		feedback.Top.Set(soullessTab == SoullessTab.Services ? 506f : 326f, 0f);
+		feedback.Top.Set(soullessTab == SoullessTab.Services ? 596f : 326f, 0f);
 		panel.Append(feedback);
-		closeButton.Top.Set(soullessTab == SoullessTab.Services ? 538f : 358f, 0f);
+		closeButton.Top.Set(soullessTab == SoullessTab.Services ? 628f : 358f, 0f);
 		panel.Append(closeButton);
 		ApplySoullessTabStyles();
 	}
@@ -559,8 +574,8 @@ internal sealed class SoulMenuState : UIState
 		essenceDetails.Height.Set(82f, 0f);
 		essenceDetails.Left.Set(16f, 0f);
 		essenceDetails.Top.Set(204f, 0f);
-		essenceDetails.BackgroundColor = new Color(25, 32, 39, 245);
-		essenceDetails.BorderColor = new Color(64, 86, 82);
+		essenceDetails.BackgroundColor = SoullessUIPalette.Surface;
+		essenceDetails.BorderColor = SoullessUIPalette.SteelMuted;
 
 		detailIcon = new SoulItemIcon();
 		detailIcon.Width.Set(52f, 0f);
@@ -577,7 +592,7 @@ internal sealed class SoulMenuState : UIState
 		detailDescription = new UIText(string.Empty, 0.64f);
 		detailDescription.Left.Set(68f, 0f);
 		detailDescription.Top.Set(34f, 0f);
-		detailDescription.TextColor = new Color(153, 172, 166);
+		detailDescription.TextColor = SoullessUIPalette.TextSecondary;
 		essenceDetails.Append(detailDescription);
 
 		detailCost = new UIText(string.Empty, 0.68f);
@@ -595,7 +610,8 @@ internal sealed class SoulMenuState : UIState
 		{
 			if (IsCurrentSelectionAvailable())
 			{
-				condenseButton.BackgroundColor = HasEnoughForCurrentSelection() ? new Color(55, 112, 91) : new Color(104, 65, 59);
+				condenseButton.BackgroundColor = HasEnoughForCurrentSelection()
+					? SoullessUIPalette.AccentSurfaceHover : SoullessUIPalette.WarningSurfaceHover;
 			}
 		};
 		condenseButton.OnMouseOut += (_, _) => ApplyCurrentActionButtonStyle();
@@ -717,6 +733,17 @@ internal sealed class SoulMenuState : UIState
 			keyUnlocked ? "Purchase" : "Locked",
 			keyUnlocked,
 			canAffordKey);
+
+		bool graftingUnlocked = NPC.downedSlimeKing || NPC.downedBoss1;
+		bool canAffordGraftingAltar = Main.LocalPlayer.GetModPlayer<SoulPlayer>().SoulBalance >= SoulTransactions.GraftingAltarCost;
+		graftingRow.SetContent(
+			ModContent.ItemType<GraftingAltarItem>(),
+			"Grafting Altar",
+			graftingUnlocked ? $"Embeds Essences into the body  •  {SoulTransactions.GraftingAltarCost:N0} souls"
+				: "Requires King Slime or Eye of Cthulhu",
+			graftingUnlocked ? "Purchase" : "Locked",
+			graftingUnlocked,
+			canAffordGraftingAltar);
 	}
 
 	private void RefreshCrystalContent()
@@ -745,7 +772,8 @@ internal sealed class SoulMenuState : UIState
 		detailName.SetText(selectedUnlocked ? $"{names[selectedCrystalIndex]} Soul Crystal" : "Unknown Crystal");
 		detailDescription.SetText(selectedUnlocked ? $"A tradable vessel containing {crystalValue:N0} souls." : "Soulless withholds this deeper art.");
 		detailCost.SetText(selectedUnlocked ? $"Cost: {conversionCost:N0} souls  •  Contains: {crystalValue:N0}" : GetSoulCrystalRequirement());
-		detailCost.TextColor = selectedUnlocked && !HasEnoughForSelectedCrystal() ? new Color(238, 154, 137) : new Color(180, 238, 210);
+		detailCost.TextColor = selectedUnlocked && !HasEnoughForSelectedCrystal()
+			? SoullessUIPalette.Warning : SoullessUIPalette.AccentText;
 		ApplyCurrentActionButtonStyle();
 	}
 
@@ -849,9 +877,9 @@ internal sealed class SoulMenuState : UIState
 	{
 		bool enabled = CanBindSelectedImbuement();
 		bindEssenceButton.SetText(enabled ? "Bind Essence" : "No Resonance");
-		bindEssenceButton.BackgroundColor = enabled ? new Color(29, 66, 61, 242) : new Color(31, 35, 39, 232);
-		bindEssenceButton.BorderColor = enabled ? new Color(87, 181, 153) : new Color(62, 68, 71);
-		bindEssenceButton.TextColor = enabled ? new Color(214, 249, 232) : new Color(125, 130, 132);
+		bindEssenceButton.BackgroundColor = enabled ? SoullessUIPalette.AccentSurface : SoullessUIPalette.SurfaceDisabled;
+		bindEssenceButton.BorderColor = enabled ? SoullessUIPalette.Accent : SoullessUIPalette.SteelMuted;
+		bindEssenceButton.TextColor = enabled ? SoullessUIPalette.AccentText : SoullessUIPalette.TextMuted;
 	}
 
 	private void UsePrimaryAction()
@@ -1016,7 +1044,7 @@ internal sealed class SoulMenuState : UIState
 		imbuementWeaponName = new UIText("Select Weapon", 0.57f);
 		imbuementWeaponName.HAlign = 0.5f;
 		imbuementWeaponName.VAlign = 0.5f;
-		imbuementWeaponName.TextColor = new Color(205, 220, 212);
+		imbuementWeaponName.TextColor = SoullessUIPalette.TextPrimary;
 		CreateRitualLabelPlate(imbuementWeaponName, 181f, 250f);
 
 		imbuementEssenceSocket = new ImbuementEssenceSocket();
@@ -1026,14 +1054,14 @@ internal sealed class SoulMenuState : UIState
 		imbuementEssenceName = new UIText("Select Essence", 0.54f);
 		imbuementEssenceName.HAlign = 0.5f;
 		imbuementEssenceName.VAlign = 0.5f;
-		imbuementEssenceName.TextColor = new Color(166, 190, 181);
+		imbuementEssenceName.TextColor = SoullessUIPalette.TextSecondary;
 		CreateRitualLabelPlate(imbuementEssenceName, 282f, 220f);
 
 		ritualBalance = new UIText(string.Empty, 0.64f);
 		ritualBalance.HAlign = 1f;
 		ritualBalance.Left.Set(-16f, 0f);
 		ritualBalance.Top.Set(18f, 0f);
-		ritualBalance.TextColor = new Color(167, 218, 198);
+		ritualBalance.TextColor = SoullessUIPalette.AccentMuted;
 
 		bindEssenceButton = new UITextPanel<string>("Bind Essence", 0.76f, false);
 		bindEssenceButton.Width.Set(178f, 0f);
@@ -1043,7 +1071,7 @@ internal sealed class SoulMenuState : UIState
 		{
 			if (CanBindSelectedImbuement())
 			{
-				bindEssenceButton.BackgroundColor = new Color(39, 91, 81, 248);
+				bindEssenceButton.BackgroundColor = SoullessUIPalette.AccentSurfaceHover;
 			}
 		};
 		bindEssenceButton.OnMouseOut += (_, _) => ApplyBindButtonStyle();
@@ -1066,10 +1094,18 @@ internal sealed class SoulMenuState : UIState
 		imbuementRecipesButton.Height.Set(36f, 0f);
 		imbuementRecipesButton.Left.Set(292f, 0f);
 		imbuementRecipesButton.Top.Set(68f, 0f);
-		imbuementRecipesButton.BackgroundColor = new Color(40, 54, 58);
-		imbuementRecipesButton.BorderColor = new Color(78, 105, 100);
-		imbuementRecipesButton.OnMouseOver += (_, _) => imbuementRecipesButton.BackgroundColor = new Color(54, 75, 74);
-		imbuementRecipesButton.OnMouseOut += (_, _) => imbuementRecipesButton.BackgroundColor = new Color(40, 54, 58);
+		imbuementRecipesButton.BackgroundColor = SoullessUIPalette.SurfaceRaised;
+		imbuementRecipesButton.BorderColor = SoullessUIPalette.Steel;
+		imbuementRecipesButton.OnMouseOver += (_, _) =>
+		{
+			imbuementRecipesButton.BackgroundColor = SoullessUIPalette.SurfaceHover;
+			imbuementRecipesButton.BorderColor = SoullessUIPalette.AccentHoverBorder;
+		};
+		imbuementRecipesButton.OnMouseOut += (_, _) =>
+		{
+			imbuementRecipesButton.BackgroundColor = SoullessUIPalette.SurfaceRaised;
+			imbuementRecipesButton.BorderColor = SoullessUIPalette.Steel;
+		};
 		imbuementRecipesButton.OnLeftClick += (_, _) => OpenImbuementRecipes();
 
 		imbuementRecipeContent = new UIElement();
@@ -1079,7 +1115,7 @@ internal sealed class SoulMenuState : UIState
 		imbuementRecipeContent.Top.Set(108f, 0f);
 
 		imbuementRecipeHint = new UIText("Select a complete recipe to begin its binding ritual.", 0.62f);
-		imbuementRecipeHint.TextColor = new Color(154, 177, 169);
+		imbuementRecipeHint.TextColor = SoullessUIPalette.TextSecondary;
 		imbuementRecipeContent.Append(imbuementRecipeHint);
 
 		imbuementRecipeListContainer = new UIElement();
@@ -1299,9 +1335,9 @@ internal sealed class SoulMenuState : UIState
 
 	private static void ApplyTabStyle(UITextPanel<string> button, bool selected)
 	{
-		button.BackgroundColor = selected ? new Color(42, 72, 65) : new Color(31, 39, 45);
-		button.BorderColor = selected ? new Color(117, 182, 151) : new Color(63, 76, 78);
-		button.TextColor = selected ? new Color(220, 244, 231) : new Color(154, 169, 165);
+		button.BackgroundColor = selected ? SoullessUIPalette.AccentSurface : SoullessUIPalette.SurfaceRaised;
+		button.BorderColor = selected ? SoullessUIPalette.Accent : SoullessUIPalette.SteelMuted;
+		button.TextColor = selected ? SoullessUIPalette.AccentText : SoullessUIPalette.TextSecondary;
 	}
 
 	private void ApplyCurrentActionButtonStyle()
@@ -1332,9 +1368,12 @@ internal sealed class SoulMenuState : UIState
 		}
 
 		condenseButton.SetText(actionText);
-		condenseButton.BackgroundColor = !available ? new Color(43, 47, 51) : affordable ? new Color(43, 83, 70) : new Color(73, 52, 50);
-		condenseButton.BorderColor = !available ? new Color(68, 72, 76) : affordable ? new Color(90, 143, 121) : new Color(123, 78, 71);
-		condenseButton.TextColor = !available ? new Color(125, 130, 132) : affordable ? new Color(215, 244, 229) : new Color(236, 183, 171);
+		condenseButton.BackgroundColor = !available ? SoullessUIPalette.SurfaceDisabled
+			: affordable ? SoullessUIPalette.AccentSurface : SoullessUIPalette.WarningSurface;
+		condenseButton.BorderColor = !available ? SoullessUIPalette.SteelMuted
+			: affordable ? SoullessUIPalette.Accent : SoullessUIPalette.WarningBorder;
+		condenseButton.TextColor = !available ? SoullessUIPalette.TextMuted
+			: affordable ? SoullessUIPalette.AccentText : SoullessUIPalette.WarningText;
 	}
 
 	private bool IsCurrentSelectionAvailable()
@@ -1445,6 +1484,29 @@ internal sealed class SoulMenuState : UIState
 		ShowFeedback(completed ? "Soul Apparatus acquired." : "Purchase request sent.", true);
 	}
 
+	private void UseGraftingAltarAction()
+	{
+		if (kind != MenuKind.Soulless || soullessTab != SoullessTab.Services)
+		{
+			return;
+		}
+
+		if (!(NPC.downedSlimeKing || NPC.downedBoss1))
+		{
+			ShowFeedback("Defeat King Slime or the Eye of Cthulhu first.", false);
+			return;
+		}
+
+		if (!HasSouls(SoulTransactions.GraftingAltarCost))
+		{
+			return;
+		}
+
+		bool completed = SendNpcTransaction(SoulMessageType.RequestGraftingAltarPurchase,
+			() => SoulTransactions.TryPurchaseGraftingAltar(Main.LocalPlayer, npcIndex));
+		ShowFeedback(completed ? "Grafting Altar acquired." : "Purchase request sent.", true);
+	}
+
 	private bool SendCrystalTransaction()
 	{
 		if (Main.netMode == NetmodeID.MultiplayerClient)
@@ -1522,7 +1584,7 @@ internal sealed class SoulMenuState : UIState
 	private void ShowFeedback(string message, bool success)
 	{
 		feedback.SetText(message);
-		feedback.TextColor = success ? new Color(147, 225, 183) : new Color(238, 154, 137);
+		feedback.TextColor = success ? SoullessUIPalette.AccentMuted : SoullessUIPalette.Warning;
 		feedbackTime = FeedbackDuration;
 	}
 
@@ -1605,8 +1667,8 @@ internal sealed class SoulActionRow : UIElement
 		background = new UIPanel();
 		background.Width.Set(0f, 1f);
 		background.Height.Set(0f, 1f);
-		background.BackgroundColor = new Color(27, 34, 41, 245);
-		background.BorderColor = new Color(59, 76, 75, 255);
+		background.BackgroundColor = SoullessUIPalette.Surface;
+		background.BorderColor = SoullessUIPalette.SteelMuted;
 		Append(background);
 
 		icon = new SoulItemIcon();
@@ -1624,7 +1686,7 @@ internal sealed class SoulActionRow : UIElement
 		detail = new UIText(string.Empty, 0.65f);
 		detail.Left.Set(70f, 0f);
 		detail.Top.Set(42f, 0f);
-		detail.TextColor = new Color(153, 172, 166);
+		detail.TextColor = SoullessUIPalette.TextSecondary;
 		background.Append(detail);
 
 		actionButton = new UITextPanel<string>(string.Empty, 0.68f, false);
@@ -1644,7 +1706,10 @@ internal sealed class SoulActionRow : UIElement
 		{
 			if (enabled)
 			{
-				actionButton.BackgroundColor = affordable ? new Color(55, 112, 91) : new Color(104, 65, 59);
+				actionButton.BackgroundColor = affordable
+					? SoullessUIPalette.AccentSurfaceHover : SoullessUIPalette.WarningSurfaceHover;
+				actionButton.BorderColor = affordable
+					? SoullessUIPalette.AccentBright : SoullessUIPalette.WarningBorder;
 			}
 		};
 		actionButton.OnMouseOut += (_, _) => ApplyButtonStyle();
@@ -1664,16 +1729,19 @@ internal sealed class SoulActionRow : UIElement
 		actionButton.SetText(buttonText);
 		enabled = isEnabled;
 		affordable = canAfford;
-		name.TextColor = enabled ? Color.White : new Color(155, 161, 163);
+		name.TextColor = enabled ? SoullessUIPalette.TextPrimary : SoullessUIPalette.TextMuted;
 		icon.Opacity = enabled ? 1f : 0.42f;
 		ApplyButtonStyle();
 	}
 
 	private void ApplyButtonStyle()
 	{
-		actionButton.BackgroundColor = !enabled ? new Color(43, 47, 51) : affordable ? new Color(43, 83, 70) : new Color(73, 52, 50);
-		actionButton.BorderColor = !enabled ? new Color(68, 72, 76) : affordable ? new Color(90, 143, 121) : new Color(123, 78, 71);
-		actionButton.TextColor = !enabled ? new Color(125, 130, 132) : affordable ? new Color(215, 244, 229) : new Color(236, 183, 171);
+		actionButton.BackgroundColor = !enabled ? SoullessUIPalette.SurfaceDisabled
+			: affordable ? SoullessUIPalette.AccentSurface : SoullessUIPalette.WarningSurface;
+		actionButton.BorderColor = !enabled ? SoullessUIPalette.SteelMuted
+			: affordable ? SoullessUIPalette.Accent : SoullessUIPalette.WarningBorder;
+		actionButton.TextColor = !enabled ? SoullessUIPalette.TextMuted
+			: affordable ? SoullessUIPalette.AccentText : SoullessUIPalette.WarningText;
 	}
 }
 
@@ -1728,8 +1796,9 @@ internal sealed class SoulEssenceCatalogueCard : UIElement
 		unlocked = isUnlocked;
 		selected = isSelected;
 		icon.Opacity = unlocked ? 1f : 0.28f;
-		name.TextColor = unlocked ? new Color(218, 235, 226) : new Color(142, 151, 150);
-		cost.TextColor = !unlocked ? new Color(112, 121, 121) : canAfford ? new Color(180, 238, 210) : new Color(238, 154, 137);
+		name.TextColor = unlocked ? SoullessUIPalette.TextPrimary : SoullessUIPalette.TextMuted;
+		cost.TextColor = !unlocked ? SoullessUIPalette.TextDisabled
+			: canAfford ? SoullessUIPalette.AccentText : SoullessUIPalette.Warning;
 		ApplyStyle(false);
 	}
 
@@ -1744,12 +1813,11 @@ internal sealed class SoulEssenceCatalogueCard : UIElement
 
 	private void ApplyStyle(bool hovered)
 	{
-		background.BackgroundColor = selected
-			? new Color(42, 72, 65)
-			: hovered ? new Color(44, 57, 61) : new Color(26, 33, 39);
-		background.BorderColor = selected
-			? new Color(117, 182, 151)
-			: unlocked ? new Color(65, 82, 79) : new Color(57, 65, 67);
+		background.BackgroundColor = selected ? SoullessUIPalette.AccentSurface
+			: hovered ? SoullessUIPalette.SurfaceHover : SoullessUIPalette.Surface;
+		background.BorderColor = selected ? SoullessUIPalette.Accent
+			: hovered && unlocked ? SoullessUIPalette.AccentHoverBorder
+			: unlocked ? SoullessUIPalette.Steel : SoullessUIPalette.SteelLow;
 	}
 }
 
@@ -1786,7 +1854,8 @@ internal sealed class SoulEssenceCard : UIElement
 		{
 			if (!selected)
 			{
-				background.BackgroundColor = new Color(44, 57, 61);
+				background.BackgroundColor = SoullessUIPalette.SurfaceHover;
+				background.BorderColor = SoullessUIPalette.AccentHoverBorder;
 			}
 		};
 		OnMouseOut += (_, _) => ApplyStyle();
@@ -1799,14 +1868,14 @@ internal sealed class SoulEssenceCard : UIElement
 		unlocked = isUnlocked;
 		selected = isSelected;
 		icon.Opacity = unlocked ? 1f : 0.18f;
-		name.TextColor = unlocked ? new Color(218, 235, 226) : new Color(112, 121, 121);
+		name.TextColor = unlocked ? SoullessUIPalette.TextPrimary : SoullessUIPalette.TextDisabled;
 		ApplyStyle();
 	}
 
 	private void ApplyStyle()
 	{
-		background.BackgroundColor = selected ? new Color(42, 72, 65) : new Color(26, 33, 39);
-		background.BorderColor = selected ? new Color(117, 182, 151) : new Color(57, 71, 71);
+		background.BackgroundColor = selected ? SoullessUIPalette.AccentSurface : SoullessUIPalette.Surface;
+		background.BorderColor = selected ? SoullessUIPalette.Accent : SoullessUIPalette.SteelMuted;
 	}
 }
 
@@ -1889,9 +1958,9 @@ internal sealed class ImbuementRecipeRow : UIElement
 		weaponSlot.Opacity = opacity;
 		essenceSlot.Opacity = opacity;
 		outputSlot.Opacity = opacity;
-		resultName.TextColor = ready ? new Color(137, 235, 205) : new Color(154, 168, 163);
-		ingredients.TextColor = ready ? new Color(210, 229, 220) : new Color(142, 153, 151);
-		status.TextColor = ready ? new Color(144, 226, 190) : new Color(207, 164, 135);
+		resultName.TextColor = ready ? SoullessUIPalette.AccentText : SoullessUIPalette.TextSecondary;
+		ingredients.TextColor = ready ? SoullessUIPalette.TextPrimary : SoullessUIPalette.TextMuted;
+		status.TextColor = ready ? SoullessUIPalette.AccentMuted : SoullessUIPalette.Requirement;
 		ApplyStyle(false);
 	}
 
@@ -1910,10 +1979,10 @@ internal sealed class ImbuementRecipeRow : UIElement
 		weaponSlot.Opacity = opacity;
 		essenceSlot.Opacity = opacity;
 		outputSlot.Opacity = opacity;
-		resultName.TextColor = ready ? new Color(137, 235, 205) : new Color(154, 168, 163);
-		ingredients.TextColor = ready ? new Color(210, 229, 220) : new Color(142, 153, 151);
-		status.TextColor = statusText == "Learned" ? new Color(131, 208, 177)
-			: ready ? new Color(144, 226, 190) : new Color(207, 164, 135);
+		resultName.TextColor = ready ? SoullessUIPalette.AccentText : SoullessUIPalette.TextSecondary;
+		ingredients.TextColor = ready ? SoullessUIPalette.TextPrimary : SoullessUIPalette.TextMuted;
+		status.TextColor = statusText == "Learned" ? SoullessUIPalette.AccentMuted
+			: ready ? SoullessUIPalette.AccentText : SoullessUIPalette.Requirement;
 		ApplyStyle(false);
 	}
 
@@ -1930,7 +1999,7 @@ internal sealed class ImbuementRecipeRow : UIElement
 	{
 		UIText operation = new(text, scale)
 		{
-			TextColor = new Color(165, 203, 190),
+			TextColor = SoullessUIPalette.TextSecondary,
 			VAlign = 0.5f
 		};
 		operation.Left.Set(left, 0f);
@@ -1939,12 +2008,11 @@ internal sealed class ImbuementRecipeRow : UIElement
 
 	private void ApplyStyle(bool hovered)
 	{
-		background.BackgroundColor = hovered
-			? ready ? new Color(43, 73, 65) : new Color(42, 48, 51)
-			: new Color(26, 33, 39);
-		background.BorderColor = ready ? new Color(103, 171, 143) : new Color(60, 70, 71);
-		detailsPanel.BackgroundColor = hovered ? new Color(30, 43, 46) : new Color(22, 29, 35);
-		detailsPanel.BorderColor = ready ? new Color(75, 120, 105) : new Color(53, 64, 65);
+		background.BackgroundColor = hovered ? SoullessUIPalette.SurfaceHover : SoullessUIPalette.Surface;
+		background.BorderColor = ready ? SoullessUIPalette.Accent
+			: hovered ? SoullessUIPalette.AccentHoverBorder : SoullessUIPalette.SteelMuted;
+		detailsPanel.BackgroundColor = hovered ? SoullessUIPalette.SurfaceRaised : SoullessUIPalette.SurfaceInset;
+		detailsPanel.BorderColor = ready ? SoullessUIPalette.AccentBorder : SoullessUIPalette.SteelLow;
 	}
 }
 
@@ -2019,9 +2087,9 @@ internal sealed class ImbuementRitualCanvas : UIElement
 		float opacity = MathHelper.Clamp(Reveal, 0f, 1f);
 
 		Utils.DrawBorderString(spriteBatch, ritualTitle, new Vector2(center.X, dimensions.Y + 20f),
-			new Color(192, 239, 219) * opacity, 0.82f, 0.5f);
+			SoullessUIPalette.AccentText * opacity, 0.82f, 0.5f);
 		Utils.DrawBorderString(spriteBatch, ritualDescription,
-			new Vector2(center.X, dimensions.Y + 49f), new Color(126, 161, 151) * opacity, 0.58f, 0.5f);
+			new Vector2(center.X, dimensions.Y + 49f), SoullessUIPalette.TextSecondary * opacity, 0.58f, 0.5f);
 	}
 
 }
@@ -2032,11 +2100,11 @@ internal sealed class RitualLabelPlate : UIElement
 	{
 		Rectangle area = GetDimensions().ToRectangle();
 		Texture2D pixel = TextureAssets.MagicPixel.Value;
-		spriteBatch.Draw(pixel, area, new Color(9, 14, 18, 218));
-		spriteBatch.Draw(pixel, new Rectangle(area.X, area.Y, area.Width, 2), new Color(55, 100, 91, 210));
-		spriteBatch.Draw(pixel, new Rectangle(area.X, area.Bottom - 2, area.Width, 2), new Color(35, 67, 63, 210));
-		spriteBatch.Draw(pixel, new Rectangle(area.X, area.Y, 2, area.Height), new Color(45, 81, 75, 210));
-		spriteBatch.Draw(pixel, new Rectangle(area.Right - 2, area.Y, 2, area.Height), new Color(45, 81, 75, 210));
+		spriteBatch.Draw(pixel, area, SoullessUIPalette.Panel * 0.86f);
+		spriteBatch.Draw(pixel, new Rectangle(area.X, area.Y, area.Width, 2), SoullessUIPalette.AccentBorder * 0.82f);
+		spriteBatch.Draw(pixel, new Rectangle(area.X, area.Bottom - 2, area.Width, 2), SoullessUIPalette.SteelMuted * 0.82f);
+		spriteBatch.Draw(pixel, new Rectangle(area.X, area.Y, 2, area.Height), SoullessUIPalette.Steel * 0.82f);
+		spriteBatch.Draw(pixel, new Rectangle(area.Right - 2, area.Y, 2, area.Height), SoullessUIPalette.Steel * 0.82f);
 	}
 }
 
@@ -2071,7 +2139,7 @@ internal sealed class ImbuementWeaponSocket : UIElement
 			ImbuementOrbitSoulRenderer.Draw(spriteBatch, center, drawFront: false);
 			// A slow, broad breath makes resonance feel deliberate instead of reactive UI feedback.
 			float pulse = 0.5f + 0.2f * MathF.Sin(Main.GlobalTimeWrappedHourly * 2.15f) + impactPulse * 0.32f;
-			Color glow = new Color(48, 232, 205) * pulse;
+			Color glow = SoullessUIPalette.Accent * pulse;
 			// Offset silhouettes make the authored frame glow without changing SpriteBatch state.
 			for (int direction = 0; direction < 8; direction++)
 			{
@@ -2087,9 +2155,10 @@ internal sealed class ImbuementWeaponSocket : UIElement
 		{
 			// A faint displaced copy gives the bound weapon a spectral shimmer.
 			Vector2 shimmer = new(MathF.Sin(Main.GlobalTimeWrappedHourly * 6f), MathF.Cos(Main.GlobalTimeWrappedHourly * 4f) * 0.5f);
-			ImbuementSlotDrawing.DrawItem(spriteBatch, itemType, center + shimmer, 44f, new Color(115, 255, 225) * (0.2f + impactPulse * 0.2f));
+			ImbuementSlotDrawing.DrawItem(spriteBatch, itemType, center + shimmer, 44f,
+				SoullessUIPalette.AccentBright * (0.2f + impactPulse * 0.2f));
 			ImbuementOrbitSoulRenderer.Draw(spriteBatch, center, drawFront: true);
-			spriteBatch.Draw(frame, position, new Color(75, 245, 215) * (0.18f + impactPulse * 0.32f));
+			spriteBatch.Draw(frame, position, SoullessUIPalette.Accent * (0.18f + impactPulse * 0.32f));
 		}
 		if (IsMouseHovering)
 		{
@@ -2115,13 +2184,13 @@ internal sealed class ImbuementWeaponSocket : UIElement
 				float strength = 1f - trailIndex / 8f;
 				int size = trailIndex < 2 ? 6 : trailIndex < 5 ? 4 : 2;
 				DrawPixel(spriteBatch, pixel, trailPosition, size,
-					new Color(54, 213, 187, 0) * (strength * 0.62f));
+					SoullessUIPalette.AccentAdditive * (strength * 0.62f));
 			}
 
 			Vector2 wispPosition = SnapToPixelGrid(QuadraticBezier(essenceCenter, control, weaponCenter, cycle));
 			float soulPulse = 0.92f + MathF.Sin((Main.GlobalTimeWrappedHourly + index) * 8f) * 0.08f;
-			DrawPixel(spriteBatch, pixel, wispPosition, soulPulse > 0.95f ? 8 : 6, new Color(72, 231, 202, 0) * 0.82f);
-			DrawPixel(spriteBatch, pixel, wispPosition, 4, new Color(218, 255, 240, 0) * 0.94f);
+			DrawPixel(spriteBatch, pixel, wispPosition, soulPulse > 0.95f ? 8 : 6, SoullessUIPalette.AccentAdditive * 0.82f);
+			DrawPixel(spriteBatch, pixel, wispPosition, 4, SoullessUIPalette.AccentTextAdditive * 0.94f);
 
 			float arrival = MathHelper.Clamp((cycle - 0.84f) / 0.16f, 0f, 1f);
 			strongestImpact = Math.Max(strongestImpact, MathF.Sin(arrival * MathHelper.Pi));
@@ -2180,9 +2249,9 @@ internal static class ImbuementSlotDrawing
 	public static void DrawSlot(SpriteBatch spriteBatch, Rectangle area, bool highlighted)
 	{
 		Texture2D pixel = TextureAssets.MagicPixel.Value;
-		Color border = highlighted ? new Color(102, 201, 177) : new Color(66, 79, 81);
+		Color border = highlighted ? SoullessUIPalette.AccentHoverBorder : SoullessUIPalette.Steel;
 		spriteBatch.Draw(pixel, area, border);
-		spriteBatch.Draw(pixel, new Rectangle(area.X + 2, area.Y + 2, area.Width - 4, area.Height - 4), new Color(28, 36, 43, 245));
+		spriteBatch.Draw(pixel, new Rectangle(area.X + 2, area.Y + 2, area.Width - 4, area.Height - 4), SoullessUIPalette.Surface);
 	}
 
 	public static void DrawItem(SpriteBatch spriteBatch, int itemType, Vector2 center, float maximumSize, Color? drawColor = null)

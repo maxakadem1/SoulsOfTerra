@@ -51,6 +51,7 @@ public sealed class SoulApparatusSystem : ModSystem
 
 		SoulMenuSystem.Close();
 		SoulSpellBookSystem.Close();
+		GraftingAltarSystem.Close();
 		Main.playerInventory = false;
 		apparatusState.Open(topLeft);
 		apparatusInterface.SetState(apparatusState);
@@ -170,8 +171,8 @@ internal sealed class SoulApparatusState : UIState
 		panel.Height.Set(548f, 0f);
 		panel.Left.Set(36f, 0f);
 		panel.VAlign = 0.5f;
-		panel.BackgroundColor = new Color(17, 22, 28, 245);
-		panel.BorderColor = new Color(76, 111, 103, 255);
+		panel.BackgroundColor = SoullessUIPalette.Panel;
+		panel.BorderColor = SoullessUIPalette.PanelBorder;
 
 		title = new UIText("Soul Apparatus", 1.05f);
 		title.Left.Set(20f, 0f);
@@ -180,37 +181,45 @@ internal sealed class SoulApparatusState : UIState
 		subtitle = new UIText("Permanent potion soulspells", 0.72f);
 		subtitle.Left.Set(21f, 0f);
 		subtitle.Top.Set(43f, 0f);
-		subtitle.TextColor = new Color(154, 177, 169);
+		subtitle.TextColor = SoullessUIPalette.TextSecondary;
 
 		progress = new UIText(string.Empty, 0.82f);
 		progress.HAlign = 1f;
 		progress.Left.Set(-20f, 0f);
 		progress.Top.Set(22f, 0f);
-		progress.TextColor = new Color(180, 238, 210);
+		progress.TextColor = SoullessUIPalette.AccentText;
 
 		dissolveTab = new UITextPanel<string>("Dissolve", 0.68f, false);
 		dissolveTab.Width.Set(130f, 0f);
 		dissolveTab.Height.Set(30f, 0f);
 		dissolveTab.Left.Set(16f, 0f);
 		dissolveTab.Top.Set(68f, 0f);
-		dissolveTab.BackgroundColor = new Color(42, 72, 65);
-		dissolveTab.BorderColor = new Color(117, 182, 151);
-		dissolveTab.TextColor = new Color(220, 244, 231);
+		dissolveTab.BackgroundColor = SoullessUIPalette.AccentSurface;
+		dissolveTab.BorderColor = SoullessUIPalette.Accent;
+		dissolveTab.TextColor = SoullessUIPalette.AccentText;
 
 		feedback = new UIText(string.Empty, 0.72f);
 		feedback.HAlign = 0.5f;
 		feedback.Top.Set(486f, 0f);
-		feedback.TextColor = new Color(147, 225, 183);
+		feedback.TextColor = SoullessUIPalette.AccentMuted;
 
 		closeButton = new UITextPanel<string>("Close", 0.72f, false);
 		closeButton.Width.Set(92f, 0f);
 		closeButton.Height.Set(32f, 0f);
 		closeButton.HAlign = 0.5f;
 		closeButton.Top.Set(506f, 0f);
-		closeButton.BackgroundColor = new Color(48, 58, 66);
-		closeButton.BorderColor = new Color(83, 103, 99);
-		closeButton.OnMouseOver += (_, _) => closeButton.BackgroundColor = new Color(65, 82, 79);
-		closeButton.OnMouseOut += (_, _) => closeButton.BackgroundColor = new Color(48, 58, 66);
+		closeButton.BackgroundColor = SoullessUIPalette.SurfaceRaised;
+		closeButton.BorderColor = SoullessUIPalette.Steel;
+		closeButton.OnMouseOver += (_, _) =>
+		{
+			closeButton.BackgroundColor = SoullessUIPalette.SurfaceHover;
+			closeButton.BorderColor = SoullessUIPalette.AccentHoverBorder;
+		};
+		closeButton.OnMouseOut += (_, _) =>
+		{
+			closeButton.BackgroundColor = SoullessUIPalette.SurfaceRaised;
+			closeButton.BorderColor = SoullessUIPalette.Steel;
+		};
 		closeButton.OnLeftClick += (_, _) => SoulApparatusSystem.Close();
 	}
 
@@ -223,7 +232,7 @@ internal sealed class SoulApparatusState : UIState
 		recipeContent.Top.Set(108f, 0f);
 
 		recipeHint = new UIText("Select a complete recipe to begin its dissolution ritual.", 0.62f);
-		recipeHint.TextColor = new Color(154, 177, 169);
+		recipeHint.TextColor = SoullessUIPalette.TextSecondary;
 		recipeContent.Append(recipeHint);
 
 		recipeListContainer = new UIElement();
@@ -262,7 +271,7 @@ internal sealed class SoulApparatusState : UIState
 		potionName = new UIText("Select Potion", 0.57f);
 		potionName.HAlign = 0.5f;
 		potionName.VAlign = 0.5f;
-		potionName.TextColor = new Color(205, 220, 212);
+		potionName.TextColor = SoullessUIPalette.TextPrimary;
 		CreateRitualLabelPlate(potionName, 181f, 250f);
 
 		essenceSocket = new ImbuementEssenceSocket();
@@ -272,21 +281,29 @@ internal sealed class SoulApparatusState : UIState
 		essenceName = new UIText("Select Essence", 0.54f);
 		essenceName.HAlign = 0.5f;
 		essenceName.VAlign = 0.5f;
-		essenceName.TextColor = new Color(166, 190, 181);
+		essenceName.TextColor = SoullessUIPalette.TextSecondary;
 		CreateRitualLabelPlate(essenceName, 282f, 220f);
 
 		ritualDrain = new UIText(string.Empty, 0.64f);
 		ritualDrain.HAlign = 1f;
 		ritualDrain.Left.Set(-16f, 0f);
 		ritualDrain.Top.Set(18f, 0f);
-		ritualDrain.TextColor = new Color(167, 218, 198);
+		ritualDrain.TextColor = SoullessUIPalette.AccentMuted;
 
 		backButton = CreateRitualButton("Back to Recipes", 140f);
 		backButton.OnLeftClick += (_, _) => ShowRecipes();
-		backButton.BackgroundColor = new Color(40, 54, 58);
-		backButton.BorderColor = new Color(78, 105, 100);
-		backButton.OnMouseOver += (_, _) => backButton.BackgroundColor = new Color(54, 75, 74);
-		backButton.OnMouseOut += (_, _) => backButton.BackgroundColor = new Color(40, 54, 58);
+		backButton.BackgroundColor = SoullessUIPalette.SurfaceRaised;
+		backButton.BorderColor = SoullessUIPalette.Steel;
+		backButton.OnMouseOver += (_, _) =>
+		{
+			backButton.BackgroundColor = SoullessUIPalette.SurfaceHover;
+			backButton.BorderColor = SoullessUIPalette.AccentHoverBorder;
+		};
+		backButton.OnMouseOut += (_, _) =>
+		{
+			backButton.BackgroundColor = SoullessUIPalette.SurfaceRaised;
+			backButton.BorderColor = SoullessUIPalette.Steel;
+		};
 
 		dissolveButton = CreateRitualButton("Dissolve", 178f);
 		dissolveButton.OnLeftClick += (_, _) => DissolveSelected();
@@ -294,7 +311,7 @@ internal sealed class SoulApparatusState : UIState
 		{
 			if (CanDissolveSelected())
 			{
-				dissolveButton.BackgroundColor = new Color(39, 91, 81, 248);
+				dissolveButton.BackgroundColor = SoullessUIPalette.AccentSurfaceHover;
 			}
 		};
 		dissolveButton.OnMouseOut += (_, _) => ApplyDissolveButtonStyle();
@@ -451,9 +468,9 @@ internal sealed class SoulApparatusState : UIState
 	{
 		bool ready = CanDissolveSelected();
 		dissolveButton.SetText(ready ? "Dissolve" : "No Resonance");
-		dissolveButton.BackgroundColor = ready ? new Color(29, 66, 61, 242) : new Color(31, 35, 39, 232);
-		dissolveButton.BorderColor = ready ? new Color(87, 181, 153) : new Color(62, 68, 71);
-		dissolveButton.TextColor = ready ? new Color(214, 249, 232) : new Color(125, 130, 132);
+		dissolveButton.BackgroundColor = ready ? SoullessUIPalette.AccentSurface : SoullessUIPalette.SurfaceDisabled;
+		dissolveButton.BorderColor = ready ? SoullessUIPalette.Accent : SoullessUIPalette.SteelMuted;
+		dissolveButton.TextColor = ready ? SoullessUIPalette.AccentText : SoullessUIPalette.TextMuted;
 	}
 
 	private void DissolveSelected()

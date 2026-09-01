@@ -28,6 +28,7 @@ public static class SoulTransactions
 	public const long FragmentCost = 100;
 	public const long WardensFragmentCost = 10_000;
 	public const long SoulApparatusCost = 1_000;
+	public const long GraftingAltarCost = 1_000;
 	private static readonly long[] SoulCrystalCosts = { 1_250, 6_250, 31_250 };
 	private static readonly long[] SoulCrystalValues = { 1_000, 5_000, 25_000 };
 	private const float InteractionRange = 12f * 16f;
@@ -85,6 +86,19 @@ public static class SoulTransactions
 		// Unlimited copies keep the station replaceable and useful for multiple bases.
 		player.QuickSpawnItem(new EntitySource_Misc("SoulsOfTerra:SoulApparatusPurchase"),
 			ModContent.ItemType<SoulApparatusItem>());
+		return true;
+	}
+
+	public static bool TryPurchaseGraftingAltar(Player player, int npcIndex)
+	{
+		if (!(NPC.downedSlimeKing || NPC.downedBoss1) || !IsValidSoullessInteraction(player, npcIndex)
+			|| !player.GetModPlayer<SoulPlayer>().TrySpendSouls(GraftingAltarCost))
+		{
+			return false;
+		}
+
+		player.QuickSpawnItem(new EntitySource_Misc("SoulsOfTerra:GraftingAltarPurchase"),
+			ModContent.ItemType<GraftingAltarItem>());
 		return true;
 	}
 
@@ -240,6 +254,91 @@ public static class SoulTransactions
 		Projectile.NewProjectile(new EntitySource_Misc("SoulsOfTerra:SoulspellDissolution"), center, Vector2.Zero,
 			ModContent.ProjectileType<SoulspellDissolutionRitualProjectile>(), 0, 0f, player.whoAmI,
 			recipeIndex, spell.PotionItemType, spell.EssenceItemType);
+		return true;
+	}
+
+	public static bool TryGraftMutation(Player player, Point16 altarPosition, int mutationSlot, int sourceSlot,
+		int expectedItemType = ItemID.None)
+	{
+		if (!IsValidGraftingAltarInteraction(player, altarPosition))
+		{
+			return false;
+		}
+
+		sourceSlot = ResolveEssenceSlot(player, sourceSlot, expectedItemType);
+		if (sourceSlot < 0)
+		{
+			return false;
+		}
+
+		return TryApplyMutationGraft(player, mutationSlot, player.inventory[sourceSlot], sourceSlot);
+	}
+
+	public static bool TryGraftMutationFromCursor(Player player, Point16 altarPosition, int mutationSlot,
+		Item cursorEssence)
+	{
+		if (!IsValidGraftingAltarInteraction(player, altarPosition))
+		{
+			return false;
+		}
+
+		// Main.mouseItem is distinct from its inventory[58] synchronization clone.
+		return TryApplyMutationGraft(player, mutationSlot, cursorEssence, -1);
+	}
+
+	private static bool TryApplyMutationGraft(Player player, int mutationSlot, Item essence, int sourceSlot)
+	{
+		if (essence.stack <= 0 || !MutationRegistry.TryFindByItemType(essence.type, out MutationDefinition definition)
+			|| !definition.Implemented)
+		{
+			return false;
+		}
+
+		MutationPlayer mutationPlayer = player.GetModPlayer<MutationPlayer>();
+		if (!mutationPlayer.TrySetMutation(mutationSlot, definition.Id))
+		{
+			return false;
+		}
+
+		ConsumeOne(essence);
+		if (Main.netMode == NetmodeID.Server && sourceSlot >= 0)
+		{
+			NetMessage.SendData(MessageID.SyncEquipment, -1, -1, null, player.whoAmI, sourceSlot);
+		}
+		mutationPlayer.SendState();
+		return true;
+	}
+
+	private static int ResolveEssenceSlot(Player player, int preferredSlot, int expectedItemType)
+	{
+		// Cursor-slot synchronization can arrive one packet later, so fall back to the matching stack.
+		if (preferredSlot >= 0 && preferredSlot < player.inventory.Length
+			&& player.inventory[preferredSlot].stack > 0
+			&& (expectedItemType <= ItemID.None || player.inventory[preferredSlot].type == expectedItemType))
+		{
+			return preferredSlot;
+		}
+
+		for (int slot = 0; slot < player.inventory.Length; slot++)
+		{
+			Item item = player.inventory[slot];
+			if (item.stack > 0 && item.type == expectedItemType)
+			{
+				return slot;
+			}
+		}
+		return -1;
+	}
+
+	public static bool TryPurgeMutation(Player player, Point16 altarPosition, int mutationSlot)
+	{
+		if (!IsValidGraftingAltarInteraction(player, altarPosition)
+			|| !player.GetModPlayer<MutationPlayer>().TryPurge(mutationSlot))
+		{
+			return false;
+		}
+
+		player.GetModPlayer<MutationPlayer>().SendState();
 		return true;
 	}
 
@@ -401,5 +500,12 @@ public static class SoulTransactions
 		Tile tile = Framing.GetTileSafely(apparatusPosition.X, apparatusPosition.Y);
 		return player.active && !player.dead && tile.HasTile && tile.TileType == ModContent.TileType<SoulApparatusTile>()
 			&& Vector2.DistanceSquared(player.Center, apparatusPosition.ToWorldCoordinates(24f, 24f)) <= InteractionRange * InteractionRange;
+	}
+
+	private static bool IsValidGraftingAltarInteraction(Player player, Point16 altarPosition)
+	{
+		Tile tile = Framing.GetTileSafely(altarPosition.X, altarPosition.Y);
+		return player.active && !player.dead && tile.HasTile && tile.TileType == ModContent.TileType<GraftingAltarTile>()
+			&& Vector2.DistanceSquared(player.Center, altarPosition.ToWorldCoordinates(24f, 24f)) <= InteractionRange * InteractionRange;
 	}
 }
