@@ -159,6 +159,7 @@ Projectiles: {
 	CarrionCallChompProjectile.DisplayName: Carrion Chomp
 	MutationSlimeGlobProjectile.DisplayName: Sticky Mutation Slime
 	MutationAlliedSlimeProjectile.DisplayName: Grafted Slime
+	MutationSkeletronHandProjectile.DisplayName: Grafted Skeletron Hand
 }
 
 Buffs: {

@@ -476,12 +476,9 @@ internal sealed class MutationPanelElement : UIElement
 	protected override void DrawSelf(SpriteBatch spriteBatch)
 	{
 		CalculatedStyle dimensions = GetDimensions();
-		Texture2D pixel = TextureAssets.MagicPixel.Value;
 		Rectangle panelArea = dimensions.ToRectangle();
-		// A quiet drop shadow separates the borderless panel from busy world backgrounds.
-		spriteBatch.Draw(pixel, new Rectangle(panelArea.X + 5, panelArea.Y + 7, panelArea.Width, panelArea.Height),
-			Color.Black * 0.32f);
-		spriteBatch.Draw(pixel, panelArea, SoullessUIPalette.Panel);
+		// The authored frame provides enough separation without an additional drop shadow.
+		SoulMenuFramePanel.DrawFrame(spriteBatch, panelArea, SoullessUIPalette.Panel);
 		MutationUIFrameRenderer.Draw(spriteBatch, new Vector2(dimensions.X, dimensions.Y));
 	}
 }

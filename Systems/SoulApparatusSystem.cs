@@ -122,6 +122,7 @@ internal sealed class SoulApparatusState : UIState
 	public void Open(Point16 topLeft)
 	{
 		apparatusPosition = topLeft;
+		panel.SoulEffectSeed = unchecked(topLeft.X * 73856093 ^ topLeft.Y * 19349663);
 		ShowRecipes();
 	}
 
@@ -169,7 +170,7 @@ internal sealed class SoulApparatusState : UIState
 		panel = new SoulMenuFramePanel();
 		panel.Width.Set(540f, 0f);
 		panel.Height.Set(548f, 0f);
-		panel.Left.Set(36f, 0f);
+		panel.HAlign = 0.5f;
 		panel.VAlign = 0.5f;
 		panel.BackgroundColor = SoullessUIPalette.Panel;
 		panel.BorderColor = SoullessUIPalette.PanelBorder;

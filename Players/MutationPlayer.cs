@@ -59,16 +59,28 @@ public sealed class MutationPlayer : ModPlayer
 			slimeSprayCooldown--;
 		}
 
-		if (!HasActive(MutationId.Slime) || Player.dead)
+		if (Player.dead)
 		{
 			slimeSpawnTimer = 0;
 			return;
 		}
 
-		if (++slimeSpawnTimer >= SlimeSpawnInterval && Player.whoAmI == Main.myPlayer)
+		if (HasActive(MutationId.Slime))
+		{
+			if (++slimeSpawnTimer >= SlimeSpawnInterval && Player.whoAmI == Main.myPlayer)
+			{
+				slimeSpawnTimer = 0;
+				SpawnAlliedSlime();
+			}
+		}
+		else
 		{
 			slimeSpawnTimer = 0;
-			SpawnAlliedSlime();
+		}
+
+		if (HasActive(MutationId.Skeletron) && Player.whoAmI == Main.myPlayer)
+		{
+			MaintainSkeletronHands();
 		}
 	}
 
@@ -227,5 +239,43 @@ public sealed class MutationPlayer : ModPlayer
 		Vector2 spawn = Player.Bottom + new Vector2(Main.rand.NextFloat(-20f, 20f), -12f);
 		Projectile.NewProjectile(Player.GetSource_Misc("SlimeMutationBud"), spawn, Vector2.Zero,
 			projectileType, damage, 1.5f, Player.whoAmI);
+	}
+
+	private void MaintainSkeletronHands()
+	{
+		int projectileType = ModContent.ProjectileType<MutationSkeletronHandProjectile>();
+		bool[] present = new bool[MutationSkeletronHandProjectile.HandCount];
+		foreach (Projectile projectile in Main.ActiveProjectiles)
+		{
+			if (projectile.owner != Player.whoAmI || projectile.type != projectileType)
+			{
+				continue;
+			}
+
+			int side = (int)projectile.ai[0];
+			if (side >= 0 && side < present.Length && !present[side])
+			{
+				present[side] = true;
+			}
+			else
+			{
+				projectile.Kill();
+			}
+		}
+
+		int baseDamage = 10 + (int)(Player.statLifeMax2 * 0.05f);
+		int damage = Math.Max(1, (int)Player.GetTotalDamage(DamageClass.Generic).ApplyTo(baseDamage));
+		for (int side = 0; side < present.Length; side++)
+		{
+			if (present[side])
+			{
+				continue;
+			}
+
+			float sideSign = side == 1 ? 1f : -1f;
+			Vector2 spawn = Player.MountedCenter + new Vector2(Player.direction * sideSign * 48f, -8f);
+			Projectile.NewProjectile(Player.GetSource_Misc("SkeletronMutationHand"), spawn, Vector2.Zero,
+				projectileType, damage, MutationSkeletronHandProjectile.Knockback, Player.whoAmI, side);
+		}
 	}
 }

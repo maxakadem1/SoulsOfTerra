@@ -29,6 +29,7 @@ public class SoulMenuSystem : ModSystem
 	private static SoulMenuState menuState;
 
 	internal static UserInterface Interface => soulInterface;
+	internal static bool IsOpen => soulInterface?.CurrentState == menuState && menuState is not null;
 
 	public override void Load()
 	{
@@ -133,11 +134,18 @@ internal sealed class SoulMenuFramePanel : UIPanel
 	private const int FrameInset = TileSize / 2;
 	private const int HeaderWidth = 180;
 	private const int HeaderTopOffset = -36;
+	internal int SoulEffectSeed { get; set; }
 
 	protected override void DrawSelf(SpriteBatch spriteBatch)
 	{
 		CalculatedStyle dimensions = GetDimensions();
 		Rectangle frame = new((int)dimensions.X, (int)dimensions.Y, (int)dimensions.Width, (int)dimensions.Height);
+		DrawFrame(spriteBatch, frame, BackgroundColor);
+		UICornerSoulRenderer.Draw(spriteBatch, frame, SoulEffectSeed);
+	}
+
+	internal static void DrawFrame(SpriteBatch spriteBatch, Rectangle frame, Color backgroundColor)
+	{
 		Texture2D pixel = TextureAssets.MagicPixel.Value;
 		Texture2D corner = ModContent.Request<Texture2D>("SoulsOfTerra/Content/UI/ShopUI_corner").Value;
 		Texture2D horizontalEdge = ModContent.Request<Texture2D>("SoulsOfTerra/Content/UI/ShopUI_top_bottom").Value;
@@ -146,7 +154,7 @@ internal sealed class SoulMenuFramePanel : UIPanel
 
 		// The inset fill leaves the transparent outer corner shapes intact.
 		Rectangle interior = new(frame.X + FrameInset, frame.Y + FrameInset, frame.Width - FrameInset * 2, frame.Height - FrameInset * 2);
-		spriteBatch.Draw(pixel, interior, BackgroundColor);
+		spriteBatch.Draw(pixel, interior, backgroundColor);
 
 		DrawHorizontalEdge(spriteBatch, horizontalEdge, frame.X + TileSize, frame.Right - TileSize, frame.Y, SpriteEffects.None);
 		DrawHorizontalEdge(spriteBatch, horizontalEdge, frame.X + TileSize, frame.Right - TileSize, frame.Bottom - TileSize, SpriteEffects.FlipVertically);
@@ -271,8 +279,7 @@ internal sealed class SoulMenuState : UIState
 		panel = new SoulMenuFramePanel();
 		panel.Width.Set(540f, 0f);
 		panel.Height.Set(340f, 0f);
-		// Shop-style placement keeps the world and player visible during interaction.
-		panel.Left.Set(36f, 0f);
+		panel.HAlign = 0.5f;
 		panel.VAlign = 0.5f;
 		panel.BackgroundColor = SoullessUIPalette.Panel;
 		panel.BorderColor = SoullessUIPalette.PanelBorder;
@@ -344,6 +351,7 @@ internal sealed class SoulMenuState : UIState
 	{
 		kind = MenuKind.Soulless;
 		npcIndex = requestedNpcIndex;
+		panel.SoulEffectSeed = unchecked(requestedNpcIndex * 486187739 + 17);
 		soullessTab = SoullessTab.Services;
 		selectedCrystalIndex = 0;
 		BuildSoullessLayout();
@@ -355,6 +363,8 @@ internal sealed class SoulMenuState : UIState
 	{
 		kind = MenuKind.Terraforge;
 		terraforgePosition = requestedTerraforgePosition;
+		panel.SoulEffectSeed = unchecked(requestedTerraforgePosition.X * 73856093
+			^ requestedTerraforgePosition.Y * 19349663);
 		terraforgeTab = TerraforgeTab.Condense;
 		linkedWeaponSlot = -1;
 		linkedEssenceSlot = -1;
