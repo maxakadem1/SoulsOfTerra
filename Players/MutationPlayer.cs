@@ -263,7 +263,8 @@ public sealed class MutationPlayer : ModPlayer
 			}
 		}
 
-		int baseDamage = 10 + (int)(Player.statLifeMax2 * 0.05f);
+		int baseDamage = MutationSkeletronHandProjectile.BaseDamage
+			+ (int)(Player.statLifeMax2 * MutationSkeletronHandProjectile.LifeDamageScale);
 		int damage = Math.Max(1, (int)Player.GetTotalDamage(DamageClass.Generic).ApplyTo(baseDamage));
 		for (int side = 0; side < present.Length; side++)
 		{
@@ -273,7 +274,9 @@ public sealed class MutationPlayer : ModPlayer
 			}
 
 			float sideSign = side == 1 ? 1f : -1f;
-			Vector2 spawn = Player.MountedCenter + new Vector2(Player.direction * sideSign * 48f, -8f);
+			Vector2 spawn = MutationSkeletronHandProjectile.GetShoulder(Player, sideSign)
+				+ new Vector2(sideSign * MutationSkeletronHandProjectile.HoverOffsetX,
+					MutationSkeletronHandProjectile.HoverOffsetY);
 			Projectile.NewProjectile(Player.GetSource_Misc("SkeletronMutationHand"), spawn, Vector2.Zero,
 				projectileType, damage, MutationSkeletronHandProjectile.Knockback, Player.whoAmI, side);
 		}

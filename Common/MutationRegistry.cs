@@ -54,11 +54,12 @@ public static class MutationRegistry
 		Create<BrainOfCthulhuEssence>(MutationId.BrainOfCthulhu),
 		Create<QueenBeeEssence>(MutationId.QueenBee),
 		Create<SkeletronEssence>(MutationId.Skeletron, true,
-			"Mutation: Grafted hands rest at your shoulders and slap nearby enemies",
-			"Two Skeletron hands rest at your shoulders.\n" +
-			"They alternately lunge at enemies within 8 tiles.\n" +
-			"Slaps deal 10 + 5% of maximum life as generic damage,\n" +
-			"cleave along the hand's path, and pass through tiles."),
+			"Mutation: Grafted hands slap distant enemies and drag them to you",
+			"Two Skeletron hands hang from your shoulders.\n" +
+			"They alternately lunge at enemies within 32 tiles.\n" +
+			"Slaps deal 25 + 15% of maximum life as generic damage,\n" +
+			"cleave along the hand's path, and pass through tiles.\n" +
+			"Struck enemies are hauled toward you unless they resist knockback."),
 		Create<CongregationEssence>(MutationId.Congregation),
 		Create<WallOfFleshEssence>(MutationId.WallOfFlesh),
 		Create<QueenSlimeEssence>(MutationId.QueenSlime),

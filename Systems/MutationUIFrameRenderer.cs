@@ -1,6 +1,8 @@
 using System;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using SoulsOfTerra.Common;
+using SoulsOfTerra.Players;
 using Terraria;
 using Terraria.DataStructures;
 using Terraria.GameContent;
@@ -29,6 +31,7 @@ internal sealed class MutationUIFrameRenderer : ModSystem
 	private static float animationTime;
 	private static float hoverStrength;
 	private static int hoveredSlot = -1;
+	private static int selectedSlot = -1;
 	private static bool closeHovered;
 	private static Vector2[] socketCenters = Array.Empty<Vector2>();
 	private static Vector2 closeCenter;
@@ -134,6 +137,11 @@ internal sealed class MutationUIFrameRenderer : ModSystem
 		}
 	}
 
+	internal static void SetSelectedSlot(int slot)
+	{
+		selectedSlot = slot;
+	}
+
 	internal static void TriggerSelection(int slot) => StartAnimation(FrameAnimation.Selection, slot,
 		SelectionDuration);
 
@@ -146,6 +154,7 @@ internal sealed class MutationUIFrameRenderer : ModSystem
 	internal static void ResetInteraction()
 	{
 		hoveredSlot = -1;
+		selectedSlot = -1;
 		closeHovered = false;
 		hoverStrength = 0f;
 		activeAnimation = FrameAnimation.None;
@@ -153,25 +162,23 @@ internal sealed class MutationUIFrameRenderer : ModSystem
 		animationRemaining = 0f;
 	}
 
-	internal static void Draw(SpriteBatch spriteBatch, Vector2 panelTopLeft)
+	internal static void DrawInteraction(SpriteBatch spriteBatch, Vector2 panelTopLeft)
 	{
-		if (hasContent && frameTarget is not null && !frameTarget.IsDisposed)
+		if (!hasContent || frameTarget is null || frameTarget.IsDisposed)
 		{
-			// Only the interaction target uses point sampling; ordinary UI text resumes with linear sampling.
-			spriteBatch.End();
-			spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp,
-				DepthStencilState.None, RasterizerState.CullCounterClockwise, null, Main.UIScaleMatrix);
-			Vector2 position = SnapEven(panelTopLeft - new Vector2(FramePadding));
-			spriteBatch.Draw(frameTarget, position, null, Color.White, 0f, Vector2.Zero,
-				CompositeScale, SpriteEffects.None, 0f);
-			spriteBatch.End();
-			spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.LinearClamp,
-				DepthStencilState.None, RasterizerState.CullCounterClockwise, null, Main.UIScaleMatrix);
+			return;
 		}
 
-		Rectangle panel = new((int)MathF.Round(panelTopLeft.X), (int)MathF.Round(panelTopLeft.Y),
-			panelWidth, panelHeight);
-		UICornerSoulRenderer.Draw(spriteBatch, panel, configuredSeed);
+		// Only the interaction target uses point sampling; ordinary UI text resumes with linear sampling.
+		spriteBatch.End();
+		spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointClamp,
+			DepthStencilState.None, RasterizerState.CullCounterClockwise, null, Main.UIScaleMatrix);
+		Vector2 position = SnapEven(panelTopLeft - new Vector2(FramePadding));
+		spriteBatch.Draw(frameTarget, position, null, Color.White, 0f, Vector2.Zero,
+			CompositeScale, SpriteEffects.None, 0f);
+		spriteBatch.End();
+		spriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.LinearClamp,
+			DepthStencilState.None, RasterizerState.CullCounterClockwise, null, Main.UIScaleMatrix);
 	}
 
 	private static void StartAnimation(FrameAnimation animation, int slot, float duration)
@@ -239,6 +246,18 @@ internal sealed class MutationUIFrameRenderer : ModSystem
 
 	private static void DrawInteraction(SpriteBatch spriteBatch)
 	{
+		if (Main.LocalPlayer.active)
+		{
+			MutationPlayer mutationPlayer = Main.LocalPlayer.GetModPlayer<MutationPlayer>();
+			for (int slot = 0; slot < socketCenters.Length; slot++)
+			{
+				if (mutationPlayer.GetMutation(slot) != MutationId.None)
+				{
+					DrawOccupiedDrift(spriteBatch, slot);
+				}
+			}
+		}
+
 		if (hoverStrength > 0f)
 		{
 			if (closeHovered)
@@ -249,6 +268,12 @@ internal sealed class MutationUIFrameRenderer : ModSystem
 			{
 				DrawHoverCurrent(spriteBatch, hoveredSlot, hoverStrength);
 			}
+		}
+
+		if (selectedSlot >= 0 && selectedSlot < socketCenters.Length && selectedSlot != hoveredSlot
+			&& !closeHovered)
+		{
+			DrawHoverCurrent(spriteBatch, selectedSlot, Math.Max(0.42f, hoverStrength * 0.5f));
 		}
 
 		if (activeAnimation == FrameAnimation.None || activeSlot < 0 || activeSlot >= socketCenters.Length)
@@ -286,9 +311,23 @@ internal sealed class MutationUIFrameRenderer : ModSystem
 		for (int index = 0; index < 7; index++)
 		{
 			float angle = head - index * 0.16f;
-			Vector2 position = target + angle.ToRotationVector2() * 8f;
+			Vector2 position = target + angle.ToRotationVector2() * 11f;
 			DrawPixel(spriteBatch, pixel, position, index < 2 ? 2 : 1,
 				SoullessUIPalette.AccentText * (strength * (1f - index / 8f) * 0.58f));
+		}
+	}
+
+	private static void DrawOccupiedDrift(SpriteBatch spriteBatch, int slot)
+	{
+		Texture2D pixel = TextureAssets.MagicPixel.Value;
+		Vector2 target = ToTarget(socketCenters[slot]);
+		float head = animationTime * 0.95f + slot * 1.7f;
+		for (int index = 0; index < 6; index++)
+		{
+			float angle = head - index * 0.22f;
+			Vector2 position = target + angle.ToRotationVector2() * 10f;
+			DrawPixel(spriteBatch, pixel, position, index < 2 ? 2 : 1,
+				SoullessUIPalette.Accent * ((1f - index / 7f) * 0.42f));
 		}
 	}
 

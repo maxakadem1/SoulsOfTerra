@@ -23,6 +23,8 @@ public sealed class GraftingAltarSystem : ModSystem
 	private static UserInterface graftingInterface;
 	private static GraftingAltarState graftingState;
 
+	internal static UserInterface Interface => graftingInterface;
+
 	public static bool IsOpen => graftingInterface?.CurrentState == graftingState && graftingState is not null;
 
 	public override void Load()
@@ -84,7 +86,7 @@ public sealed class GraftingAltarSystem : ModSystem
 		layers.Insert(mouseTextIndex, new LegacyGameInterfaceLayer("SoulsOfTerra: Grafting Altar",
 			() =>
 			{
-				graftingInterface?.Draw(Main.spriteBatch, new GameTime());
+				graftingState?.DrawShopFull();
 				return true;
 			}, InterfaceScaleType.UI));
 	}
@@ -93,26 +95,32 @@ public sealed class GraftingAltarSystem : ModSystem
 internal sealed class GraftingAltarState : UIState
 {
 	private const float InteractionRangeSquared = 12f * 16f * 12f * 16f;
-	private const float InventoryRight = 660f;
-	private const float PreferredPanelWidth = 456f;
-	private const float MinimumPanelWidth = 340f;
-	private const float PreferredPanelHeight = 548f;
-	private const float MinimumPanelHeight = 480f;
 	private const int CursorInventorySlot = 58;
+
+	private const int PanelWidth = ShopFullLayout.PanelWidth;
+	private const int PanelHeight = ShopFullLayout.PanelHeight;
+	private const int InteriorLeft = ShopFullLayout.InteriorLeft;
+	private const int InteriorBottomInset = ShopFullLayout.InteriorBottomInset;
+	private const int BoxWidth = ShopFullLayout.BoxWidth;
+	private const int BoxHeight = ShopFullLayout.BoxHeight;
+	private const int BoxGap = 20;
+	private const int SocketLabelHeight = 26;
+	private const int SocketsTop = 158;
+	private const int DetailsTop = 262;
 
 	private MutationPanelElement panel;
 	private UIText title;
 	private UIText subtitle;
 	private UIText insertInstruction;
 	private UIText removeInstruction;
-	private MutationCloseElement closeButton;
+	private ShopFullCloseElement closeButton;
 	private readonly MutationSocketElement[] sockets = new MutationSocketElement[MutationPlayer.SlotCount];
 	private readonly MutationId[] previousMutations = new MutationId[MutationPlayer.SlotCount];
 	private MutationDetailsElement details;
 	private Point16 altarPosition;
 	private int selectedSlot = -1;
-	private float currentPanelWidth;
-	private float currentPanelHeight;
+	private float currentPanelLeft;
+	private float currentPanelTop;
 
 	public override void OnInitialize()
 	{
@@ -120,6 +128,10 @@ internal sealed class GraftingAltarState : UIState
 		CreateSockets();
 		CreateDetails();
 		Append(panel);
+	}
+
+	public override void OnActivate()
+	{
 		ApplyLayout(force: true);
 	}
 
@@ -130,6 +142,17 @@ internal sealed class GraftingAltarState : UIState
 		SelectFirstOccupied();
 		SnapshotMutations();
 		ApplyLayout(force: true);
+		RefreshSelection();
+	}
+
+	internal void DrawShopFull()
+	{
+		if (!GraftingAltarSystem.IsOpen)
+		{
+			return;
+		}
+
+		ShopFullLayout.Draw(GraftingAltarSystem.Interface, this, panel, ref currentPanelLeft, ref currentPanelTop);
 	}
 
 	public override void Update(GameTime gameTime)
@@ -159,44 +182,46 @@ internal sealed class GraftingAltarState : UIState
 		panel = new MutationPanelElement();
 
 		title = new UIText(Localize("MutationTitle"), 1.05f);
-		title.Left.Set(28f, 0f);
-		title.Top.Set(14f, 0f);
+		ShopFullLayout.PlaceTitle(title);
 		panel.Append(title);
 
 		subtitle = new UIText(Localize("MutationSubtitle"), 0.68f);
-		subtitle.Left.Set(23f, 0f);
-		subtitle.Top.Set(44f, 0f);
+		ShopFullLayout.PlaceSubtitle(subtitle);
 		subtitle.TextColor = SoullessUIPalette.TextSecondary;
 		panel.Append(subtitle);
 
-		closeButton = new MutationCloseElement();
-		closeButton.Width.Set(34f, 0f);
-		closeButton.Height.Set(30f, 0f);
-		closeButton.Top.Set(12f, 0f);
+		closeButton = new ShopFullCloseElement();
+		ShopFullLayout.PlaceClose(closeButton);
 		closeButton.OnMouseOver += (_, _) => SetCloseButtonHover(true);
 		closeButton.OnMouseOut += (_, _) => SetCloseButtonHover(false);
 		closeButton.OnLeftClick += (_, _) => GraftingAltarSystem.Close();
 		panel.Append(closeButton);
 
 		insertInstruction = new UIText(Localize("MutationInsertInstruction"), 0.59f);
-		insertInstruction.Left.Set(23f, 0f);
-		insertInstruction.Top.Set(77f, 0f);
+		insertInstruction.Left.Set(InteriorLeft, 0f);
+		insertInstruction.Top.Set(108f, 0f);
 		insertInstruction.TextColor = SoullessUIPalette.TextSecondary;
 		panel.Append(insertInstruction);
 
 		removeInstruction = new UIText(Localize("MutationRemoveInstruction"), 0.59f);
-		removeInstruction.Left.Set(23f, 0f);
-		removeInstruction.Top.Set(99f, 0f);
+		removeInstruction.Left.Set(InteriorLeft, 0f);
+		removeInstruction.Top.Set(128f, 0f);
 		removeInstruction.TextColor = SoullessUIPalette.WarningText;
 		panel.Append(removeInstruction);
 	}
 
 	private void CreateSockets()
 	{
+		float groupWidth = sockets.Length * BoxWidth + (sockets.Length - 1) * BoxGap;
+		float socketsLeft = ShopFullLayout.SnapEven((PanelWidth - groupWidth) * 0.5f);
 		for (int slot = 0; slot < sockets.Length; slot++)
 		{
 			int capturedSlot = slot;
 			sockets[slot] = new MutationSocketElement(slot);
+			sockets[slot].Left.Set(socketsLeft + slot * (BoxWidth + BoxGap), 0f);
+			sockets[slot].Top.Set(SocketsTop, 0f);
+			sockets[slot].Width.Set(BoxWidth, 0f);
+			sockets[slot].Height.Set(BoxHeight + SocketLabelHeight, 0f);
 			sockets[slot].OnLeftClick += (_, _) => HandleSocketLeftClick(capturedSlot);
 			sockets[slot].OnRightClick += (_, _) => HandleSocketRightClick(capturedSlot);
 			sockets[slot].OnMouseOver += (_, _) => HandleSocketHover(capturedSlot, true);
@@ -208,58 +233,33 @@ internal sealed class GraftingAltarState : UIState
 	private void CreateDetails()
 	{
 		details = new MutationDetailsElement();
+		details.Left.Set(InteriorLeft, 0f);
+		details.Top.Set(DetailsTop, 0f);
+		details.Width.Set(PanelWidth - InteriorLeft * 2f, 0f);
+		details.Height.Set(PanelHeight - DetailsTop - InteriorBottomInset, 0f);
 		panel.Append(details);
 	}
 
 	private void ApplyLayout(bool force = false)
 	{
-		float virtualWidth = Main.screenWidth / Main.UIScale;
-		float virtualHeight = Main.screenHeight / Main.UIScale;
-		float availableWidth = virtualWidth - InventoryRight - 18f;
-		float panelWidth = MathHelper.Clamp(availableWidth, MinimumPanelWidth, PreferredPanelWidth);
-		float panelHeight = MathHelper.Clamp(virtualHeight - 54f, MinimumPanelHeight, PreferredPanelHeight);
-		if (!force && Math.Abs(panelWidth - currentPanelWidth) < 0.5f
-			&& Math.Abs(panelHeight - currentPanelHeight) < 0.5f)
+		if (!ShopFullLayout.TryPlaceBesideInventory(panel, ref currentPanelLeft, ref currentPanelTop, force))
 		{
 			return;
 		}
 
-		currentPanelWidth = panelWidth;
-		currentPanelHeight = panelHeight;
-		// Compact widths preserve the three-column composition instead of covering the inventory.
-		float panelLeft = SnapEven(Math.Min(InventoryRight, virtualWidth - panelWidth - 12f));
-		float panelTop = SnapEven(Math.Max(38f, (virtualHeight - panelHeight) * 0.5f));
-		panel.Left.Set(panelLeft, 0f);
-		panel.Top.Set(panelTop, 0f);
-		panel.Width.Set(panelWidth, 0f);
-		panel.Height.Set(panelHeight, 0f);
-		closeButton.Left.Set(panelWidth - 52f, 0f);
+		panel.SoulEffectSeed = unchecked(altarPosition.X * 73856093 ^ altarPosition.Y * 19349663);
+		ShopFullLayout.Recalculate(this, GraftingAltarSystem.Interface);
 
-		float socketGap = 8f;
-		float socketsLeft = 20f;
-		float socketWidth = (panelWidth - socketsLeft * 2f - socketGap * 2f) / sockets.Length;
-		for (int slot = 0; slot < sockets.Length; slot++)
-		{
-			sockets[slot].Left.Set(socketsLeft + slot * (socketWidth + socketGap), 0f);
-			sockets[slot].Top.Set(128f, 0f);
-			sockets[slot].Width.Set(socketWidth, 0f);
-			sockets[slot].Height.Set(112f, 0f);
-		}
-
-		details.Left.Set(20f, 0f);
-		details.Top.Set(258f, 0f);
-		details.Width.Set(panelWidth - 40f, 0f);
-		details.Height.Set(panelHeight - 278f, 0f);
-		Recalculate();
-
+		float groupWidth = sockets.Length * BoxWidth + (sockets.Length - 1) * BoxGap;
+		float socketsLeft = ShopFullLayout.SnapEven((PanelWidth - groupWidth) * 0.5f);
 		Vector2[] centers = new Vector2[sockets.Length];
 		for (int slot = 0; slot < sockets.Length; slot++)
 		{
-			centers[slot] = new Vector2(socketsLeft + slot * (socketWidth + socketGap) + socketWidth * 0.5f,
-				128f + 37f);
+			centers[slot] = new Vector2(socketsLeft + slot * (BoxWidth + BoxGap) + BoxWidth * 0.5f,
+				SocketsTop + BoxHeight * 0.5f);
 		}
-		MutationUIFrameRenderer.Configure(altarPosition, panelWidth, panelHeight, centers,
-			new Vector2(panelWidth - 35f, 27f));
+		MutationUIFrameRenderer.Configure(altarPosition, PanelWidth, PanelHeight, centers,
+			new Vector2(PanelWidth - 47f, 67f));
 	}
 
 	private void HandleSocketLeftClick(int slot)
@@ -379,6 +379,7 @@ internal sealed class GraftingAltarState : UIState
 			sockets[slot].Selected = selectedSlot == slot;
 		}
 		details.SelectedSlot = selectedSlot;
+		MutationUIFrameRenderer.SetSelectedSlot(selectedSlot);
 	}
 
 	private void SetCloseButtonHover(bool hovered)
@@ -467,37 +468,21 @@ internal sealed class GraftingAltarState : UIState
 	}
 
 	private static string Localize(string key) => Language.GetTextValue($"Mods.SoulsOfTerra.UI.{key}");
-
-	private static float SnapEven(float value) => MathF.Round(value * 0.5f) * 2f;
 }
 
-internal sealed class MutationPanelElement : UIElement
+internal sealed class MutationPanelElement : ShopFullPanel
 {
-	protected override void DrawSelf(SpriteBatch spriteBatch)
+	public override void Draw(SpriteBatch spriteBatch)
 	{
+		base.Draw(spriteBatch);
 		CalculatedStyle dimensions = GetDimensions();
-		Rectangle panelArea = dimensions.ToRectangle();
-		// The authored frame provides enough separation without an additional drop shadow.
-		SoulMenuFramePanel.DrawFrame(spriteBatch, panelArea, SoullessUIPalette.Panel);
-		MutationUIFrameRenderer.Draw(spriteBatch, new Vector2(dimensions.X, dimensions.Y));
-	}
-}
-
-internal sealed class MutationCloseElement : UIElement
-{
-	public bool Hovered { get; set; }
-
-	protected override void DrawSelf(SpriteBatch spriteBatch)
-	{
-		CalculatedStyle dimensions = GetDimensions();
-		Color color = Hovered ? SoullessUIPalette.AccentText : SoullessUIPalette.TextSecondary;
-		Utils.DrawBorderString(spriteBatch, "×", dimensions.Center(), color, 0.82f, 0.5f, 0.5f);
+		// Boxes are child elements, so socket orbits must be composited after them.
+		MutationUIFrameRenderer.DrawInteraction(spriteBatch, new Vector2(dimensions.X, dimensions.Y));
 	}
 }
 
 internal sealed class MutationSocketElement : UIElement
 {
-	private const int SocketSize = 74;
 	private readonly int slot;
 
 	public bool Selected { get; set; }
@@ -514,36 +499,36 @@ internal sealed class MutationSocketElement : UIElement
 		bool available = mutationPlayer.IsSlotAvailable(slot);
 		MutationId id = mutationPlayer.GetMutation(slot);
 		bool occupied = MutationRegistry.TryGet(id, out MutationDefinition definition);
-		Rectangle socket = new((int)(dimensions.Center().X - SocketSize * 0.5f), (int)dimensions.Y,
-			SocketSize, SocketSize);
-		DrawSocketGround(spriteBatch, socket, available);
+		Rectangle box = new((int)MathF.Round(dimensions.X), (int)MathF.Round(dimensions.Y),
+			ShopFullLayout.BoxWidth, ShopFullLayout.BoxHeight);
+		DrawBox(spriteBatch, box, available);
+		Vector2 itemCenter = new(box.X + box.Width * 0.5f, box.Y + box.Height * 0.5f);
 
 		string label;
 		if (!available)
 		{
-			DrawLockedIcon(spriteBatch, socket.Center.ToVector2());
+			DrawLockedIcon(spriteBatch, itemCenter);
 			label = Localize("MutationLockedName");
 		}
 		else if (occupied)
 		{
 			if (Selected || IsMouseHovering)
 			{
-				DrawItemGlow(spriteBatch, definition.EssenceItemType, socket.Center.ToVector2());
+				DrawItemGlow(spriteBatch, definition.EssenceItemType, itemCenter);
 			}
-			ImbuementSlotDrawing.DrawItem(spriteBatch, definition.EssenceItemType,
-				socket.Center.ToVector2(), 50f);
+			ImbuementSlotDrawing.DrawItem(spriteBatch, definition.EssenceItemType, itemCenter, 40f);
 			label = definition.DisplayName;
 		}
 		else
 		{
-			DrawEmptyMark(spriteBatch, socket.Center.ToVector2());
+			DrawEmptyMark(spriteBatch, itemCenter);
 			label = Localize("MutationEmptyName");
 		}
 
 		Color labelColor = Selected ? SoullessUIPalette.AccentText
 			: available ? SoullessUIPalette.TextSecondary : SoullessUIPalette.TextMuted;
 		Utils.DrawBorderString(spriteBatch, label,
-			new Vector2(dimensions.Center().X, dimensions.Y + 82f), labelColor, 0.58f, 0.5f);
+			new Vector2(dimensions.Center().X, box.Bottom + 6f), labelColor, 0.58f, 0.5f);
 
 		if (IsMouseHovering)
 		{
@@ -551,31 +536,13 @@ internal sealed class MutationSocketElement : UIElement
 		}
 	}
 
-	private void DrawSocketGround(SpriteBatch spriteBatch, Rectangle area, bool available)
+	private void DrawBox(SpriteBatch spriteBatch, Rectangle destination, bool available)
 	{
-		Texture2D pixel = TextureAssets.MagicPixel.Value;
-		Vector2 center = area.Center.ToVector2();
-		// Layered inset shadows suggest a drop area without enclosing it in a box.
-		spriteBatch.Draw(pixel, new Rectangle((int)center.X - 29, area.Y + 10, 58, 48),
-			Color.Black * (available ? 0.16f : 0.24f));
-		spriteBatch.Draw(pixel, new Rectangle((int)center.X - 25, area.Y + 14, 50, 40),
-			SoullessUIPalette.SurfaceInset * (available ? 0.38f : 0.24f));
-
-		int lineY = area.Bottom - 4;
-		Color lineColor = available ? SoullessUIPalette.SteelMuted : SoullessUIPalette.SteelLow;
-		spriteBatch.Draw(pixel, new Rectangle((int)center.X - 25, lineY, 50, 2), lineColor * 0.72f);
-		if (Selected)
-		{
-			spriteBatch.Draw(pixel, new Rectangle((int)center.X - 32, lineY - 2, 64, 6),
-				SoullessUIPalette.Accent * 0.14f);
-			spriteBatch.Draw(pixel, new Rectangle((int)center.X - 26, lineY, 52, 2),
-				SoullessUIPalette.Accent);
-		}
-		else if (IsMouseHovering && available)
-		{
-			spriteBatch.Draw(pixel, new Rectangle((int)center.X - 25, lineY, 50, 2),
-				SoullessUIPalette.AccentMuted);
-		}
+		Color color = !available ? Color.White * 0.55f
+			: Selected ? Color.Lerp(Color.White, SoullessUIPalette.Accent, 0.28f)
+			: IsMouseHovering ? Color.Lerp(Color.White, SoullessUIPalette.Accent, 0.14f)
+			: Color.White;
+		ShopFullArt.DrawBox(spriteBatch, destination, color);
 	}
 
 	private static void DrawItemGlow(SpriteBatch spriteBatch, int itemType, Vector2 center)
@@ -583,7 +550,7 @@ internal sealed class MutationSocketElement : UIElement
 		for (int direction = 0; direction < 4; direction++)
 		{
 			Vector2 offset = (MathHelper.PiOver2 * direction).ToRotationVector2() * 2f;
-			ImbuementSlotDrawing.DrawItem(spriteBatch, itemType, center + offset, 50f,
+			ImbuementSlotDrawing.DrawItem(spriteBatch, itemType, center + offset, 40f,
 				SoullessUIPalette.Accent * 0.16f);
 		}
 	}
@@ -599,7 +566,7 @@ internal sealed class MutationSocketElement : UIElement
 	private static void DrawLockedIcon(SpriteBatch spriteBatch, Vector2 center)
 	{
 		Main.instance.LoadItem(ItemID.DemonHeart);
-		ImbuementSlotDrawing.DrawItem(spriteBatch, ItemID.DemonHeart, center, 34f,
+		ImbuementSlotDrawing.DrawItem(spriteBatch, ItemID.DemonHeart, center, 28f,
 			SoullessUIPalette.TextMuted * 0.82f);
 	}
 

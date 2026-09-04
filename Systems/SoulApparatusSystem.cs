@@ -52,7 +52,7 @@ public sealed class SoulApparatusSystem : ModSystem
 		SoulMenuSystem.Close();
 		SoulSpellBookSystem.Close();
 		GraftingAltarSystem.Close();
-		Main.playerInventory = false;
+		Main.playerInventory = true;
 		apparatusState.Open(topLeft);
 		apparatusInterface.SetState(apparatusState);
 	}
@@ -72,7 +72,7 @@ public sealed class SoulApparatusSystem : ModSystem
 		layers.Insert(mouseTextIndex, new LegacyGameInterfaceLayer("SoulsOfTerra: Soul Apparatus",
 			() =>
 			{
-				apparatusInterface?.Draw(Main.spriteBatch, new GameTime());
+				apparatusState?.DrawShopFull();
 				return true;
 			}, InterfaceScaleType.UI));
 	}
@@ -81,9 +81,13 @@ public sealed class SoulApparatusSystem : ModSystem
 internal sealed class SoulApparatusState : UIState
 {
 	private const float InteractionRangeSquared = 12f * 16f * 12f * 16f;
-	private SoulMenuFramePanel panel;
+	private const string DefaultRecipeHint = "Select a complete recipe to begin its dissolution ritual.";
+	private const float RecipeListTop = 25f;
+	private const float RecipeListHeight = ShopFullLayout.PanelHeight - ShopFullLayout.BodyTop
+		- ShopFullLayout.InteriorBottomInset - RecipeListTop;
+	private ShopFullPanel panel;
+	private ShopFullCloseElement closeButton;
 	private UIText title;
-	private UIText subtitle;
 	private UIText progress;
 	private UITextPanel<string> dissolveTab;
 	private UIElement recipeContent;
@@ -92,7 +96,6 @@ internal sealed class SoulApparatusState : UIState
 	private UIScrollbar recipeScrollBar;
 	private UIText recipeHint;
 	private UIText feedback;
-	private UITextPanel<string> closeButton;
 	private readonly List<ImbuementRecipeRow> rows = new();
 
 	private ImbuementRitualCanvas ritualContent;
@@ -110,6 +113,8 @@ internal sealed class SoulApparatusState : UIState
 	private int selectedRecipe = -1;
 	private int potionSlot = -1;
 	private int essenceSlot = -1;
+	private float currentPanelLeft;
+	private float currentPanelTop;
 	internal bool IsRitualResonating => !showingRecipes && CanDissolveSelected();
 
 	public override void OnInitialize()
@@ -119,6 +124,11 @@ internal sealed class SoulApparatusState : UIState
 		CreateRitualPage();
 	}
 
+	public override void OnActivate()
+	{
+		ApplyShopPlacement(force: true);
+	}
+
 	public void Open(Point16 topLeft)
 	{
 		apparatusPosition = topLeft;
@@ -126,12 +136,23 @@ internal sealed class SoulApparatusState : UIState
 		ShowRecipes();
 	}
 
+	internal void DrawShopFull()
+	{
+		if (!SoulApparatusSystem.IsOpen)
+		{
+			return;
+		}
+
+		ShopFullLayout.Draw(SoulApparatusSystem.Interface, this, panel, ref currentPanelLeft, ref currentPanelTop);
+	}
+
 	public override void Update(GameTime gameTime)
 	{
 		base.Update(gameTime);
 		Player player = Main.LocalPlayer;
 		Tile tile = Framing.GetTileSafely(apparatusPosition.X, apparatusPosition.Y);
-		if (!player.active || player.dead || Main.keyState.IsKeyDown(Keys.Escape) || !tile.HasTile
+		if (!player.active || player.dead || !Main.playerInventory || Main.keyState.IsKeyDown(Keys.Escape)
+			|| !tile.HasTile
 			|| tile.TileType != ModContent.TileType<SoulApparatusTile>()
 			|| Vector2.DistanceSquared(player.Center, apparatusPosition.ToWorldCoordinates(24f, 24f)) > InteractionRangeSquared)
 		{
@@ -139,6 +160,7 @@ internal sealed class SoulApparatusState : UIState
 			return;
 		}
 
+		ApplyShopPlacement();
 		if (panel.Parent is not null && panel.ContainsPoint(Main.MouseScreen)
 			|| ritualContent.Parent is not null && ritualContent.ContainsPoint(Main.MouseScreen))
 		{
@@ -150,8 +172,8 @@ internal sealed class SoulApparatusState : UIState
 			ritualReveal = Math.Min(1f, ritualReveal + 0.075f);
 			float easedReveal = 1f - MathF.Pow(1f - ritualReveal, 3f);
 			ritualContent.Reveal = easedReveal;
-			ritualContent.Top.Set((1f - easedReveal) * 18f, 0f);
-			Recalculate();
+			ritualContent.Top.Set(ShopFullLayout.BodyTop + (1f - easedReveal) * 18f, 0f);
+			ShopFullLayout.Recalculate(this, SoulApparatusSystem.Interface);
 		}
 
 		if (showingRecipes)
@@ -167,88 +189,65 @@ internal sealed class SoulApparatusState : UIState
 
 	private void CreateCatalogueFrame()
 	{
-		panel = new SoulMenuFramePanel();
-		panel.Width.Set(540f, 0f);
-		panel.Height.Set(548f, 0f);
-		panel.HAlign = 0.5f;
-		panel.VAlign = 0.5f;
-		panel.BackgroundColor = SoullessUIPalette.Panel;
-		panel.BorderColor = SoullessUIPalette.PanelBorder;
+		panel = new ShopFullPanel();
 
 		title = new UIText("Soul Apparatus", 1.05f);
-		title.Left.Set(20f, 0f);
-		title.Top.Set(14f, 0f);
-
-		subtitle = new UIText("Permanent potion soulspells", 0.72f);
-		subtitle.Left.Set(21f, 0f);
-		subtitle.Top.Set(43f, 0f);
-		subtitle.TextColor = SoullessUIPalette.TextSecondary;
+		ShopFullLayout.PlaceTitle(title);
 
 		progress = new UIText(string.Empty, 0.82f);
 		progress.HAlign = 1f;
-		progress.Left.Set(-20f, 0f);
-		progress.Top.Set(22f, 0f);
+		// Keep progress below the title and clear of the close control.
+		progress.Left.Set(-ShopFullLayout.TitleLeft, 0f);
+		progress.Top.Set(ShopFullLayout.SubtitleTop, 0f);
 		progress.TextColor = SoullessUIPalette.AccentText;
 
 		dissolveTab = new UITextPanel<string>("Dissolve", 0.68f, false);
 		dissolveTab.Width.Set(130f, 0f);
 		dissolveTab.Height.Set(30f, 0f);
-		dissolveTab.Left.Set(16f, 0f);
-		dissolveTab.Top.Set(68f, 0f);
+		dissolveTab.Left.Set(ShopFullLayout.InteriorLeft, 0f);
+		dissolveTab.Top.Set(ShopFullLayout.TabsTop - 4f, 0f);
 		dissolveTab.BackgroundColor = SoullessUIPalette.AccentSurface;
 		dissolveTab.BorderColor = SoullessUIPalette.Accent;
 		dissolveTab.TextColor = SoullessUIPalette.AccentText;
 
 		feedback = new UIText(string.Empty, 0.72f);
 		feedback.HAlign = 0.5f;
-		feedback.Top.Set(486f, 0f);
 		feedback.TextColor = SoullessUIPalette.AccentMuted;
 
-		closeButton = new UITextPanel<string>("Close", 0.72f, false);
-		closeButton.Width.Set(92f, 0f);
-		closeButton.Height.Set(32f, 0f);
-		closeButton.HAlign = 0.5f;
-		closeButton.Top.Set(506f, 0f);
-		closeButton.BackgroundColor = SoullessUIPalette.SurfaceRaised;
-		closeButton.BorderColor = SoullessUIPalette.Steel;
-		closeButton.OnMouseOver += (_, _) =>
-		{
-			closeButton.BackgroundColor = SoullessUIPalette.SurfaceHover;
-			closeButton.BorderColor = SoullessUIPalette.AccentHoverBorder;
-		};
-		closeButton.OnMouseOut += (_, _) =>
-		{
-			closeButton.BackgroundColor = SoullessUIPalette.SurfaceRaised;
-			closeButton.BorderColor = SoullessUIPalette.Steel;
-		};
+		closeButton = new ShopFullCloseElement();
+		ShopFullLayout.PlaceClose(closeButton);
+		closeButton.OnMouseOver += (_, _) => closeButton.Hovered = true;
+		closeButton.OnMouseOut += (_, _) => closeButton.Hovered = false;
 		closeButton.OnLeftClick += (_, _) => SoulApparatusSystem.Close();
 	}
 
 	private void CreateRecipePage()
 	{
 		recipeContent = new UIElement();
-		recipeContent.Width.Set(-32f, 1f);
-		recipeContent.Height.Set(328f, 0f);
-		recipeContent.Left.Set(16f, 0f);
-		recipeContent.Top.Set(108f, 0f);
+		recipeContent.Width.Set(-(ShopFullLayout.InteriorLeft * 2f), 1f);
+		recipeContent.Height.Set(RecipeListTop + RecipeListHeight, 0f);
+		recipeContent.Left.Set(ShopFullLayout.InteriorLeft, 0f);
+		recipeContent.Top.Set(ShopFullLayout.BodyTop, 0f);
 
-		recipeHint = new UIText("Select a complete recipe to begin its dissolution ritual.", 0.62f);
+		recipeHint = new UIText(DefaultRecipeHint, 0.62f);
 		recipeHint.TextColor = SoullessUIPalette.TextSecondary;
 		recipeContent.Append(recipeHint);
 
 		recipeListContainer = new UIElement();
 		recipeListContainer.Width.Set(0f, 1f);
-		recipeListContainer.Height.Set(303f, 0f);
-		recipeListContainer.Top.Set(25f, 0f);
+		recipeListContainer.Height.Set(RecipeListHeight, 0f);
+		recipeListContainer.Top.Set(RecipeListTop, 0f);
 		recipeContent.Append(recipeListContainer);
 
 		recipeList = new UIList();
-		recipeList.Width.Set(-26f, 1f);
+		// Inset animated row borders so the list scissor does not clip their left edge.
+		recipeList.Left.Set(3f, 0f);
+		recipeList.Width.Set(-29f, 1f);
 		recipeList.Height.Set(0f, 1f);
-		recipeList.ListPadding = 5f;
+		// Six rows use the full interior height while staying clear of the lower frame.
+		recipeList.ListPadding = 4.5f;
 		recipeListContainer.Append(recipeList);
 
-		// Use the same corrected scrollbar geometry as the Terraforge catalogue.
 		recipeScrollBar = new FixedUIScrollbar(SoulApparatusSystem.Interface);
 		recipeScrollBar.Height.Set(0f, 1f);
 		recipeScrollBar.HAlign = 1f;
@@ -260,35 +259,36 @@ internal sealed class SoulApparatusState : UIState
 	{
 		ritualContent = new ImbuementRitualCanvas("DISSOLUTION RITUAL",
 			"Dissolve a draught into a permanent rite.");
-		ritualContent.Width.Set(480f, 0f);
-		ritualContent.Height.Set(410f, 0f);
-		ritualContent.HAlign = 0.5f;
-		ritualContent.VAlign = 0.5f;
+		ritualContent.DrawHeader = false;
+		ritualContent.Width.Set(-(ShopFullLayout.InteriorLeft * 2f), 1f);
+		ritualContent.Height.Set(430f, 0f);
+		ritualContent.Left.Set(ShopFullLayout.InteriorLeft, 0f);
+		ritualContent.Top.Set(ShopFullLayout.BodyTop, 0f);
 
 		potionSocket = new ImbuementWeaponSocket();
 		potionSocket.HAlign = 0.5f;
-		potionSocket.Top.Set(88f, 0f);
+		potionSocket.Top.Set(28f, 0f);
 
 		potionName = new UIText("Select Potion", 0.57f);
 		potionName.HAlign = 0.5f;
 		potionName.VAlign = 0.5f;
 		potionName.TextColor = SoullessUIPalette.TextPrimary;
-		CreateRitualLabelPlate(potionName, 181f, 250f);
+		CreateRitualLabelPlate(potionName, 108f, 250f);
 
 		essenceSocket = new ImbuementEssenceSocket();
 		essenceSocket.HAlign = 0.5f;
-		essenceSocket.Top.Set(225f, 0f);
+		essenceSocket.Top.Set(155f, 0f);
 
 		essenceName = new UIText("Select Essence", 0.54f);
 		essenceName.HAlign = 0.5f;
 		essenceName.VAlign = 0.5f;
 		essenceName.TextColor = SoullessUIPalette.TextSecondary;
-		CreateRitualLabelPlate(essenceName, 282f, 220f);
+		CreateRitualLabelPlate(essenceName, 230f, 220f);
 
 		ritualDrain = new UIText(string.Empty, 0.64f);
 		ritualDrain.HAlign = 1f;
-		ritualDrain.Left.Set(-16f, 0f);
-		ritualDrain.Top.Set(18f, 0f);
+		ritualDrain.Left.Set(-8f, 0f);
+		ritualDrain.Top.Set(4f, 0f);
 		ritualDrain.TextColor = SoullessUIPalette.AccentMuted;
 
 		backButton = CreateRitualButton("Back to Recipes", 140f);
@@ -318,6 +318,16 @@ internal sealed class SoulApparatusState : UIState
 		dissolveButton.OnMouseOut += (_, _) => ApplyDissolveButtonStyle();
 	}
 
+	private void ApplyShopPlacement(bool force = false)
+	{
+		if (!ShopFullLayout.TryPlaceBesideInventory(panel, ref currentPanelLeft, ref currentPanelTop, force))
+		{
+			return;
+		}
+
+		ShopFullLayout.Recalculate(this, SoulApparatusSystem.Interface);
+	}
+
 	private void ShowRecipes(string message = null)
 	{
 		showingRecipes = true;
@@ -329,17 +339,16 @@ internal sealed class SoulApparatusState : UIState
 		panel.RemoveAllChildren();
 		Append(panel);
 		panel.Append(title);
-		panel.Append(subtitle);
 		panel.Append(progress);
 		panel.Append(dissolveTab);
 		panel.Append(recipeContent);
-		feedback.SetText(message ?? string.Empty);
-		feedback.Top.Set(486f, 0f);
-		panel.Append(feedback);
+		// Catalogue feedback temporarily replaces the instructional hint.
+		recipeHint.SetText(message ?? DefaultRecipeHint);
+		recipeHint.TextColor = message is null ? SoullessUIPalette.TextSecondary : SoullessUIPalette.AccentMuted;
 		panel.Append(closeButton);
 		RebuildRows();
 		RefreshProgress();
-		Recalculate();
+		ApplyShopPlacement(force: true);
 	}
 
 	private void ShowRitual(int recipeIndex, int foundPotionSlot, int foundEssenceSlot)
@@ -350,29 +359,42 @@ internal sealed class SoulApparatusState : UIState
 		essenceSlot = foundEssenceSlot;
 		feedback.Remove();
 		RemoveAllChildren();
+		panel.RemoveAllChildren();
+		Append(panel);
+		panel.Append(title);
+		panel.Append(progress);
+		panel.Append(closeButton);
+		panel.Append(dissolveTab);
+		// Keep the shared ShopUI_full chrome; only the interior switches to the ritual.
 		ritualContent.RemoveAllChildren();
-		Append(ritualContent);
+		ritualContent.Width.Set(-(ShopFullLayout.InteriorLeft * 2f), 1f);
+		ritualContent.Height.Set(430f, 0f);
+		ritualContent.Left.Set(ShopFullLayout.InteriorLeft, 0f);
+		ritualContent.Top.Set(ShopFullLayout.BodyTop, 0f);
+		ritualContent.HAlign = 0f;
+		ritualContent.VAlign = 0f;
+		panel.Append(ritualContent);
 		ritualContent.Append(potionSocket);
 		ritualContent.Append(potionName.Parent);
 		ritualContent.Append(essenceSocket);
 		ritualContent.Append(essenceName.Parent);
 		ritualContent.Append(ritualDrain);
 
-		backButton.Left.Set(72f, 0f);
-		backButton.Top.Set(326f, 0f);
+		backButton.Left.Set(20f, 0f);
+		backButton.Top.Set(340f, 0f);
 		ritualContent.Append(backButton);
-		dissolveButton.Left.Set(230f, 0f);
-		dissolveButton.Top.Set(326f, 0f);
+		dissolveButton.Left.Set(176f, 0f);
+		dissolveButton.Top.Set(340f, 0f);
 		ritualContent.Append(dissolveButton);
 
 		feedback.SetText("The ingredients resonate.");
-		feedback.Top.Set(374f, 0f);
+		feedback.Top.Set(390f, 0f);
 		ritualContent.Append(feedback);
 		ritualReveal = 0f;
 		ritualContent.Reveal = 0f;
-		ritualContent.Top.Set(18f, 0f);
+		ritualContent.Top.Set(ShopFullLayout.BodyTop + 18f, 0f);
 		RefreshRitual();
-		Recalculate();
+		ApplyShopPlacement(force: true);
 	}
 
 	private void RebuildRows()
