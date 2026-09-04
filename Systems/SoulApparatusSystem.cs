@@ -102,7 +102,7 @@ internal sealed class SoulApparatusState : UIState
 	private ImbuementWeaponSocket potionSocket;
 	private ImbuementEssenceSocket essenceSocket;
 	private UIText potionName;
-	private UIText essenceName;
+	private UIText soulCostName;
 	private UIText ritualDrain;
 	private UITextPanel<string> backButton;
 	private UITextPanel<string> dissolveButton;
@@ -112,7 +112,6 @@ internal sealed class SoulApparatusState : UIState
 	private bool showingRecipes = true;
 	private int selectedRecipe = -1;
 	private int potionSlot = -1;
-	private int essenceSlot = -1;
 	private float currentPanelLeft;
 	private float currentPanelTop;
 	internal bool IsRitualResonating => !showingRecipes && CanDissolveSelected();
@@ -279,11 +278,11 @@ internal sealed class SoulApparatusState : UIState
 		essenceSocket.HAlign = 0.5f;
 		essenceSocket.Top.Set(155f, 0f);
 
-		essenceName = new UIText("Select Essence", 0.54f);
-		essenceName.HAlign = 0.5f;
-		essenceName.VAlign = 0.5f;
-		essenceName.TextColor = SoullessUIPalette.TextSecondary;
-		CreateRitualLabelPlate(essenceName, 230f, 220f);
+		soulCostName = new UIText($"{SoulTransactions.SoulspellLearnCost:N0} souls", 0.54f);
+		soulCostName.HAlign = 0.5f;
+		soulCostName.VAlign = 0.5f;
+		soulCostName.TextColor = SoullessUIPalette.TextSecondary;
+		CreateRitualLabelPlate(soulCostName, 230f, 220f);
 
 		ritualDrain = new UIText(string.Empty, 0.64f);
 		ritualDrain.HAlign = 1f;
@@ -333,7 +332,6 @@ internal sealed class SoulApparatusState : UIState
 		showingRecipes = true;
 		selectedRecipe = -1;
 		potionSlot = -1;
-		essenceSlot = -1;
 		feedback.Remove();
 		RemoveAllChildren();
 		panel.RemoveAllChildren();
@@ -351,12 +349,11 @@ internal sealed class SoulApparatusState : UIState
 		ApplyShopPlacement(force: true);
 	}
 
-	private void ShowRitual(int recipeIndex, int foundPotionSlot, int foundEssenceSlot)
+	private void ShowRitual(int recipeIndex, int foundPotionSlot)
 	{
 		showingRecipes = false;
 		selectedRecipe = recipeIndex;
 		potionSlot = foundPotionSlot;
-		essenceSlot = foundEssenceSlot;
 		feedback.Remove();
 		RemoveAllChildren();
 		panel.RemoveAllChildren();
@@ -377,7 +374,7 @@ internal sealed class SoulApparatusState : UIState
 		ritualContent.Append(potionSocket);
 		ritualContent.Append(potionName.Parent);
 		ritualContent.Append(essenceSocket);
-		ritualContent.Append(essenceName.Parent);
+		ritualContent.Append(soulCostName.Parent);
 		ritualContent.Append(ritualDrain);
 
 		backButton.Left.Set(20f, 0f);
@@ -387,7 +384,7 @@ internal sealed class SoulApparatusState : UIState
 		dissolveButton.Top.Set(340f, 0f);
 		ritualContent.Append(dissolveButton);
 
-		feedback.SetText("The ingredients resonate.");
+		feedback.SetText("The draught and souls resonate.");
 		feedback.Top.Set(390f, 0f);
 		ritualContent.Append(feedback);
 		ritualReveal = 0f;
@@ -422,12 +419,10 @@ internal sealed class SoulApparatusState : UIState
 		{
 			SoulSpellDefinition spell = SoulSpellRegistry.PotionSpells[index];
 			int foundPotion = FindInventorySlot(spell.PotionItemType);
-			int foundEssence = FindInventorySlot(spell.EssenceItemType);
 			bool learned = player.HasLearned(spell.Id);
-			SoulEssenceRegistry.TryFindByItemType(spell.EssenceItemType, out SoulEssenceDefinition essence);
-			bool unlocked = essence is not null && essence.IsUnlocked();
-			bool ready = !learned && unlocked && foundPotion >= 0 && foundEssence >= 0;
-			rows[index].SetContent(spell, ready, GetStatus(spell, essence, learned, foundPotion, foundEssence));
+			bool canAfford = CanAffordLearn();
+			bool ready = !learned && foundPotion >= 0 && canAfford;
+			rows[index].SetContent(spell, ready, GetStatus(spell, learned, foundPotion, canAfford));
 		}
 	}
 
@@ -445,16 +440,14 @@ internal sealed class SoulApparatusState : UIState
 	private void SelectRecipe(int recipeIndex)
 	{
 		SoulSpellDefinition spell = SoulSpellRegistry.PotionSpells[recipeIndex];
-		SoulEssenceRegistry.TryFindByItemType(spell.EssenceItemType, out SoulEssenceDefinition essence);
 		int foundPotion = FindInventorySlot(spell.PotionItemType);
-		int foundEssence = FindInventorySlot(spell.EssenceItemType);
 		if (Main.LocalPlayer.GetModPlayer<SoulSpellPlayer>().HasLearned(spell.Id)
-			|| essence is null || !essence.IsUnlocked() || foundPotion < 0 || foundEssence < 0)
+			|| foundPotion < 0 || !CanAffordLearn())
 		{
 			return;
 		}
 
-		ShowRitual(recipeIndex, foundPotion, foundEssence);
+		ShowRitual(recipeIndex, foundPotion);
 	}
 
 	private void RefreshRitual()
@@ -468,9 +461,9 @@ internal sealed class SoulApparatusState : UIState
 		SoulSpellDefinition spell = SoulSpellRegistry.PotionSpells[selectedRecipe];
 		bool ready = CanDissolveSelected();
 		potionSocket.SetItem(spell.PotionItemType, ready);
-		essenceSocket.SetItem(spell.EssenceItemType);
+		essenceSocket.SetSouls(SoulTransactions.SoulspellLearnCost);
 		potionName.SetText(Lang.GetItemNameValue(spell.PotionItemType));
-		essenceName.SetText(Lang.GetItemNameValue(spell.EssenceItemType));
+		soulCostName.SetText($"{SoulTransactions.SoulspellLearnCost:N0} souls");
 		ritualDrain.SetText($"{spell.Name}  •  {spell.CostText}");
 		ApplyDissolveButtonStyle();
 	}
@@ -484,7 +477,7 @@ internal sealed class SoulApparatusState : UIState
 
 		SoulSpellDefinition spell = SoulSpellRegistry.PotionSpells[selectedRecipe];
 		return !Main.LocalPlayer.GetModPlayer<SoulSpellPlayer>().HasLearned(spell.Id)
-			&& SlotMatches(potionSlot, spell.PotionItemType) && SlotMatches(essenceSlot, spell.EssenceItemType);
+			&& SlotMatches(potionSlot, spell.PotionItemType) && CanAffordLearn();
 	}
 
 	private void ApplyDissolveButtonStyle()
@@ -509,44 +502,41 @@ internal sealed class SoulApparatusState : UIState
 			packet.Write((byte)SoulMessageType.RequestSoulspellDissolution);
 			packet.Write((byte)selectedRecipe);
 			packet.Write((byte)potionSlot);
-			packet.Write((byte)essenceSlot);
 			packet.Write(apparatusPosition.X);
 			packet.Write(apparatusPosition.Y);
 			packet.Send();
 		}
 		else
 		{
-			SoulTransactions.TryDissolveSoulspell(Main.LocalPlayer, apparatusPosition, selectedRecipe, potionSlot, essenceSlot);
+			SoulTransactions.TryDissolveSoulspell(Main.LocalPlayer, apparatusPosition, selectedRecipe, potionSlot);
 		}
 
 		ShowRecipes("Soulspell learned.");
 	}
 
-	private static string GetStatus(SoulSpellDefinition spell, SoulEssenceDefinition essence, bool learned,
-		int potionSlot, int essenceSlot)
+	private static string GetStatus(SoulSpellDefinition spell, bool learned, int potionSlot, bool canAfford)
 	{
 		if (learned)
 		{
 			return "Learned";
 		}
-		if (essence is not null && !essence.IsUnlocked())
+		if (potionSlot < 0 && !canAfford)
 		{
-			return essence.GetRequirement();
-		}
-		if (potionSlot < 0 && essenceSlot < 0)
-		{
-			return $"Missing {Lang.GetItemNameValue(spell.PotionItemType)} and {Lang.GetItemNameValue(spell.EssenceItemType)}";
+			return $"Missing {Lang.GetItemNameValue(spell.PotionItemType)} and {SoulTransactions.SoulspellLearnCost:N0} souls";
 		}
 		if (potionSlot < 0)
 		{
 			return $"Missing {Lang.GetItemNameValue(spell.PotionItemType)}";
 		}
-		if (essenceSlot < 0)
+		if (!canAfford)
 		{
-			return $"Missing {Lang.GetItemNameValue(spell.EssenceItemType)}";
+			return $"Need {SoulTransactions.SoulspellLearnCost:N0} souls";
 		}
 		return "Ready — select recipe";
 	}
+
+	private static bool CanAffordLearn() =>
+		Main.LocalPlayer.GetModPlayer<SoulPlayer>().SoulBalance >= SoulTransactions.SoulspellLearnCost;
 
 	private static int FindInventorySlot(int itemType)
 	{

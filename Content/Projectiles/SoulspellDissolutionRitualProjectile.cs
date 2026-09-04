@@ -58,7 +58,7 @@ public sealed class SoulspellDissolutionRitualProjectile : ModProjectile
 
 	public override bool PreDraw(ref Color lightColor)
 	{
-		// Both ingredients collapse before the learned vanilla buff icon manifests.
+		// Potion and souls collapse before the learned vanilla buff icon manifests.
 		int recipeIndex = (int)Projectile.ai[0];
 		if (recipeIndex < 0 || recipeIndex >= SoulSpellRegistry.PotionSpells.Length)
 		{
@@ -71,11 +71,13 @@ public sealed class SoulspellDissolutionRitualProjectile : ModProjectile
 		if (age < RevealTime)
 		{
 			float collapse = Utils.GetLerpValue(RevealTime - 15f, RevealTime, age, true);
+			float remain = 1f - collapse;
 			float angle = age * 0.12f;
-			Vector2 potionOffset = angle.ToRotationVector2() * 30f * (1f - collapse);
-			Vector2 essenceOffset = (angle + MathHelper.Pi).ToRotationVector2() * 30f * (1f - collapse);
-			DrawItem(spell.PotionItemType, center + potionOffset, 0.68f * (1f - collapse), Color.White);
-			DrawItem(spell.EssenceItemType, center + essenceOffset, 0.58f * (1f - collapse), Color.White);
+			Vector2 potionOffset = angle.ToRotationVector2() * 30f * remain;
+			Vector2 soulOffset = (angle + MathHelper.Pi).ToRotationVector2() * 30f * remain;
+			DrawItem(spell.PotionItemType, center + potionOffset, 0.68f * remain, Color.White);
+			SoulOrbProjectile.DrawSoulVisualAt(center + soulOffset, SoulTransactions.SoulspellLearnCost,
+				remain, 0.55f * remain);
 		}
 		else
 		{

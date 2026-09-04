@@ -102,6 +102,8 @@ public sealed class MutationSkeletronHandProjectile : ModProjectile
 		Projectile.tileCollide = false;
 		Projectile.ignoreWater = true;
 		Projectile.netImportant = true;
+		Projectile.minion = true;
+		Projectile.minionSlots = 1f;
 		Projectile.DamageType = DamageClass.Generic;
 		Projectile.usesLocalNPCImmunity = true;
 		Projectile.localNPCHitCooldown = 20;

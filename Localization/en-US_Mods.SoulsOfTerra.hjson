@@ -31,7 +31,7 @@ UI: {
 	MutationTitle: Mutations
 	MutationSubtitle: Grafting Altar
 	MutationInsertInstruction: Drag an Essence onto an empty socket to embed it.
-	MutationRemoveInstruction: Right-click an embedded Essence to remove it permanently.
+	MutationRemoveInstruction: Right-click an embedded Essence to remove it and recover the Essence.
 	MutationDetailsHeader: MUTATION EFFECTS
 	MutationEmptyName: Empty
 	MutationLockedName: Locked
@@ -40,13 +40,13 @@ UI: {
 	MutationEmptyTitle: Empty mutation socket
 	MutationEmptyBody: Drag a discovered boss Essence here to embed its mutation.
 	MutationLockedTitle: Locked mutation socket
-	MutationLockedBody: Consume a Demon Heart to unlock this mutation socket.
+	MutationLockedBody: Consume a Demon Heart, or enter Hardmode in Classic, to unlock this mutation socket.
+	MutationLockedTooltip: Consume a Demon Heart, or enter Hardmode in Classic, to unlock this mutation socket
 	MutationEmptyTooltip: Drag a discovered boss Essence here to embed it
-	MutationLockedTooltip: Consume a Demon Heart to unlock this mutation socket
 	MutationOccupiedTooltip:
 		'''
 		Left-click to view effects
-		Right-click to remove permanently
+		Right-click to recover the Essence
 		'''
 	MutationOccupiedFeedback: Right-click the embedded mutation to remove it before inserting another.
 	MutationEssenceOnlyFeedback: Only boss Essences can be grafted.
@@ -217,7 +217,7 @@ Tiles: {
 Items: {
 	SoulApparatusItem: {
 		DisplayName: Soul Apparatus
-		Tooltip: Dissolves potions and boss essences into permanent soulspells
+		Tooltip: Dissolves a potion and a few souls into a permanent soulspell
 	}
 
 	GraftingAltarItem: {

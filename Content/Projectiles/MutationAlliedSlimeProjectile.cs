@@ -30,6 +30,9 @@ public sealed class MutationAlliedSlimeProjectile : ModProjectile
 		Projectile.tileCollide = true;
 		Projectile.ignoreWater = false;
 		Projectile.DamageType = DamageClass.Generic;
+		Projectile.minion = true;
+		Projectile.minionSlots = 1f;
+		Projectile.netImportant = true;
 		Projectile.usesLocalNPCImmunity = true;
 		Projectile.localNPCHitCooldown = 30;
 	}
@@ -44,6 +47,7 @@ public sealed class MutationAlliedSlimeProjectile : ModProjectile
 		}
 
 		NPC target = FindTarget(owner);
+		RefreshDamage(owner);
 		// Ground acceleration and timed hops imitate ordinary slime pursuit.
 		float targetX = target?.Center.X ?? owner.Center.X + owner.direction * 28f;
 		float direction = System.Math.Sign(targetX - Projectile.Center.X);
@@ -123,6 +127,12 @@ public sealed class MutationAlliedSlimeProjectile : ModProjectile
 			}
 		}
 		return nearest;
+	}
+
+	private void RefreshDamage(Player owner)
+	{
+		int baseDamage = 6 + (int)(owner.statLifeMax2 * 0.04f);
+		Projectile.damage = System.Math.Max(1, (int)owner.GetTotalDamage(DamageClass.Generic).ApplyTo(baseDamage));
 	}
 
 	private void UpdateFrames(bool grounded)
