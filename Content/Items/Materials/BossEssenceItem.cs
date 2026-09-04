@@ -60,9 +60,11 @@ public abstract class BossEssenceItem : ModItem
 			}
 		}
 
-		tooltips.Insert(firstLoreIndex, new TooltipLine(Mod, "Mutation",
+		tooltips.Insert(firstLoreIndex, new TooltipLine(Mod, "EssenceUses",
+			"Used for grafting, imbuement, and Soulspells") { OverrideColor = Color.White });
+		tooltips.Insert(firstLoreIndex + 1, new TooltipLine(Mod, "WeaponInfusion",
+			EssencePathRegistry.GetInventorySummary(Type)) { OverrideColor = new Color(80, 225, 205) });
+		tooltips.Insert(firstLoreIndex + 2, new TooltipLine(Mod, "Mutation",
 			MutationRegistry.GetInventorySummary(Type)) { OverrideColor = new Color(190, 105, 235) });
-		tooltips.Insert(firstLoreIndex + 1, new TooltipLine(Mod, "EssenceUses",
-			"Used for grafting, imbuement, and Soulspells") { OverrideColor = new Color(80, 225, 205) });
 	}
 }

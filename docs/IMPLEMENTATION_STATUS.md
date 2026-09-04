@@ -1,6 +1,6 @@
 # Souls of Terra — Implementation Status
 
-> This document describes the current prototype, not every intended feature. Last reviewed: 2026-08-31.
+> This document describes the current prototype, not every intended feature. Last reviewed: 2026-09-04.
 
 ## Current playable loop
 
@@ -36,12 +36,21 @@
 - Spellbook keybind (`K`) and Stance keybind (`Left Alt`), rebound in Controls.
 - Always band: Soul Skip on by default, double-tap easing surge, preserved vertical momentum, brief i-frames, no ram, chasing equipped-player echoes, converging fragments, reunion impact, and a full-height torn wake.
 - Mutually exclusive Soul Flight alternative: horizontal double-tap becomes two seconds of collision-aware free flight as the collectible soul, with ten-tick in/out dissolves, a continuous soul wake, seamless momentum, full damage immunity and outgoing-damage suppression, followed by a shared three-second cooldown.
-- Stance band: vanilla Shine learned and checked by default, Stance off, at 0.08 souls per second.
+- Stance band: vanilla Shine learned and checked by default, Stance off, at 2 souls per second.
 - Live loadout edits, server-authoritative drain, Stance drop at 0 souls or death, Always spells persist.
 - Four learned-spell categories across paged two-page spreads using the authored base, hover, and pressed arrows.
 - Buff-tray icons for Soul Skip, Soul Flight, and potion spells; right-click toggles the matching book state.
 - Soul Apparatus sold by Soulless for 1,000 souls after the Eye, with a 3-by-3 placeable tile, full recipe catalogue, focused dissolution ritual, and per-character permanent learning.
-- Forty eligible vanilla buff potions with exact fixed essences, progression/strength drain rates, multiplayer-authoritative consumption, and no vanilla-potion stat stacking.
+- Forty eligible vanilla buff potions learned with the potion plus 200 souls, no essence or era lock, 25× drain rates, multiplayer-authoritative consumption, and no vanilla-potion stat stacking.
+
+### Mutations
+
+- Grafting Altar sold by Soulless for 1,000 souls after King Slime or the Eye, with a placeable tile and a three-socket UI beside the inventory.
+- Dragging an essence onto an empty socket consumes it and embeds that mutation permanently; right-click purges and returns the essence; duplicates across slots are rejected.
+- Slot 3 unlocks from a Demon Heart, or from Hardmode in Classic worlds.
+- Nineteen mutations registered, two implemented: King Slime buds allied slimes and sprays weakening globules on hurt, at 10% slower movement; Skeletron grants two shoulder hands that alternately lunge, at -8 defense and increased knockback.
+- Mutation pets consume minion slots and refresh their damage live.
+- Per-character save data and multiplayer state synchronization.
 
 ### Soul orb presentation
 
@@ -165,6 +174,12 @@ These values have not been reconciled with measured boss rewards and are deliber
 - Terraforge formation, single-instance enforcement, clearance checks, recall, and dismantling need multiplayer playtesting.
 - Free-for-all bloodstains and orbs permit another player to take them by design.
 - Modded NPCs with unusual or misleading `value` data may need fallback logic or exceptions.
+- Event farming defeats the reward formula. Pumpkin Moon, Frost Moon, and invasion enemies carry `npc.value` far beyond ordinary play, so a player with an arena earns orders of magnitude more than one without. Every fixed price in the mod is therefore either trivial or punishing depending on whether the player farms.
+- Soulspell Stance drain is a 25× prototype. A full book now costs about 146 souls per second, which should keep ordinary potions relevant, but the scale still needs play against measured boss payouts.
+- Soul Crystals are a 25% opt-out from the death penalty. Items do not drop on death in Classic or Softcore, so banking before a risky fight removes bloodstains from the game for a modest fee.
+- In multiplayer one enemy pays one shared reward while prices stay fixed, so a four-player group earns a quarter each and pays full price. Combined with free-for-all orbs and bloodstains, group play is structurally adversarial.
+- Nine of the nineteen essences have no imbuement weapon, so condensing them currently leads nowhere except weapon temper paths.
+- Weapon temper DPS targets and level costs are prototypes and have not been measured against real play.
 - The complete `.tmod` package cannot be replaced externally while tModLoader has it loaded; compile-only validation still succeeds.
 - Existing worlds do not receive a Buried Court; the first implementation requires a newly generated world.
 - The redesigned arena layout, structure asset packaging, entrance traversal, multi-tile reliquary framing, seal hitboxes, attack timings, and procedural collision visuals require in-game validation.
@@ -202,11 +217,34 @@ These values have not been reconciled with measured boss rewards and are deliber
 22. Imbue a Musket into Carrion Call; throw bait onto an enemy and onto a tile, confirm the rumble, one boss-scale rise-and-dive from below, underground scrapes, one hit per enemy, a 1.75× chomp on a still-tagged host, a smaller burst on a floor meal, a miss when the host walks out, no ammo, and that a second slow throw can start while the first worm is still diving.
 23. Imbue a Magic Missile into Stars of Ruin; confirm the staff waves, twelve stars gather at its tip, lock one visible NPC near the cursor, launch rapidly from that shared origin into six mirrored curve pairs filling both sides of the aim line, begin homing only after the bouquet forms, collide with terrain, and continue without retargeting if their target dies; mana is consumed once per verse, and a second verse cannot start until the conductor ends.
 24. Die with low, medium, and high soul balances; verify capped bloodstain tiers, grounded rendering, hover and Smart Interact response, immediate recovery, collapse and burst feedback, second-death replacement, save/reload persistence, and multiplayer recovery synchronization.
-25. Open the spellbook, confirm Soul Skip on and Shine checked, double-tap to surge without ram damage, press Stance with 0 souls and confirm it fails, collect souls, hold Stance and confirm the displayed 0.08 souls-per-second drain uses the vanilla Shine effect.
+25. Open the spellbook, confirm Soul Skip on and Shine checked, double-tap to surge without ram damage, press Stance with 0 souls and confirm it fails, collect souls, hold Stance and confirm the displayed 2 souls-per-second drain uses the vanilla Shine effect.
 26. Uncheck Light while Stance is on, confirm drain stops, die with Stance on, and confirm Soul Skip remains available after respawn.
-27. Select Soul Flight and confirm Soul Skip unchecks; double-tap left or right while running, steer with movement or Jump, collide with tiles, take and deal no damage for two seconds, preserve exit momentum, then verify neither dash can activate during the shared three-second cooldown.
+28. After Terraforge Temper 1, open the Temper tab: raise a sword along Slime Essence, confirm the name and damage change, save/reload the item, imbue it and confirm the temper survives, then transfer onto another weapon and re-infuse onto a different essence.
 
 ## Near-term implementation backlog
+
+### Weapon temper and essence paths
+
+The mod's economy is being redirected into weapon temper as its primary sink, with essence paths as the primary essence sink. See `GAME_DESIGN.md` and `DECISIONS.md` for the settled design.
+
+Prototype now in-game:
+
+- Temper level and essence path save on the item instance, survive prefixes, copy through imbuement, and sync in multiplayer.
+- Damage converges toward a per-level damage-per-second target derived from use time, with an override list for misleading weapons.
+- Terraforge Temper tab: raise along one essence path, transfer with a two-level loss, or re-infuse onto a different path.
+- Nineteen prototype path effects (debuff, crit, lifesteal, armour penetration, double-damage).
+- Soulless fragment temper is framed as the weapon ceiling.
+
+Still required:
+
+- Instrument real soul income. Event farms still break every printed price.
+- Measure era DPS targets against real weapons and retune the cost curve.
+
+### Mutations
+
+Drawbacks, minion-slot cost, Classic slot-3 access, live damage, and purge refunds are in the prototype. Remaining work is authoring the other eighteen mutations.
+
+### Existing
 
 - Add clear menu feedback for insufficient souls and locked progression.
 - Reconcile all Terraforge Temper costs with measured milestone rewards.

@@ -84,6 +84,27 @@ public sealed class MutationPlayer : ModPlayer
 		}
 	}
 
+	public override void PostUpdateEquips()
+	{
+		if (HasActive(MutationId.Slime))
+		{
+			Player.moveSpeed *= 0.9f;
+		}
+
+		if (HasActive(MutationId.Skeletron))
+		{
+			Player.statDefense -= 8;
+		}
+	}
+
+	public override void ModifyHurt(ref Player.HurtModifiers modifiers)
+	{
+		if (HasActive(MutationId.Skeletron))
+		{
+			modifiers.Knockback *= 1.4f;
+		}
+	}
+
 	public override void OnHurt(Player.HurtInfo info)
 	{
 		if (!HasActive(MutationId.Slime) || slimeSprayCooldown > 0 || Player.whoAmI != Main.myPlayer)
@@ -107,7 +128,8 @@ public sealed class MutationPlayer : ModPlayer
 		return slot >= 0 && slot < SlotCount ? mutations[slot] : MutationId.None;
 	}
 
-	public bool IsSlotAvailable(int slot) => slot is 0 or 1 || slot == 2 && Player.extraAccessory;
+	public bool IsSlotAvailable(int slot) =>
+		slot is 0 or 1 || slot == 2 && (Player.extraAccessory || Main.hardMode);
 
 	public bool HasActive(MutationId id)
 	{
@@ -220,7 +242,8 @@ public sealed class MutationPlayer : ModPlayer
 	private void SpawnAlliedSlime()
 	{
 		int projectileType = ModContent.ProjectileType<MutationAlliedSlimeProjectile>();
-		if (Player.ownedProjectileCounts[projectileType] >= 3)
+		int owned = Player.ownedProjectileCounts[projectileType];
+		if (owned >= 3)
 		{
 			Projectile oldest = null;
 			foreach (Projectile projectile in Main.ActiveProjectiles)
@@ -232,6 +255,10 @@ public sealed class MutationPlayer : ModPlayer
 				}
 			}
 			oldest?.Kill();
+		}
+		else if (Player.slotsMinions + 1f > Player.maxMinions + 0.001f)
+		{
+			return;
 		}
 
 		int baseDamage = 6 + (int)(Player.statLifeMax2 * 0.04f);
@@ -266,9 +293,10 @@ public sealed class MutationPlayer : ModPlayer
 		int baseDamage = MutationSkeletronHandProjectile.BaseDamage
 			+ (int)(Player.statLifeMax2 * MutationSkeletronHandProjectile.LifeDamageScale);
 		int damage = Math.Max(1, (int)Player.GetTotalDamage(DamageClass.Generic).ApplyTo(baseDamage));
+		float reservedSlots = Player.slotsMinions;
 		for (int side = 0; side < present.Length; side++)
 		{
-			if (present[side])
+			if (present[side] || reservedSlots + 1f > Player.maxMinions + 0.001f)
 			{
 				continue;
 			}
@@ -279,6 +307,7 @@ public sealed class MutationPlayer : ModPlayer
 					MutationSkeletronHandProjectile.HoverOffsetY);
 			Projectile.NewProjectile(Player.GetSource_Misc("SkeletronMutationHand"), spawn, Vector2.Zero,
 				projectileType, damage, MutationSkeletronHandProjectile.Knockback, Player.whoAmI, side);
+			reservedSlots += 1f;
 		}
 	}
 }

@@ -1,3 +1,4 @@
+using System;
 using Microsoft.Xna.Framework;
 using SoulsOfTerra.Content.Items.Access;
 using SoulsOfTerra.Content.Items.Consumables.SoulCrystals;
@@ -29,6 +30,7 @@ public static class SoulTransactions
 	public const long WardensFragmentCost = 10_000;
 	public const long SoulApparatusCost = 1_000;
 	public const long GraftingAltarCost = 1_000;
+	public const long SoulspellLearnCost = 200;
 	private static readonly long[] SoulCrystalCosts = { 1_250, 6_250, 31_250 };
 	private static readonly long[] SoulCrystalValues = { 1_000, 5_000, 25_000 };
 	private const float InteractionRange = 12f * 16f;
@@ -186,6 +188,8 @@ public static class SoulTransactions
 
 		int preservedPrefix = weapon.prefix;
 		int consumedWeaponType = weapon.type;
+		int preservedLevel = WeaponTemperItem.LevelOf(weapon);
+		int preservedPath = WeaponTemperItem.PathOf(weapon);
 		ConsumeOne(weapon);
 		ConsumeOne(essence);
 		if (Main.netMode == NetmodeID.Server)
@@ -199,6 +203,7 @@ public static class SoulTransactions
 		{
 			output.Prefix(preservedPrefix);
 		}
+		WeaponTemperItem.Get(output)?.SetState(preservedLevel, preservedPath);
 		player.QuickSpawnItem(new EntitySource_Misc("SoulsOfTerra:EssenceBindingComplete"), output, 1);
 
 		Vector2 ritualCenter = terraforgePosition.ToWorldCoordinates(TerraforgeTile.Width * 8f, -12f);
@@ -209,12 +214,11 @@ public static class SoulTransactions
 		return true;
 	}
 
-	public static bool TryDissolveSoulspell(Player player, Point16 apparatusPosition, int recipeIndex,
-		int potionSlot, int essenceSlot)
+	// Learning is cheap: the potion plus a flat soul fee. Stance drain is the real cost.
+	public static bool TryDissolveSoulspell(Player player, Point16 apparatusPosition, int recipeIndex, int potionSlot)
 	{
 		if (recipeIndex < 0 || recipeIndex >= SoulSpellRegistry.PotionSpells.Length
-			|| potionSlot == essenceSlot || potionSlot < 0 || potionSlot >= player.inventory.Length
-			|| essenceSlot < 0 || essenceSlot >= player.inventory.Length
+			|| potionSlot < 0 || potionSlot >= player.inventory.Length
 			|| !IsValidSoulApparatusInteraction(player, apparatusPosition))
 		{
 			return false;
@@ -222,38 +226,24 @@ public static class SoulTransactions
 
 		SoulSpellDefinition spell = SoulSpellRegistry.PotionSpells[recipeIndex];
 		SoulSpellPlayer spellPlayer = player.GetModPlayer<SoulSpellPlayer>();
-		if (spellPlayer.HasLearned(spell.Id)
-			|| !SoulEssenceRegistry.TryFindByItemType(spell.EssenceItemType, out SoulEssenceDefinition essenceDefinition)
-			|| !essenceDefinition.IsUnlocked())
-		{
-			return false;
-		}
-
 		Item potion = player.inventory[potionSlot];
-		Item essence = player.inventory[essenceSlot];
-		if (potion.type != spell.PotionItemType || potion.stack <= 0
-			|| essence.type != spell.EssenceItemType || essence.stack <= 0)
-		{
-			return false;
-		}
-
-		if (!spellPlayer.TryLearn(spell.Id))
+		if (spellPlayer.HasLearned(spell.Id) || potion.type != spell.PotionItemType || potion.stack <= 0
+			|| !player.GetModPlayer<SoulPlayer>().TrySpendSouls(SoulspellLearnCost)
+			|| !spellPlayer.TryLearn(spell.Id))
 		{
 			return false;
 		}
 
 		ConsumeOne(potion);
-		ConsumeOne(essence);
 		if (Main.netMode == NetmodeID.Server)
 		{
 			NetMessage.SendData(MessageID.SyncEquipment, -1, -1, null, player.whoAmI, potionSlot);
-			NetMessage.SendData(MessageID.SyncEquipment, -1, -1, null, player.whoAmI, essenceSlot);
 		}
 
 		Vector2 center = apparatusPosition.ToWorldCoordinates(SoulApparatusTile.Width * 8f, 8f);
 		Projectile.NewProjectile(new EntitySource_Misc("SoulsOfTerra:SoulspellDissolution"), center, Vector2.Zero,
 			ModContent.ProjectileType<SoulspellDissolutionRitualProjectile>(), 0, 0f, player.whoAmI,
-			recipeIndex, spell.PotionItemType, spell.EssenceItemType);
+			recipeIndex, spell.PotionItemType);
 		return true;
 	}
 
@@ -332,14 +322,136 @@ public static class SoulTransactions
 
 	public static bool TryPurgeMutation(Player player, Point16 altarPosition, int mutationSlot)
 	{
+		MutationPlayer mutationPlayer = player.GetModPlayer<MutationPlayer>();
+		MutationId id = mutationPlayer.GetMutation(mutationSlot);
 		if (!IsValidGraftingAltarInteraction(player, altarPosition)
-			|| !player.GetModPlayer<MutationPlayer>().TryPurge(mutationSlot))
+			|| !MutationRegistry.TryGet(id, out MutationDefinition definition)
+			|| !mutationPlayer.TryPurge(mutationSlot))
 		{
 			return false;
 		}
 
-		player.GetModPlayer<MutationPlayer>().SendState();
+		player.QuickSpawnItem(new EntitySource_Misc("SoulsOfTerra:MutationPurge"), definition.EssenceItemType);
+		mutationPlayer.SendState();
 		return true;
+	}
+
+	public static bool TryTemperWeapon(Player player, Point16 terraforgePosition, int weaponSlot, int essenceSlot)
+	{
+		if (!TryGetTemperTargets(player, terraforgePosition, weaponSlot, essenceSlot, requireMatchingPath: true,
+			out Item weapon, out Item essence, out WeaponTemperItem temper, out int pathIndex))
+		{
+			return false;
+		}
+
+		int nextLevel = temper.Level + 1;
+		if (nextLevel > WeaponTemper.LevelCeiling())
+		{
+			return false;
+		}
+
+		if (!player.GetModPlayer<SoulPlayer>().TrySpendSouls(WeaponTemper.GetLevelCost(nextLevel)))
+		{
+			return false;
+		}
+
+		ConsumeOne(essence);
+		temper.SetState(nextLevel, pathIndex);
+		SyncSlot(player, weaponSlot);
+		SyncSlot(player, essenceSlot);
+		return true;
+	}
+
+	public static bool TryReinfuseWeapon(Player player, Point16 terraforgePosition, int weaponSlot, int essenceSlot)
+	{
+		if (!TryGetTemperTargets(player, terraforgePosition, weaponSlot, essenceSlot, requireMatchingPath: false,
+			out _, out Item essence, out WeaponTemperItem temper, out int pathIndex))
+		{
+			return false;
+		}
+
+		if (temper.Level <= 0 || temper.PathIndex == pathIndex)
+		{
+			return false;
+		}
+
+		if (!player.GetModPlayer<SoulPlayer>().TrySpendSouls(WeaponTemper.GetReinfuseCost(temper.Level)))
+		{
+			return false;
+		}
+
+		ConsumeOne(essence);
+		temper.SetState(temper.Level, pathIndex);
+		SyncSlot(player, weaponSlot);
+		SyncSlot(player, essenceSlot);
+		return true;
+	}
+
+	public static bool TryTransferWeaponTemper(Player player, Point16 terraforgePosition, int sourceSlot, int destSlot)
+	{
+		if (!IsValidTerraforgeInteraction(player, terraforgePosition) || sourceSlot == destSlot
+			|| sourceSlot < 0 || sourceSlot >= player.inventory.Length
+			|| destSlot < 0 || destSlot >= player.inventory.Length)
+		{
+			return false;
+		}
+
+		Item source = player.inventory[sourceSlot];
+		Item dest = player.inventory[destSlot];
+		WeaponTemperItem sourceTemper = WeaponTemperItem.Get(source);
+		WeaponTemperItem destTemper = WeaponTemperItem.Get(dest);
+		int transferred = WeaponTemper.GetTransferredLevel(sourceTemper?.Level ?? 0);
+		if (sourceTemper is null || destTemper is null || transferred <= 0 || destTemper.IsTempered)
+		{
+			return false;
+		}
+
+		if (!player.GetModPlayer<SoulPlayer>().TrySpendSouls(WeaponTemper.GetTransferCost(sourceTemper.Level)))
+		{
+			return false;
+		}
+
+		destTemper.SetState(Math.Min(transferred, WeaponTemper.LevelCeiling()), sourceTemper.PathIndex);
+		sourceTemper.SetState(0, -1);
+		SyncSlot(player, sourceSlot);
+		SyncSlot(player, destSlot);
+		return true;
+	}
+
+	private static bool TryGetTemperTargets(Player player, Point16 terraforgePosition, int weaponSlot, int essenceSlot,
+		bool requireMatchingPath, out Item weapon, out Item essence, out WeaponTemperItem temper, out int pathIndex)
+	{
+		weapon = null;
+		essence = null;
+		temper = null;
+		pathIndex = -1;
+		if (!IsValidTerraforgeInteraction(player, terraforgePosition) || weaponSlot == essenceSlot
+			|| weaponSlot < 0 || weaponSlot >= player.inventory.Length
+			|| essenceSlot < 0 || essenceSlot >= player.inventory.Length)
+		{
+			return false;
+		}
+
+		weapon = player.inventory[weaponSlot];
+		essence = player.inventory[essenceSlot];
+		temper = WeaponTemperItem.Get(weapon);
+		pathIndex = EssencePathRegistry.IndexOfEssence(essence.type);
+		if (temper is null || !WeaponTemper.CanTemper(weapon) || essence.stack <= 0 || pathIndex < 0
+			|| !SoulEssenceRegistry.TryGet(pathIndex, out SoulEssenceDefinition definition)
+			|| !definition.IsUnlocked())
+		{
+			return false;
+		}
+
+		return !requireMatchingPath || temper.Level <= 0 || temper.PathIndex == pathIndex;
+	}
+
+	private static void SyncSlot(Player player, int slot)
+	{
+		if (Main.netMode == NetmodeID.Server)
+		{
+			NetMessage.SendData(MessageID.SyncEquipment, -1, -1, null, player.whoAmI, slot);
+		}
 	}
 
 	private static void ConsumeOne(Item item)

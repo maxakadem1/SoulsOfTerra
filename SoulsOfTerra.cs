@@ -34,7 +34,10 @@ public enum SoulMessageType : byte
 	RequestGraftingAltarPurchase,
 	RequestGraftMutation,
 	RequestPurgeMutation,
-	SyncMutations
+	SyncMutations,
+	RequestWeaponTemper,
+	RequestWeaponTemperTransfer,
+	RequestWeaponTemperReinfuse
 }
 
 public class SoulsOfTerra : Mod
@@ -167,6 +170,15 @@ public class SoulsOfTerra : Mod
 				break;
 			case SoulMessageType.SyncMutations:
 				MutationPlayer.HandleStateSync(reader, whoAmI);
+				break;
+			case SoulMessageType.RequestWeaponTemper:
+				HandleWeaponTemper(reader, whoAmI);
+				break;
+			case SoulMessageType.RequestWeaponTemperTransfer:
+				HandleWeaponTemperTransfer(reader, whoAmI);
+				break;
+			case SoulMessageType.RequestWeaponTemperReinfuse:
+				HandleWeaponTemperReinfuse(reader, whoAmI);
 				break;
 		}
 	}
@@ -353,12 +365,11 @@ public class SoulsOfTerra : Mod
 	{
 		int recipeIndex = reader.ReadByte();
 		int potionSlot = reader.ReadByte();
-		int essenceSlot = reader.ReadByte();
 		Point16 apparatusPosition = new(reader.ReadInt16(), reader.ReadInt16());
 		Player player = GetRequestingPlayer(whoAmI);
 		if (player is not null)
 		{
-			SoulTransactions.TryDissolveSoulspell(player, apparatusPosition, recipeIndex, potionSlot, essenceSlot);
+			SoulTransactions.TryDissolveSoulspell(player, apparatusPosition, recipeIndex, potionSlot);
 		}
 	}
 
@@ -393,6 +404,42 @@ public class SoulsOfTerra : Mod
 		if (player is not null)
 		{
 			SoulTransactions.TryPurgeMutation(player, altarPosition, slot);
+		}
+	}
+
+	private static void HandleWeaponTemper(BinaryReader reader, int whoAmI)
+	{
+		int weaponSlot = reader.ReadByte();
+		int essenceSlot = reader.ReadByte();
+		Point16 terraforgePosition = new(reader.ReadInt16(), reader.ReadInt16());
+		Player player = GetRequestingPlayer(whoAmI);
+		if (player is not null)
+		{
+			SoulTransactions.TryTemperWeapon(player, terraforgePosition, weaponSlot, essenceSlot);
+		}
+	}
+
+	private static void HandleWeaponTemperTransfer(BinaryReader reader, int whoAmI)
+	{
+		int sourceSlot = reader.ReadByte();
+		int destSlot = reader.ReadByte();
+		Point16 terraforgePosition = new(reader.ReadInt16(), reader.ReadInt16());
+		Player player = GetRequestingPlayer(whoAmI);
+		if (player is not null)
+		{
+			SoulTransactions.TryTransferWeaponTemper(player, terraforgePosition, sourceSlot, destSlot);
+		}
+	}
+
+	private static void HandleWeaponTemperReinfuse(BinaryReader reader, int whoAmI)
+	{
+		int weaponSlot = reader.ReadByte();
+		int essenceSlot = reader.ReadByte();
+		Point16 terraforgePosition = new(reader.ReadInt16(), reader.ReadInt16());
+		Player player = GetRequestingPlayer(whoAmI);
+		if (player is not null)
+		{
+			SoulTransactions.TryReinfuseWeapon(player, terraforgePosition, weaponSlot, essenceSlot);
 		}
 	}
 }

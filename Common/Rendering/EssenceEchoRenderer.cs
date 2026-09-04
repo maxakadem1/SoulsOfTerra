@@ -154,6 +154,18 @@ internal static class EssenceEchoRenderer
 		return sampled;
 	}
 
+	public static bool TryGetAccent(int itemType, out Color accent)
+	{
+		if (!TryGetDefinition(itemType, out EssenceVisualDefinition definition))
+		{
+			accent = default;
+			return false;
+		}
+
+		accent = GetAccentColor(itemType, definition);
+		return true;
+	}
+
 	private static void GetSourceTexture(EssenceVisualSource source, out Texture2D texture,
 		out Rectangle frame)
 	{

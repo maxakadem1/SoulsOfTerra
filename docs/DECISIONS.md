@@ -65,6 +65,7 @@
 | Dismantling | Any pickaxe works; explosions do not. | Relocation remains accessible while accidental destruction is prevented. |
 | Progression term | Soulless Tempers the Fragment; recipes require Terraforge Temper. | Unifies the forging language across upgrades and requirements. |
 | Temper payment | Souls only. | Keeps the core economy central. |
+| Temper meaning | Terraforge Temper is the ceiling every weapon may be tempered toward, not a gate on continuing. | Converts a tollbooth with no decision into structure players plan around, and makes the temper ceiling a consequence of progression rather than an arbitrary number. |
 | Intended price target | Approximately 50% of the milestone boss reward. | Encourages some additional combat without demanding excessive farming. |
 
 ## Progression and crafting
@@ -136,6 +137,44 @@
 | Current bindings | Any Copper-through-Platinum broadsword + Slime Essence; Ruby Staff + Eye Essence; Musket + Eater of Worlds Essence (Carrion Call); Breaker Blade + Wall of Flesh Essence; Imp Staff + Congregation Essence; Muramasa + Congregation Essence; Handgun + Congregation Essence; Magic Missile + Congregation Essence (Stars of Ruin); Diamond Staff + Moon Lord Essence; Venus Magnum + Moon Lord Essence. | Establishes flexible early bases and precise thematic bases where desired. |
 | Future enforcement | Every mod weapon inherits `ImbuementWeaponItem`, must be a registry output, and may not have a conventional recipe. | Turns the design rule into a load-time invariant instead of documentation alone. |
 
+## Weapon temper and essence paths
+
+| Topic | Decision | Reason |
+|---|---|---|
+| Role | Weapon temper is the primary soul sink; essence paths are the primary essence sink. | Every previous sink was a one-time purchase that closed, leaving souls as a scheduled tax rather than a decision. Temper never closes. |
+| System count | Temper and infusion are one system, not two. Temper is magnitude, the essence path is character. | Two systems competing for the same currency produced four shallow mechanics instead of one deep one. |
+| Scope | Any weapon may be tempered, vanilla or mod. | Limiting temper to ten imbuement weapons leaves the Terraforge idle for most of a playthrough, recreating the shallow-sink problem. |
+| Storage | Temper is stored on the individual item instance, not the weapon type. | A specific object becomes worth protecting and acquires a history; a type-wide unlock is paid once and closes forever. |
+| Level effect | Damage only. Use time, reach, projectiles, class, and prefix are untouched. | Anything expressive belongs to the essence path; two systems granting character would collide. |
+| Authoring | Behaviour is derived systemically from weapon data, with a short override list for weapons whose output is not damage times rate. | Any vanilla weapon qualifies, so per-weapon authoring is impossible. |
+| Damage curve | Temper converges the weapon toward an era target rather than scaling its existing damage. | Proportional scaling preserves the ordering of base damage, so a stronger weapon always wins at equal investment and reviving an old weapon is never rational. |
+| Level +0 | A weapon deals its ordinary Terraria damage until tempered. | Parity must be purchased. Free parity would erase Terraria's loot progression and empty the sink at the same time. |
+| Ceiling | A fully tempered weapon lands slightly above the strongest comparable weapon obtainable at that stage. | A ceiling level with era-best makes temper a catch-up mechanic that current-era weapons gain nothing from, so nobody invests. |
+| Normalisation unit | Convergence targets damage per second, derived from use time, not raw damage. | Terraria prices nothing for attack speed; normalising raw damage would make the fastest weapon the only correct choice. |
+| Ceiling authority | A weapon may never exceed the world's Terraforge Temper. | Prevents an early weapon from outclassing its era, using progression rather than an arbitrary cap. |
+| Essence consumption | One essence per temper level. | Keeps essences in continuous demand instead of being condensed once per weapon. |
+| Essence choice | Each weapon is raised along one essence path chosen at first temper; every level feeds that same essence. | Interchangeable fuel would leave nineteen essences with distinct art and no distinct purpose, and would leave essences without an imbuement weapon as permanent dead ends. |
+| Path effect | The path grants an added effect that strengthens with each level. | Weapon identity becomes base moveset plus path, making a specific tempered weapon describable and memorable. |
+| Path change | Re-infusion costs souls and destroys the accumulated essence investment. | Keeps the initial path choice meaningful while charging for reconsideration. |
+| Outgrown weapons | A transfer ritual moves temper to another weapon for souls, losing a small number of levels. | Total loss makes hoarding rational and leaves the sink idle exactly when it should be busiest. A sink players fear to use is not a sink. |
+| Transfer framing | Charging for regret suits Soulless. | Expresses his quiet profit through mechanics rather than a hidden counter. |
+| Imbuement interaction | Imbuement preserves temper; a +7 Muramasa becomes a +7 Unison. | Resetting would punish imbuing after the early game and turn the mod's own weapons into things players avoid. |
+| Mod weapon identity | Mod weapons are distinguished by moveset, not damage. | Under full parity no weapon is stronger than another at equal temper; ten distinctive movesets is a sound offering where ten "strong weapons" never was. |
+
+## Mutations
+
+| Topic | Decision | Reason |
+|---|---|---|
+| Role | The body's counterpart to essence paths: a path gives a weapon character, a mutation gives the player one. | Provides a clear identity distinct from accessories and from weapon temper. |
+| Economic role | Explicitly not a soul sink. | Three permanent purchases close faster than any other system; asking them to absorb souls made them expensive, unrefundable, and shallow simultaneously. |
+| Pricing | Cheap in souls, expensive in commitment. | Weapon temper carries the economy, freeing mutations to be rare and memorable rather than a toll. |
+| Drawbacks | Every mutation grants a strong benefit and a real permanent cost. | Without a drawback a mutation is a free permanent stat that contradicts pillar 3, benefits every class identically, and homogenises builds. |
+| Design space | Permanent downsides are near-absent from vanilla Terraria. | Makes grafting the mod's most distinctive surface. |
+| Minion slots | Mutation pets consume minion slots, as Compeditus already does. | Free permanent minions for every class devalue the summoner. |
+| Third slot | Needs a Classic-mode equivalent to the Demon Heart gate. | `Player.extraAccessory` is Expert-only, so Classic worlds currently have a permanently dead slot with no explanation. |
+| Damage refresh | Mutation damage must recalculate live rather than being fixed at projectile spawn. | The current snapshot creates a hidden re-graft ritual whenever maximum life changes. |
+| Purging | Must refund something. | A total loss means players never experiment, which is fatal for a system whose point is choosing. |
+
 ## Soulspells
 
 | Topic | Decision | Reason |
@@ -148,13 +187,13 @@
 | Cost model | Flat souls per interval per spell, no Temper scaling. | The printed number never silently changes. |
 | First Always spell | Soul Skip: a double-tap easing surge that preserves vertical momentum, grants brief i-frames, and has no ram damage. A soul echo chases the player through a full-height torn wake and merges in a landing snap. | Expressive exploration movement without competing with combat accessories. |
 | Alternate dash | Soul Flight is mutually exclusive with Soul Skip but both may be off. A horizontal double-tap gives two seconds of tile-colliding, four-direction flight at 9 px/tick as a 1.35x pickup soul, then a shared three-second cooldown. Ten-tick dissolves exchange the player and orb around a continuous soul wake. It preserves entry/exit momentum, releases grapples, blocks items, incoming damage, and all player-owned damage, but does not cleanse debuffs. | Creates seamless precision traversal with an explicit invulnerability tradeoff and no input conflict with vertical double-tap equipment. |
-| First paid spell | Shine, 0.08 souls per second, learned and checked from spawn. | Uses the exact vanilla effect to teach the same system used by dissolved potions. |
+| First paid spell | Shine, 2 souls per second, learned and checked from spawn. Stance starts off. | Uses the exact vanilla effect to teach the same system used by dissolved potions. No starter discount, so the first toggle shows Stance is a spend. |
 | Spawn defaults | Soul Skip on, Shine checked, Stance off. | They can skip immediately; Stance is a deliberate press. |
 | Empty balance | Stance cannot start if paid drain is active and the pile is 0; Stance drops when a charge cannot be paid. | Closes a toggle exploit and keeps Always spells up. |
 | Live-edit | Checks change while Stance is on. | The book is the mixer; Stance is the switch. |
-| Potion-dissolve | Soulless sells unlimited Soul Apparatuses for 1,000 souls after the Eye of Cthulhu. One registered vanilla buff potion plus its one specific boss essence permanently teaches that character the matching unchecked Stance spell. | Gives potion effects a permanent, progression-gated soul sink with unambiguous recipes. |
+| Potion-dissolve | Soulless sells unlimited Soul Apparatuses for 1,000 souls after the Eye of Cthulhu. One registered vanilla buff potion plus 200 souls permanently teaches that character the matching unchecked Stance spell. | Learning is a cheap rite. The bottle is the only gate; a second lock would recreate the grind. |
 | Potion scope | Timed positive vanilla drinkable buff potions only; recovery, food, flasks, teleportation, permanent upgrades, and thrown Love/Stink potions are excluded. | Keeps every learned result compatible with sustained Stance behavior. |
-| Potion pricing | Expected progression supplies a base drain, adjusted by effect strength; recipe essences are fixed rather than interchangeable. | Preserves readable balance and prevents optional or later essences from confusing recipe requirements. |
+| Potion pricing | Keep the existing relative drain ranking, multiplied by 25. Learning is a flat 200 souls. | Unlock stays cheap; Stance is the real cost. A utility lasts a cave trip, a combat mix lasts an expedition, and the full book is a short luxury. |
 | Potion coexistence | Soulspells apply the vanilla buff ID; ordinary potions can still be consumed but never stack their stats. Right-clicking an active spell buff unchecks it. | Preserves Quick Buff behavior and prevents double-dipping. |
 
 ## Ranged melee
@@ -172,6 +211,13 @@
 ## Decisions intentionally deferred
 
 - Exact final reward formula and exception policy for unusual modded NPCs.
+- Whether event farming (Pumpkin Moon, Frost Moon, invasions) needs its own reward treatment. `npc.value` throughput there exceeds ordinary play by orders of magnitude, which makes every fixed price meaningless for players who build an arena and punishing for those who do not. No price in the mod can be set honestly until this is resolved.
+- The soul cost curve per temper level, and how many levels sit within each Terraforge Temper.
+- The exact convergence formula and its era targets, plus the override list for weapons whose output is not damage times rate.
+- The nineteen essence path effects and how strongly each scales with level.
+- The specific drawback attached to each mutation.
+- Whether the 25× Stance drain scale needs easing after play. The starting numbers make a combat mix last about 15 minutes and the full book about a minute off a 10,000-soul Eye-tier pile.
+- Whether Soul Crystals should remain a 25% opt-out from the death penalty. Items do not drop on death in Classic or Softcore, so banking before a fight makes bloodstains irrelevant for a modest fee.
 - Final Terraforge Temper costs after measuring real boss payouts.
 - Whether bloodstains eventually become owner-only or configurable.
 - The complete King Slime equipment set and its mechanical identity.
