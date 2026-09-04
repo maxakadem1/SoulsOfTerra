@@ -76,6 +76,7 @@ public class SoulSpellBookSystem : ModSystem
 
 		SoulMenuSystem.Close();
 		SoulApparatusSystem.Close();
+		GraftingAltarSystem.Close();
 		Main.playerInventory = false;
 		bookState.Open();
 		bookInterface.SetState(bookState);

@@ -28,6 +28,53 @@ UI: {
 	SoulspellDashDescription: Double-tap to surge forward and leave a chasing soul echo
 	SoulspellFlightName: Soul Flight
 	SoulspellFlightDescription: Double-tap left or right to fly as a soul for 2 seconds; cannot use items, take damage, or deal damage
+	MutationTitle: Mutations
+	MutationSubtitle: Grafting Altar
+	MutationInsertInstruction: Drag an Essence onto an empty socket to embed it.
+	MutationRemoveInstruction: Right-click an embedded Essence to remove it permanently.
+	MutationDetailsHeader: MUTATION EFFECTS
+	MutationEmptyName: Empty
+	MutationLockedName: Locked
+	MutationNoActiveTitle: No active mutations
+	MutationNoActiveBody: Drag an Essence onto an empty socket to begin grafting.
+	MutationEmptyTitle: Empty mutation socket
+	MutationEmptyBody: Drag a discovered boss Essence here to embed its mutation.
+	MutationLockedTitle: Locked mutation socket
+	MutationLockedBody: Consume a Demon Heart to unlock this mutation socket.
+	MutationEmptyTooltip: Drag a discovered boss Essence here to embed it
+	MutationLockedTooltip: Consume a Demon Heart to unlock this mutation socket
+	MutationOccupiedTooltip:
+		'''
+		Left-click to view effects
+		Right-click to remove permanently
+		'''
+	MutationOccupiedFeedback: Right-click the embedded mutation to remove it before inserting another.
+	MutationEssenceOnlyFeedback: Only boss Essences can be grafted.
+	MutationUndiscoveredFeedback: No graft has been discovered for this Essence yet.
+	MutationDuplicateFeedback: That mutation is already embedded in another socket.
+	MutationReturnToInventoryFeedback: Return the Essence to your inventory and pick it up again.
+
+	MutationNames: {
+		Slime: King Slime
+		Eye: Eye of Cthulhu
+		Deerclops: Deerclops
+		EaterOfWorlds: Eater of Worlds
+		BrainOfCthulhu: Brain of Cthulhu
+		QueenBee: Queen Bee
+		Skeletron: Skeletron
+		Congregation: Sealed Congregation
+		WallOfFlesh: Wall of Flesh
+		QueenSlime: Queen Slime
+		Destroyer: The Destroyer
+		Twins: The Twins
+		SkeletronPrime: Skeletron Prime
+		Plantera: Plantera
+		Golem: Golem
+		DukeFishron: Duke Fishron
+		EmpressOfLight: Empress of Light
+		LunaticCultist: Lunatic Cultist
+		MoonLord: Moon Lord
+	}
 
 	SoulspellCategory: {
 		Exploration: Exploration
@@ -110,6 +157,9 @@ Projectiles: {
 	CarrionCallBaitProjectile.DisplayName: Carrion Meal
 	CarrionCallEaterProjectile.DisplayName: Called Eater
 	CarrionCallChompProjectile.DisplayName: Carrion Chomp
+	MutationSlimeGlobProjectile.DisplayName: Sticky Mutation Slime
+	MutationAlliedSlimeProjectile.DisplayName: Grafted Slime
+	MutationSkeletronHandProjectile.DisplayName: Grafted Skeletron Hand
 }
 
 Buffs: {
@@ -126,6 +176,11 @@ Buffs: {
 	SoulFlightBuff: {
 		DisplayName: Soul Flight
 		Description: Double-tap left or right to become a freely moving soul
+	}
+
+	MutationSlimeCoatingBuff: {
+		DisplayName: Mutation Slime Coating
+		Description: Armor and movement are weakened by grafted slime
 	}
 }
 
@@ -155,6 +210,7 @@ Tiles: {
 	SoulShrineTile.MapEntry: Warden's Reliquary
 	TerraforgeTile.MapEntry: Terraforge
 	SoulApparatusTile.MapEntry: Soul Apparatus
+	GraftingAltarTile.MapEntry: Grafting Altar
 	CourtBrickUnsafe.MapEntry: Court Brick Unsafe
 }
 
@@ -162,6 +218,11 @@ Items: {
 	SoulApparatusItem: {
 		DisplayName: Soul Apparatus
 		Tooltip: Dissolves potions and boss essences into permanent soulspells
+	}
+
+	GraftingAltarItem: {
+		DisplayName: Grafting Altar
+		Tooltip: Opens the body to boss Essence mutations
 	}
 
 	PulsingBait: {

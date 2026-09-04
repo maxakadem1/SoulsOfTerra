@@ -30,7 +30,11 @@ public enum SoulMessageType : byte
 	RequestSoulFlight,
 	SyncSoulFlight,
 	RequestSoulApparatusPurchase,
-	RequestSoulspellDissolution
+	RequestSoulspellDissolution,
+	RequestGraftingAltarPurchase,
+	RequestGraftMutation,
+	RequestPurgeMutation,
+	SyncMutations
 }
 
 public class SoulsOfTerra : Mod
@@ -151,6 +155,18 @@ public class SoulsOfTerra : Mod
 				break;
 			case SoulMessageType.RequestSoulspellDissolution:
 				HandleSoulspellDissolution(reader, whoAmI);
+				break;
+			case SoulMessageType.RequestGraftingAltarPurchase:
+				HandleGraftingAltarPurchase(reader, whoAmI);
+				break;
+			case SoulMessageType.RequestGraftMutation:
+				HandleGraftMutation(reader, whoAmI);
+				break;
+			case SoulMessageType.RequestPurgeMutation:
+				HandlePurgeMutation(reader, whoAmI);
+				break;
+			case SoulMessageType.SyncMutations:
+				MutationPlayer.HandleStateSync(reader, whoAmI);
 				break;
 		}
 	}
@@ -343,6 +359,40 @@ public class SoulsOfTerra : Mod
 		if (player is not null)
 		{
 			SoulTransactions.TryDissolveSoulspell(player, apparatusPosition, recipeIndex, potionSlot, essenceSlot);
+		}
+	}
+
+	private static void HandleGraftingAltarPurchase(BinaryReader reader, int whoAmI)
+	{
+		int npcIndex = reader.ReadInt16();
+		Player player = GetRequestingPlayer(whoAmI);
+		if (player is not null)
+		{
+			SoulTransactions.TryPurchaseGraftingAltar(player, npcIndex);
+		}
+	}
+
+	private static void HandleGraftMutation(BinaryReader reader, int whoAmI)
+	{
+		int slot = reader.ReadByte();
+		int sourceSlot = reader.ReadByte();
+		int expectedItemType = reader.ReadInt32();
+		Point16 altarPosition = new(reader.ReadInt16(), reader.ReadInt16());
+		Player player = GetRequestingPlayer(whoAmI);
+		if (player is not null)
+		{
+			SoulTransactions.TryGraftMutation(player, altarPosition, slot, sourceSlot, expectedItemType);
+		}
+	}
+
+	private static void HandlePurgeMutation(BinaryReader reader, int whoAmI)
+	{
+		int slot = reader.ReadByte();
+		Point16 altarPosition = new(reader.ReadInt16(), reader.ReadInt16());
+		Player player = GetRequestingPlayer(whoAmI);
+		if (player is not null)
+		{
+			SoulTransactions.TryPurgeMutation(player, altarPosition, slot);
 		}
 	}
 }

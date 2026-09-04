@@ -1,6 +1,9 @@
+using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using SoulsOfTerra.Common;
 using SoulsOfTerra.Common.Rendering;
+using SoulsOfTerra.Content.Rarities;
 using Terraria;
 using Terraria.ID;
 using Terraria.ModLoader;
@@ -31,5 +34,35 @@ public abstract class BossEssenceItem : ModItem
 		Vector2 center = Item.Center - Main.screenPosition;
 		EssenceEchoRenderer.TryDraw(spriteBatch, Type, center, 46f * scale, lightColor, rotation);
 		return false;
+	}
+
+	public override void ModifyTooltips(List<TooltipLine> tooltips)
+	{
+		TooltipLine name = tooltips.Find(line => line.Mod == "Terraria" && line.Name == "ItemName");
+		if (name is not null)
+		{
+			name.OverrideColor = ModContent.GetInstance<BossEssenceRarity>().RarityColor;
+		}
+
+		int firstLoreIndex = tooltips.FindIndex(line => line.Name.StartsWith("Tooltip"));
+		if (firstLoreIndex < 0)
+		{
+			firstLoreIndex = tooltips.Count;
+		}
+		else
+		{
+			for (int index = firstLoreIndex; index < tooltips.Count; index++)
+			{
+				if (tooltips[index].Name.StartsWith("Tooltip"))
+				{
+					tooltips[index].OverrideColor = new Color(255, 24, 24);
+				}
+			}
+		}
+
+		tooltips.Insert(firstLoreIndex, new TooltipLine(Mod, "Mutation",
+			MutationRegistry.GetInventorySummary(Type)) { OverrideColor = new Color(190, 105, 235) });
+		tooltips.Insert(firstLoreIndex + 1, new TooltipLine(Mod, "EssenceUses",
+			"Used for grafting, imbuement, and Soulspells") { OverrideColor = new Color(80, 225, 205) });
 	}
 }
